@@ -10,6 +10,10 @@ const StyledFooter = styled(AntFooter)`
   background: transparent;
   padding: 24px 50px;
   color: #334155;
+
+  @media (max-width: 576px) {
+    padding: 24px 16px;
+  }
 `;
 
 const Footer = () => {

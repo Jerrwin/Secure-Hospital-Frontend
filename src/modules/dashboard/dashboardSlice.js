@@ -7,6 +7,7 @@ const initialState = {
   prescriptions: [],
   staff: [],
   loading: false,
+  fetched: false,
   error: null,
 };
 
@@ -20,6 +21,7 @@ const dashboardSlice = createSlice({
     },
     fetchDashboardDataSuccess: (state, action) => {
       state.loading = false;
+      state.fetched = true;
       const { stats, appointments, patients, prescriptions, staff } = action.payload;
       if (stats) state.stats = stats;
       if (appointments) state.appointments = appointments;
@@ -29,11 +31,28 @@ const dashboardSlice = createSlice({
     },
     fetchDashboardDataFailure: (state, action) => {
       state.loading = false;
+      state.fetched = false;
       state.error = action.payload;
     },
     clearDashboardData: (state) => {
       return initialState;
     },
+  },
+  extraReducers: (builder) => {
+    // GLOBAL SIGNAL: If ANY other module (Appointments, Patients, etc.) 
+    // successfully updates data, we mark the dashboard as "stale" (fetched: false).
+    // This forces a re-fetch the next time the user views the dashboard.
+    builder.addMatcher(
+      (action) => 
+        action.type.endsWith("/success") || 
+        action.type.includes("Success"),
+      (state, action) => {
+        // Only invalidate if the action DID NOT come from the dashboard itself
+        if (!action.type.startsWith("dashboard/")) {
+          state.fetched = false;
+        }
+      }
+    );
   },
 });
 

@@ -194,7 +194,7 @@ const UnifiedDashboard = ({ role, data, loading }) => {
       },
     }),
     [data, appointmentCols, prescriptionCols],
-  ); // <-- FIXED HERE
+  );
 
   // Normalize role and handle aliases (e.g., Provider -> DOCTOR)
   const normalizedRole = useMemo(() => {

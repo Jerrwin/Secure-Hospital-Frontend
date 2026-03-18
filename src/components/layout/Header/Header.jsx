@@ -27,11 +27,34 @@ const Brand = styled.div`
   color: #2563eb;
   font-size: 1.25rem;
   font-weight: 700;
+
+  @media (max-width: 576px) {
+    font-size: 1.1rem;
+    gap: 8px;
+  }
+`;
+
+const UserName = styled(Text)`
+  color: #334155;
+  font-weight: 500;
+
+  @media (max-width: 480px) {
+    display: none;
+  }
 `;
 
 const Header = ({ user }) => {
   const { logout } = useAuth();
   
+  // Dynamic Hospital Name from Subdomain
+  const hostname = window.location.hostname;
+  const subdomain = hostname.split(".")[0];
+  const isSubdomain = subdomain !== "localhost" && subdomain !== "www" && hostname.includes(".");
+  
+  const hospitalName = isSubdomain 
+    ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) 
+    : "MedPortal";
+
   const menuItems = [
     { key: 'profile', icon: <UserOutlined />, label: 'Profile' },
     { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
@@ -49,7 +72,7 @@ const Header = ({ user }) => {
     <StyledHeader>
       <Brand>
         <MedicineBoxOutlined style={{ fontSize: '1.5rem' }} />
-        <span>MedPortal Unified</span>
+        <span>{hospitalName}</span>
       </Brand>
       
       <Dropdown 
@@ -58,10 +81,17 @@ const Header = ({ user }) => {
         arrow
       >
         <Space style={{ cursor: 'pointer' }}>
-          <Avatar style={{ backgroundColor: '#eff6ff', color: '#2563eb' }} icon={<UserOutlined />} />
-          <Text style={{ color: '#334155', fontWeight: 500 }}>
+          <Avatar 
+            style={{ 
+              backgroundColor: '#eff6ff', 
+              color: '#2563eb',
+              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.1)' 
+            }} 
+            icon={<UserOutlined />} 
+          />
+          <UserName>
             {user?.name || 'User'}
-          </Text>
+          </UserName>
         </Space>
       </Dropdown>
     </StyledHeader>

@@ -1,6 +1,8 @@
 import React from "react";
 import { Layout } from "antd";
 import styled from "styled-components";
+import { useSelector, useDispatch } from "react-redux";
+import { setSidebarCollapsed } from "../../../modules/ui/uiSlice";
 import Sidebar from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
@@ -18,20 +20,38 @@ const StyledContent = styled(Content)`
   padding: 24px;
   background: transparent;
   min-height: 280px;
+
+  @media (max-width: 768px) {
+    margin: 12px 12px 0;
+    padding: 16px;
+  }
 `;
 
 const DashboardLayout = ({ children, user, currentPath }) => {
+  const dispatch = useDispatch();
+  const collapsed = useSelector((state) => state.ui.sidebarCollapsed);
+
+  const handleToggle = (value) => {
+    dispatch(setSidebarCollapsed(value));
+  };
+
   // Fallback for user role to prevent crashes if auth state is delayed
   const safeUser = user || { role: "GUEST", name: "Guest User" };
-  console.log(safeUser);
 
   return (
     <MainLayout>
-      <Sidebar role={safeUser.role} currentPath={currentPath} />
+      <Header user={safeUser} />
       <Layout style={{ background: "#eff6ff" }}>
-        <Header user={safeUser} />
-        <StyledContent>{children}</StyledContent>
-        <Footer />
+        <Sidebar 
+          role={safeUser.role} 
+          currentPath={currentPath} 
+          collapsed={collapsed}
+          setCollapsed={handleToggle}
+        />
+        <Layout style={{ background: "#eff6ff", display: 'flex', flexDirection: 'column' }}>
+          <StyledContent>{children}</StyledContent>
+          <Footer />
+        </Layout>
       </Layout>
     </MainLayout>
   );

@@ -13,7 +13,6 @@ const { Sider } = Layout;
 
 const StyledSider = styled(Sider)`
   background: #1e3a8a !important;
-  min-height: 100vh;
   box-shadow: 2px 0 8px rgba(37, 99, 235, 0.05);
 
   .ant-menu {
@@ -39,7 +38,7 @@ const StyledSider = styled(Sider)`
   }
 `;
 
-const Sidebar = ({ currentPath, role }) => {
+const Sidebar = ({ currentPath, role, collapsed, setCollapsed }) => {
   const navigate = useNavigate();
 
   // Memoize navigation items to prevent unnecessary re-renders
@@ -65,7 +64,13 @@ const Sidebar = ({ currentPath, role }) => {
   }, [role]);
 
   return (
-    <StyledSider width={240} breakpoint="lg" collapsedWidth="80">
+    <StyledSider 
+      width={240} 
+      breakpoint="lg" 
+      collapsedWidth="80"
+      collapsed={collapsed}
+      onCollapse={(value) => setCollapsed(value)}
+    >
       <Menu
         mode="inline"
         selectedKeys={[currentPath || '/dashboard']}

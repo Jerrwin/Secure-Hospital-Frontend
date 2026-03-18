@@ -14,15 +14,16 @@ const useDashboard = (user) => {
     prescriptions,
     staff,
     loading,
+    fetched,
     error,
   } = useSelector((state) => state.dashboard, shallowEqual);
 
-  // Dispatch the fetch request on mount, passing the user's role
+  // Dispatch the fetch request ONLY if we haven't fetched data yet
   useEffect(() => {
-    if (user?.role) {
+    if (user?.role && !fetched && !loading) {
       dispatch(fetchDashboardDataRequest({ role: user.role }));
     }
-  }, [dispatch, user?.role]);
+  }, [dispatch, user?.role, fetched, loading]);
 
   // Memoize the return object so child components don't unnecessarily re-render
   const dashboardData = useMemo(
