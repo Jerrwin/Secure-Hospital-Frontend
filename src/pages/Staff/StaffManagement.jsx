@@ -246,7 +246,7 @@ const StaffManagement = () => {
         // 4. Fallback to name if ID mapping failed
         if (name) {
           const s = name.toUpperCase();
-          const colorMap = { ADMIN: 'red', DOCTOR: 'blue', NURSE: 'cyan', PHARMACIST: 'purple', PROVIDER: 'blue' };
+          const colorMap = { ADMIN: 'red', NURSE: 'cyan', PHARMACIST: 'purple', PROVIDER: 'blue' };
           return <Tag color={colorMap[s] || 'default'}>{name}</Tag>;
         }
 

@@ -35,7 +35,7 @@ function* fetchDashboardDataSaga(action) {
     if (role === "ADMIN") {
       const staffRes = yield call(dashboardAPI.getStaff);
       extraData.staff = staffRes.data.data;
-    } else if (role === "DOCTOR" || role === "PROVIDER") {
+    } else if (role === "PROVIDER") {
       const patientsRes = yield call(dashboardAPI.getPatients);
       extraData.patients = patientsRes.data.data;
     } else if (role === "PHARMACIST") {
