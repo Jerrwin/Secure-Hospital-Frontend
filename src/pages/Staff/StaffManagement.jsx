@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Switch, Space, Tag, message, Popconfirm, Typography } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Switch, Space, Tag, message, Popconfirm, Typography, Progress } from 'antd';
 import { PlusOutlined, EditOutlined, TeamOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
 import useAuth from '../../modules/auth/hooks/useAuth';
@@ -55,6 +55,25 @@ const StaffManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [form] = Form.useForm();
+  
+  // Watch password field for strength meter
+  const password = Form.useWatch('password', form);
+
+  const getPasswordStrength = (pwd) => {
+    if (!pwd) return { score: 0, label: '', color: '#e2e8f0' };
+    let score = 0;
+    if (pwd.length >= 8) score += 1;
+    if (/[0-9]/.test(pwd)) score += 1;
+    if (/[A-Z]/.test(pwd)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
+
+    if (pwd.length < 6) return { score: 25, label: 'Very Weak', color: '#ff4d4f' };
+    if (score <= 1) return { score: 33, label: 'Weak', color: '#ff4d4f' };
+    if (score <= 3) return { score: 66, label: 'Average', color: '#faad14' };
+    return { score: 100, label: 'Strong', color: '#52c41a' };
+  };
+
+  const strength = getPasswordStrength(password);
 
   // Debounce search term
   useEffect(() => {
@@ -78,11 +97,22 @@ const StaffManagement = () => {
     );
   };
 
-  // Filter data based on search
+  // Filter data based on search and roles
   const displayData = useMemo(() => {
-    if (!debouncedSearch) return staffList || [];
+    // 1. First, exclude 'Admin' role from the general staff list view
+    const nonAdminStaff = (staffList || []).filter(item => {
+      const id = item.role_id || item.roleId || (item.role?.id) || (typeof item.role === 'number' ? item.role : null);
+      const name = item.role_name || item.role?.name || (typeof item.role === 'string' ? item.role : null);
+      
+      // role_id 1 is usually Admin, also check by name
+      const isAdmin = id == 1 || (name && name.toLowerCase() === 'admin');
+      return !isAdmin;
+    });
+
+    // 2. Then apply search filter
+    if (!debouncedSearch) return nonAdminStaff;
     const lowerQuery = debouncedSearch.toLowerCase();
-    return (staffList || []).filter(item => 
+    return nonAdminStaff.filter(item => 
       item.name?.toLowerCase().includes(lowerQuery) ||
       item.email?.toLowerCase().includes(lowerQuery) ||
       item.phone_number?.toLowerCase().includes(lowerQuery)
@@ -153,6 +183,7 @@ const StaffManagement = () => {
 
     // 2. Prepare payload with both possible activity markers (binary and string)
     const cleanRecord = {
+      user_id: record.user_id, // Include user_id to trigger status sync across tables
       name: record.name,
       email: record.email,
       role_id: roleId,
@@ -263,10 +294,18 @@ const StaffManagement = () => {
 
   return (
     <DashboardLayout user={user} currentPath="/staff">
-      <div style={{ background: '#fff', padding: '32px', borderRadius: '12px', minHeight: '75vh', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)' }}>
+      <div style={{ 
+        background: '#fff', 
+        padding: 'clamp(16px, 4vw, 32px)', 
+        borderRadius: '12px', 
+        minHeight: '75vh', 
+        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)' 
+      }}>
         <PageHeader>
-          <h1><TeamOutlined style={{ color: '#2563eb' }}/> Staff Management</h1>
-          <Space size="large">
+          <h1 style={{ fontSize: '1.75rem' }}>
+            <TeamOutlined style={{ color: '#2563eb' }}/> Staff Management
+          </h1>
+          <Space size="middle">
             <Input 
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
               placeholder="Search by name, email or phone..." 
@@ -276,7 +315,12 @@ const StaffManagement = () => {
               style={{ width: '300px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
               size="large"
             />
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()} style={{ background: '#2563eb', height: '40px', borderRadius: '8px', fontWeight: 500 }}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={() => showModal()} 
+              style={{ background: '#2563eb', height: '40px', borderRadius: '8px', fontWeight: 500 }}
+            >
               Add Staff
             </Button>
           </Space>
@@ -292,6 +336,7 @@ const StaffManagement = () => {
             const isActive = record.status ? record.status === 'active' : (record.is_active === 1 || record.is_active === '1' || record.is_active === true);
             return isActive ? '' : 'inactive-row';
           }}
+          scroll={{ x: 800 }}
         />
 
         <Modal
@@ -321,7 +366,6 @@ const StaffManagement = () => {
               <Form.Item
                 name="last_name"
                 label="Last Name"
-                rules={[{ required: true, message: 'Last name is required' }]}
                 style={{ flex: 1 }}
               >
                 <Input size="large" placeholder="E.g. House" style={{ borderRadius: '6px' }} />
@@ -360,23 +404,58 @@ const StaffManagement = () => {
             </Space>
 
             {!editingStaff && (
-              <Form.Item
-                name="password"
-                label="Temporary Password"
-                rules={[{ required: true, message: 'Password is required for new users' }]}
-              >
-                <Input.Password size="large" placeholder="Secure password" style={{ borderRadius: '6px' }} />
-              </Form.Item>
+              <div style={{ marginBottom: '24px' }}>
+                <Form.Item
+                  name="password"
+                  label="Password"
+                  rules={[{ required: true, message: 'Password is required for new users' }]}
+                  style={{ marginBottom: 8 }}
+                >
+                  <Input.Password size="large" placeholder="Secure password" style={{ borderRadius: '6px' }} />
+                </Form.Item>
+                {password && (
+                  <div style={{ marginTop: '-4px' }}>
+                    <Progress 
+                      percent={strength.score} 
+                      showInfo={false} 
+                      strokeColor={strength.color} 
+                      size="small" 
+                      style={{ marginBottom: 4 }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', color: strength.color, fontWeight: 600 }}>
+                        Strength: {strength.label}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                        Use 8+ chars with mix of letters, numbers & symbols
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             <Space style={{ display: 'flex', width: '100%' }}>
               <Form.Item
                 name="phone_number"
                 label="Phone Number"
-                rules={[{ required: true, message: 'Phone number is required' }]}
+                rules={[
+                  { required: true, message: 'Phone number is required' },
+                  { pattern: /^\d{10}$/, message: 'Please enter exactly 10 digits' }
+                ]}
                 style={{ flex: 1 }}
               >
-                <Input size="large" placeholder="9070503210" style={{ borderRadius: '6px' }} />
+                <Input 
+                  size="large" 
+                  placeholder="9070503210" 
+                  style={{ borderRadius: '6px' }} 
+                  maxLength={10}
+                  onKeyPress={(event) => {
+                    if (!/[0-9]/.test(event.key)) {
+                      event.preventDefault();
+                    }
+                  }}
+                />
               </Form.Item>
 
               <Form.Item
@@ -400,8 +479,7 @@ const StaffManagement = () => {
                   size="large" 
                   placeholder="Select role"
                   options={[
-                    { value: 1, label: 'System Administrator' },
-                    { value: 2, label: 'Provider / Doctor' },
+                    { value: 2, label: 'Provider' },
                     { value: 3, label: 'Nurse' },
                     { value: 4, label: 'Pharmacist' },
                     { value: 5, label: 'Receptionist' },

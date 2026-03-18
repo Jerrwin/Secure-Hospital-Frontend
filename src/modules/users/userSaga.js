@@ -31,8 +31,8 @@ function* updateStaffSaga(action) {
   try {
     const { id, data } = action.payload;
     const response = yield call(updateStaffAPI, action.payload);
-    // Merge the updated data with the response (in case server returns just a success message)
-    const updatedRecord = { ...data, ...(response.data || (response.id ? response : {})) };
+    // Merge the updated data with the response, ensuring 'id' is preserved
+    const updatedRecord = { id, ...data, ...(response?.data || {}) };
     yield put(updateStaffSuccess(updatedRecord));
     // Optional re-fetch to be safe
     yield put(fetchStaffRequest());
