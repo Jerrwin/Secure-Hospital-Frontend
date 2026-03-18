@@ -6,6 +6,7 @@ import { setSidebarCollapsed } from "../../../modules/ui/uiSlice";
 import Sidebar from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
+import useAuth from "../../../modules/auth/hooks/useAuth";
 
 const { Content } = Layout;
 
@@ -29,6 +30,7 @@ const StyledContent = styled(Content)`
 
 const DashboardLayout = ({ children, user, currentPath }) => {
   const dispatch = useDispatch();
+  const { userRole } = useAuth();
   const collapsed = useSelector((state) => state.ui.sidebarCollapsed);
 
   const handleToggle = (value) => {
@@ -36,6 +38,7 @@ const DashboardLayout = ({ children, user, currentPath }) => {
   };
 
   // Fallback for user role to prevent crashes if auth state is delayed
+  const currentUserRole = userRole || (user?.role || "GUEST").toUpperCase();
   const safeUser = user || { role: "GUEST", name: "Guest User" };
 
   return (
@@ -43,7 +46,7 @@ const DashboardLayout = ({ children, user, currentPath }) => {
       <Header user={safeUser} />
       <Layout style={{ background: "#eff6ff" }}>
         <Sidebar 
-          role={safeUser.role} 
+          role={currentUserRole} 
           currentPath={currentPath} 
           collapsed={collapsed}
           setCollapsed={handleToggle}

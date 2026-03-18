@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import useAuth from "../modules/auth/hooks/useAuth";
 
 const RoleBasedRoute = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, userRole, isAuthenticated } = useAuth();
 
   // If not logged in at all, redirect to login
   if (!isAuthenticated) {
@@ -11,7 +11,6 @@ const RoleBasedRoute = ({ children, allowedRoles }) => {
   }
 
   // Normalize role and check permission
-  const userRole = (user?.role || "").toUpperCase();
   const isAllowed = allowedRoles.includes(userRole);
 
   if (!isAllowed) {

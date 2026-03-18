@@ -6,6 +6,7 @@ import DashboardPage from "../pages/Dashboard/DashboardPage";
 import AppointmentList from "../pages/Appointments/AppointmentList";
 import PatientList from "../pages/Patients/PatientList";
 import PrescriptionList from "../pages/Prescriptions/PrescriptionList";
+import StaffManagement from "../pages/Staff/StaffManagement";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 
@@ -54,6 +55,15 @@ const AppRouter = ({ isSubdomain }) => {
         element={
           <RoleBasedRoute allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}>
             <PrescriptionList />
+          </RoleBasedRoute>
+        }
+      />
+
+      <Route
+        path="/staff"
+        element={
+          <RoleBasedRoute allowedRoles={["ADMIN"]}>
+            <StaffManagement />
           </RoleBasedRoute>
         }
       />
