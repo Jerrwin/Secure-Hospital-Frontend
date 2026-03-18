@@ -6,7 +6,7 @@ import useAuth from '../../modules/auth/hooks/useAuth';
 import useUsers from '../../modules/users/hooks/useUsers';
 import styled from 'styled-components';
 
-const { Option } = Select;
+// const { Option } = Select; // Deprecated in AntD v5, use options prop instead
 
 const PageHeader = styled.div`
   display: flex;
@@ -299,7 +299,7 @@ const StaffManagement = () => {
           open={isModalVisible}
           onCancel={handleCancel}
           footer={null}
-          destroyOnClose
+          destroyOnHidden
           width={600}
         >
           <Form
@@ -347,11 +347,15 @@ const StaffManagement = () => {
                 rules={[{ required: true, message: 'Gender is required' }]}
                 style={{ flex: 1, paddingLeft: '24px' }}
               >
-                <Select size="large" placeholder="Select gender">
-                  <Option value="male">Male</Option>
-                  <Option value="female">Female</Option>
-                  <Option value="other">Other</Option>
-                </Select>
+                <Select 
+                  size="large" 
+                  placeholder="Select gender"
+                  options={[
+                    { value: 'male', label: 'Male' },
+                    { value: 'female', label: 'Female' },
+                    { value: 'other', label: 'Other' },
+                  ]}
+                />
               </Form.Item>
             </Space>
 
@@ -392,13 +396,17 @@ const StaffManagement = () => {
                 rules={[{ required: true, message: 'Select a role' }]}
                 style={{ flex: 1 }}
               >
-                <Select size="large" placeholder="Select role">
-                  <Option value={1}>System Administrator</Option>
-                  <Option value={2}>Provider / Doctor</Option>
-                  <Option value={3}>Nurse</Option>
-                  <Option value={4}>Pharmacist</Option>
-                  <Option value={5}>Receptionist</Option>
-                </Select>
+                <Select 
+                  size="large" 
+                  placeholder="Select role"
+                  options={[
+                    { value: 1, label: 'System Administrator' },
+                    { value: 2, label: 'Provider / Doctor' },
+                    { value: 3, label: 'Nurse' },
+                    { value: 4, label: 'Pharmacist' },
+                    { value: 5, label: 'Receptionist' },
+                  ]}
+                />
               </Form.Item>
 
               <Form.Item
