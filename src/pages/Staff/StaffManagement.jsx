@@ -49,13 +49,13 @@ const StyledTable = styled(Table)`
 const StaffManagement = () => {
   const { user } = useAuth();
   const { staffList, loading, error, fetchStaff, addStaff, updateStaff, removeStaff } = useUsers();
-  
+
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [form] = Form.useForm();
-  
+
   // Watch password field for strength meter
   const password = Form.useWatch('password', form);
 
@@ -88,9 +88,9 @@ const StaffManagement = () => {
     const parts = String(text).split(new RegExp(`(${query})`, 'gi'));
     return (
       <span>
-        {parts.map((part, i) => 
-          part.toLowerCase() === query.toLowerCase() ? 
-            <mark key={i} style={{ backgroundColor: '#ffea00', padding: 0 }}>{part}</mark> : 
+        {parts.map((part, i) =>
+          part.toLowerCase() === query.toLowerCase() ?
+            <mark key={i} style={{ backgroundColor: '#ffea00', padding: 0 }}>{part}</mark> :
             part
         )}
       </span>
@@ -103,7 +103,7 @@ const StaffManagement = () => {
     const nonAdminStaff = (staffList || []).filter(item => {
       const id = item.role_id || item.roleId || (item.role?.id) || (typeof item.role === 'number' ? item.role : null);
       const name = item.role_name || item.role?.name || (typeof item.role === 'string' ? item.role : null);
-      
+
       // role_id 1 is usually Admin, also check by name
       const isAdmin = id == 1 || (name && name.toLowerCase() === 'admin');
       return !isAdmin;
@@ -112,7 +112,7 @@ const StaffManagement = () => {
     // 2. Then apply search filter
     if (!debouncedSearch) return nonAdminStaff;
     const lowerQuery = debouncedSearch.toLowerCase();
-    return nonAdminStaff.filter(item => 
+    return nonAdminStaff.filter(item =>
       item.name?.toLowerCase().includes(lowerQuery) ||
       item.email?.toLowerCase().includes(lowerQuery) ||
       item.phone_number?.toLowerCase().includes(lowerQuery)
@@ -134,7 +134,7 @@ const StaffManagement = () => {
     setEditingStaff(record);
     if (record) {
       // If the record only has 'name' but form expects first/last, split it
-      const formData = { 
+      const formData = {
         ...record,
         is_active: record.is_active === true || record.is_active === 1 || record.is_active === '1'
       };
@@ -193,7 +193,7 @@ const StaffManagement = () => {
       is_active: checked ? 1 : 0,
       status: checked ? 'active' : 'inactive' // Support both column formats
     };
-    
+
     updateStaff(record.id, cleanRecord);
     message.success(`User ${checked ? 'activated' : 'deactivated'}`);
   };
@@ -226,7 +226,7 @@ const StaffManagement = () => {
       render: (roleId, record) => {
         // 1. Try to find a numeric ID from any potential field
         const id = roleId || record.role_id || record.roleId || (typeof record.role === 'number' ? record.role : null);
-        
+
         // 2. Try to find a string name directly (e.g. from record.role.name or record.role_name)
         const name = record.role_name || record.role?.name || (typeof record.role === 'string' ? record.role : null);
 
@@ -260,8 +260,8 @@ const StaffManagement = () => {
         // Prioritize 'status' column if it exists, as it's the more reliable indicator for this backend
         const isActive = record.status ? record.status === 'active' : (record.is_active === true || record.is_active === 1 || record.is_active === '1');
         return (
-          <Switch 
-            checked={isActive} 
+          <Switch
+            checked={isActive}
             onChange={(checked) => handleToggleActive(checked, record)}
             checkedChildren="Active"
             unCheckedChildren="Inactive"
@@ -294,31 +294,31 @@ const StaffManagement = () => {
 
   return (
     <DashboardLayout user={user} currentPath="/staff">
-      <div style={{ 
-        background: '#fff', 
-        padding: 'clamp(16px, 4vw, 32px)', 
-        borderRadius: '12px', 
-        minHeight: '75vh', 
-        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)' 
+      <div style={{
+        background: '#fff',
+        padding: 'clamp(16px, 4vw, 32px)',
+        borderRadius: '12px',
+        minHeight: '75vh',
+        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)'
       }}>
         <PageHeader>
           <h1 style={{ fontSize: '1.75rem' }}>
-            <TeamOutlined style={{ color: '#2563eb' }}/> Staff Management
+            <TeamOutlined style={{ color: '#2563eb' }} /> Staff Management
           </h1>
           <Space size="middle">
-            <Input 
+            <Input
               prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              placeholder="Search by name, email or phone..." 
+              placeholder="Search by name, email or phone..."
               onChange={(e) => setSearchTerm(e.target.value)}
               value={searchTerm}
               allowClear
               style={{ width: '300px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
               size="large"
             />
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
-              onClick={() => showModal()} 
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => showModal()}
               style={{ background: '#2563eb', height: '40px', borderRadius: '8px', fontWeight: 500 }}
             >
               Add Staff
@@ -326,10 +326,10 @@ const StaffManagement = () => {
           </Space>
         </PageHeader>
 
-        <StyledTable 
-          columns={columns} 
-          dataSource={displayData} 
-          rowKey="id" 
+        <StyledTable
+          columns={columns}
+          dataSource={displayData}
+          rowKey="id"
           loading={loading && staffList.length === 0}
           pagination={{ pageSize: 5, placement: 'bottomCenter', showSizeChanger: false }}
           rowClassName={(record) => {
@@ -391,8 +391,8 @@ const StaffManagement = () => {
                 rules={[{ required: true, message: 'Gender is required' }]}
                 style={{ flex: 1, paddingLeft: '24px' }}
               >
-                <Select 
-                  size="large" 
+                <Select
+                  size="large"
                   placeholder="Select gender"
                   options={[
                     { value: 'male', label: 'Male' },
@@ -415,11 +415,11 @@ const StaffManagement = () => {
                 </Form.Item>
                 {password && (
                   <div style={{ marginTop: '-4px' }}>
-                    <Progress 
-                      percent={strength.score} 
-                      showInfo={false} 
-                      strokeColor={strength.color} 
-                      size="small" 
+                    <Progress
+                      percent={strength.score}
+                      showInfo={false}
+                      strokeColor={strength.color}
+                      size="small"
                       style={{ marginBottom: 4 }}
                     />
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -445,10 +445,10 @@ const StaffManagement = () => {
                 ]}
                 style={{ flex: 1 }}
               >
-                <Input 
-                  size="large" 
-                  placeholder="9070503210" 
-                  style={{ borderRadius: '6px' }} 
+                <Input
+                  size="large"
+                  placeholder="9070503210"
+                  style={{ borderRadius: '6px' }}
                   maxLength={10}
                   onKeyPress={(event) => {
                     if (!/[0-9]/.test(event.key)) {
@@ -475,8 +475,8 @@ const StaffManagement = () => {
                 rules={[{ required: true, message: 'Select a role' }]}
                 style={{ flex: 1 }}
               >
-                <Select 
-                  size="large" 
+                <Select
+                  size="large"
                   placeholder="Select role"
                   options={[
                     { value: 2, label: 'Provider' },
