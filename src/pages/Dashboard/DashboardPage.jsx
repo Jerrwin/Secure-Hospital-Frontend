@@ -6,14 +6,15 @@ import useDashboard from "../../components/layout/DashboardLayout/useDashboard";
 import useAuth from "../../modules/auth/hooks/useAuth";
 
 const DashboardPage = () => {
-  const { user } = useAuth(); // Real user from Redux
+  //throw new Error("This is a test crash!");
+  const { user, userRole } = useAuth(); // Real user and role from Redux
   const dashboardState = useDashboard(user);
 
   // Inject Mock Data for missing backend tables (Nurse/Patient)
   const dashboardData = useMemo(() => {
     const baseData = { ...dashboardState };
 
-    if (user?.role === "NURSE") {
+    if (userRole === "NURSE") {
       baseData.stats = { wardPatients: 14, pendingVitals: 6 };
       baseData.appointments = [
         { id: 1, patientName: "John Doe", time: "09:00 AM", status: "Pending" },
@@ -26,7 +27,7 @@ const DashboardPage = () => {
       ];
     }
 
-    if (user?.role === "PATIENT") {
+    if (userRole === "PATIENT") {
       baseData.stats = { upcomingVisits: 1, activePrescriptions: 2 };
       baseData.appointments = [
         {
@@ -47,7 +48,7 @@ const DashboardPage = () => {
     }
 
     return baseData;
-  }, [dashboardState, user?.role]);
+  }, [dashboardState, userRole]);
 
   //Guard: If user is not yet loaded (e.g. on direct refresh), show loading
   if (!user) {
@@ -85,7 +86,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <DashboardLayout user={user} currentPath="/dashboard">
+    <>
       <div style={{ marginBottom: "24px" }}>
         <Space align="center" size="middle">
           <h1 style={{ color: "#1e3a8a", fontSize: "1.75rem", margin: 0 }}>
@@ -99,7 +100,7 @@ const DashboardPage = () => {
               textTransform: "uppercase",
             }}
           >
-            {user?.role}
+            {userRole}
           </Tag>
         </Space>
         <p style={{ color: "#64748b", marginTop: "4px" }}>
@@ -113,12 +114,12 @@ const DashboardPage = () => {
         </div>
       ) : (
         <UnifiedDashboard
-          role={user?.role}
+          role={userRole}
           data={dashboardData}
           loading={dashboardState.loading}
         />
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

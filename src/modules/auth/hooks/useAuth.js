@@ -28,6 +28,21 @@ const useAuth = () => {
     dispatch(clearError());
   }, [dispatch]);
 
+  const userRole = useMemo(() => {
+    if (!user) return "";
+    if (user.role) return user.role.toUpperCase();
+
+    const roleMap = {
+      1: "ADMIN",
+      2: "DOCTOR",
+      3: "NURSE",
+      4: "PHARMACIST",
+      5: "RECEPTIONIST",
+      6: "PATIENT",
+    };
+    return (roleMap[user.role_id] || "").toUpperCase();
+  }, [user]);
+
   return useMemo(
     () => ({
       user,
@@ -36,6 +51,7 @@ const useAuth = () => {
       error,
       isAuthenticated,
       isLoading,
+      userRole,
       login,
       logout: logoutUser,
       clearAuthError,
@@ -47,6 +63,7 @@ const useAuth = () => {
       error,
       isAuthenticated,
       isLoading,
+      userRole,
       login,
       logoutUser,
       clearAuthError,
