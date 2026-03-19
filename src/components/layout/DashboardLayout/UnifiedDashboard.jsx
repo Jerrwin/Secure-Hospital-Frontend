@@ -14,31 +14,44 @@ const UnifiedDashboard = ({ role, data, loading }) => {
     () => [
       {
         title: "Patient",
-        dataIndex: "patient_name",
         key: "patient_name",
-        render: (_, record) =>
-          record.patient_name ||
-          `${record.patient?.first_name || ''} ${record.patient?.last_name || ''}`.trim() ||
-          record.patientName ||
-          '—',
+        render: (_, record) => {
+          const patient = record.patient || {};
+          const firstName = patient.first_name || patient.FIRST_NAME || '';
+          const lastName = patient.last_name || patient.LAST_NAME || '';
+          const fullName = `${firstName} ${lastName}`.trim();
+
+          return (
+            record.patient_name ||
+            record.PATIENT_NAME ||
+            fullName ||
+            record.patientName ||
+            "—"
+          );
+        },
       },
       {
         title: "Date & Time",
-        dataIndex: "appointment_date",
         key: "appointment_date",
-        render: (_, record) =>
-          record.appointment_date
-            ? `${record.appointment_date} ${record.start_time || ''}`.trim()
-            : record.time || '—',
+        render: (_, record) => {
+          const date = record.appointment_date || record.APPOINTMENT_DATE || '';
+          const time = record.start_time || record.START_TIME || record.time || '';
+          return date ? `${date} ${time}`.trim() : "—";
+        },
       },
       {
         title: "Status",
-        dataIndex: "status",
         key: "status",
-        render: (status) => {
-          const s = (status || '').toLowerCase();
-          const colorMap = { scheduled: 'blue', completed: 'green', cancelled: 'red', pending: 'orange' };
-          return <Tag color={colorMap[s] || 'default'}>{status || '—'}</Tag>;
+        render: (_, record) => {
+          const status = record.status || record.STATUS || '';
+          const s = status.toLowerCase();
+          const colorMap = {
+            scheduled: "blue",
+            completed: "green",
+            cancelled: "red",
+            pending: "orange",
+          };
+          return <Tag color={colorMap[s] || "default"}>{status || "—"}</Tag>;
         },
       },
     ],
@@ -60,19 +73,19 @@ const UnifiedDashboard = ({ role, data, loading }) => {
         stats: [
           {
             title: "Total Patients",
-            value: data.stats?.patients_total,
+            value: data.stats?.patients_total ?? data.stats?.PATIENTS_TOTAL,
             icon: <TeamOutlined />,
             trend: 12,
           },
           {
             title: "Total Staff",
-            value: data.stats?.staff_total,
+            value: data.stats?.staff_total ?? data.stats?.STAFF_TOTAL,
             icon: <MedicineBoxOutlined />,
             trend: 2,
           },
           {
             title: "Today's Appointments",
-            value: data.stats?.appointments_today,
+            value: data.stats?.appointments_today ?? data.stats?.APPOINTMENTS_TODAY,
             icon: <CalendarOutlined />,
             trend: 8,
           },

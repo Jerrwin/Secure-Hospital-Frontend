@@ -1,10 +1,22 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const getStoredUser = () => {
+  try {
+    const user = localStorage.getItem("user");
+    // Handle literal "undefined" string (corrupted by previous bugs)
+    if (!user || user === "undefined") return null;
+    return JSON.parse(user);
+  } catch (e) {
+    return null;
+  }
+};
+
 const initialState = {
-  user: JSON.parse(localStorage.getItem("user")) || null,
-  accessToken: localStorage.getItem("access_token") || null,
-  csrfToken: localStorage.getItem("csrf_token") || null,
-  status: "idle", // idle | loading | succeeded | failed
+  // It's acceptable to keep non-sensitive user profile data in localStorage for UI optimism
+  user: getStoredUser(),
+  accessToken: null, // Tokens MUST be in-memory only for XSS protection
+  csrfToken: null, // Tokens MUST be in-memory only for XSS protection
+  status: getStoredUser() ? "loading" : "idle", // Wait for checkAuth if user exists
   error: null,
 };
 
@@ -43,8 +55,6 @@ const authSlice = createSlice({
       state.csrfToken = null;
       state.status = "idle";
       state.error = null;
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("csrf_token");
       localStorage.removeItem("user");
     },
 
@@ -54,12 +64,7 @@ const authSlice = createSlice({
   },
 });
 
-export const {
-  loginRequest,
-  loginSuccess,
-  loginFailure,
-  logout,
-  clearError,
-} = authSlice.actions;
+export const { loginRequest, loginSuccess, loginFailure, logout, clearError } =
+  authSlice.actions;
 
 export default authSlice.reducer;

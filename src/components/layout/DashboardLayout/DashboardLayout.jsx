@@ -2,10 +2,12 @@ import React from "react";
 import { Layout } from "antd";
 import styled from "styled-components";
 import { useSelector, useDispatch } from "react-redux";
+import { Outlet, useLocation } from "react-router-dom";
 import { setSidebarCollapsed } from "../../../modules/ui/uiSlice";
 import Sidebar from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
+import ErrorBoundary from "../../common/ErrorBoundary";
 import useAuth from "../../../modules/auth/hooks/useAuth";
 
 const { Content } = Layout;
@@ -28,9 +30,10 @@ const StyledContent = styled(Content)`
   }
 `;
 
-const DashboardLayout = ({ children, user, currentPath }) => {
+const DashboardLayout = () => {
   const dispatch = useDispatch();
-  const { userRole } = useAuth();
+  const location = useLocation();
+  const { user, userRole } = useAuth();
   const collapsed = useSelector((state) => state.ui.sidebarCollapsed);
 
   const handleToggle = (value) => {
@@ -43,16 +46,30 @@ const DashboardLayout = ({ children, user, currentPath }) => {
 
   return (
     <MainLayout>
-      <Header user={safeUser} />
+      <ErrorBoundary variant="mini">
+        <Header user={safeUser} />
+      </ErrorBoundary>
       <Layout style={{ background: "#eff6ff" }}>
-        <Sidebar 
-          role={currentUserRole} 
-          currentPath={currentPath} 
-          collapsed={collapsed}
-          setCollapsed={handleToggle}
-        />
-        <Layout style={{ background: "#eff6ff", display: 'flex', flexDirection: 'column' }}>
-          <StyledContent>{children}</StyledContent>
+        <ErrorBoundary variant="mini">
+          <Sidebar
+            role={currentUserRole}
+            currentPath={location.pathname}
+            collapsed={collapsed}
+            setCollapsed={handleToggle}
+          />
+        </ErrorBoundary>
+        <Layout
+          style={{
+            background: "#eff6ff",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <StyledContent>
+            <ErrorBoundary key={location.key}>
+              <Outlet />
+            </ErrorBoundary>
+          </StyledContent>
           <Footer />
         </Layout>
       </Layout>

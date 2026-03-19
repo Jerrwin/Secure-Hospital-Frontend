@@ -7,13 +7,14 @@ import AppointmentList from "../pages/Appointments/AppointmentList";
 import PatientList from "../pages/Patients/PatientList";
 import PrescriptionList from "../pages/Prescriptions/PrescriptionList";
 import StaffManagement from "../pages/Staff/StaffManagement";
+import DashboardLayout from "../components/layout/DashboardLayout/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 
 const AppRouter = ({ isSubdomain }) => {
   return (
     <Routes>
-      {/* If subdomain like abc.localhost, show Login. If just localhost, show Landing. */}
+      {/* ─── Public Routes ────────────────────────────────────────── */}
       <Route
         path="/"
         element={isSubdomain ? <LoginPage /> : <LandingPage />}
@@ -23,50 +24,46 @@ const AppRouter = ({ isSubdomain }) => {
         element={isSubdomain ? <LoginPage /> : <Navigate to="/" replace />}
       />
 
+      {/* ─── Protected Routes (Nested under DashboardLayout) ──────── */}
       <Route
-        path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <DashboardLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/dashboard" element={<DashboardPage />} />
+        
+        <Route path="/appointments" element={<AppointmentList />} />
 
-      <Route
-        path="/appointments"
-        element={
-          <ProtectedRoute>
-            <AppointmentList />
-          </ProtectedRoute>
-        }
-      />
+        {/* Note: RoleBasedRoute still wraps the element inside the layout */}
+        <Route
+          path="/patients"
+          element={
+            <RoleBasedRoute allowedRoles={["ADMIN", "DOCTOR", "PROVIDER"]}>
+              <PatientList />
+            </RoleBasedRoute>
+          }
+        />
 
-      <Route
-        path="/patients"
-        element={
-          <RoleBasedRoute allowedRoles={["ADMIN", "DOCTOR", "PROVIDER"]}>
-            <PatientList />
-          </RoleBasedRoute>
-        }
-      />
+        <Route
+          path="/prescriptions"
+          element={
+            <RoleBasedRoute allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}>
+              <PrescriptionList />
+            </RoleBasedRoute>
+          }
+        />
 
-      <Route
-        path="/prescriptions"
-        element={
-          <RoleBasedRoute allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}>
-            <PrescriptionList />
-          </RoleBasedRoute>
-        }
-      />
-
-      <Route
-        path="/staff"
-        element={
-          <RoleBasedRoute allowedRoles={["ADMIN"]}>
-            <StaffManagement />
-          </RoleBasedRoute>
-        }
-      />
+        <Route
+          path="/staff"
+          element={
+            <RoleBasedRoute allowedRoles={["ADMIN"]}>
+              <StaffManagement />
+            </RoleBasedRoute>
+          }
+        />
+      </Route>
 
       {/* Fallback to root */}
       <Route path="*" element={<Navigate to="/" replace />} />
