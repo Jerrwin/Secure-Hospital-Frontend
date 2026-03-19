@@ -18,35 +18,37 @@ const { Option } = Select;
 
 // ─── Styled Components ───────────────────────────────────────────────────────
 
-const PageWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-`;
+
 
 const PageHeader = styled.div`
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-`;
-
-const PageTitle = styled.h2`
-  font-size: 22px;
-  font-weight: 700;
-  color: #1e3a5f;
-  margin: 0;
-  display: flex;
   align-items: center;
-  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  h1 {
+    color: #1e3a8a;
+    font-size: clamp(1.5rem, 4vw, 1.75rem);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 1 auto;
+  }
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 const CardWrapper = styled.div`
   background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(30, 58, 95, 0.08);
-  padding: 24px;
+  padding: clamp(16px, 4vw, 32px);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.05);
   overflow: hidden;
 `;
 
@@ -80,9 +82,9 @@ const ActionBtn = styled(Button)`
 
 const StatusTag = ({ status }) => {
   const map = {
-    scheduled: { color: "blue",   label: "Scheduled" },
-    completed: { color: "green",  label: "Completed" },
-    cancelled: { color: "red",    label: "Cancelled"  },
+    scheduled: { color: "blue", label: "Scheduled" },
+    completed: { color: "green", label: "Completed" },
+    cancelled: { color: "red", label: "Cancelled" },
   };
   const s = map[status?.toLowerCase()] || { color: "default", label: status };
   return <Tag color={s.color}>{s.label}</Tag>;
@@ -97,7 +99,7 @@ const highlightText = (text, query) => {
   if (!query || !text) return text;
   const parts = text.split(new RegExp(`(${query})`, "gi"));
   return (
-    <span>
+    <Space orientation="vertical" size={0}>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
           <Highlight key={i}>{part}</Highlight>
@@ -105,7 +107,7 @@ const highlightText = (text, query) => {
           part
         )
       )}
-    </span>
+    </Space>
   );
 };
 
@@ -123,20 +125,20 @@ const AppointmentList = () => {
 
   // Debugging
   useEffect(() => {
-    console.log("Appointments Component State:", { 
-      role, 
-      userId, 
+    console.log("Appointments Component State:", {
+      role,
+      userId,
       fullUser: user, // Log full user object to see available fields
-      patientsCount: patients.length, 
-      staffCount: staff.length, 
-      dropdownLoading 
+      patientsCount: patients.length,
+      staffCount: staff.length,
+      dropdownLoading
     });
   }, [role, userId, user, patients, staff, dropdownLoading]);
 
   const [form] = Form.useForm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  
+
   // Search state & Debounce
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -152,7 +154,7 @@ const AppointmentList = () => {
   // ── Initial load ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!fetched) fetchAll();
-    fetchDropdowns(); 
+    fetchDropdowns();
   }, [fetched, fetchAll, fetchDropdowns]);
 
   // ── Show API errors ─────────────────────────────────────────────────────
@@ -182,7 +184,7 @@ const AppointmentList = () => {
     // 3. Search filtering (Doctor Name or Patient Name)
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase();
-      result = result.filter(a => 
+      result = result.filter(a =>
         (a.patient_name || "").toLowerCase().includes(q) ||
         (a.provider_name || "").toLowerCase().includes(q)
       );
@@ -225,24 +227,24 @@ const AppointmentList = () => {
   const openEdit = (record) => {
     setEditingId(record.id);
     form.setFieldsValue({
-      patient_id:       String(record.patient_id),
-      provider_id:      String(record.provider_id),
+      patient_id: String(record.patient_id),
+      provider_id: String(record.provider_id),
       appointment_date: dayjs(record.appointment_date),
-      start_time:       dayjs(record.start_time, "HH:mm:ss"),
-      end_time:         dayjs(record.end_time,   "HH:mm:ss"),
-      STATUS:           record.STATUS?.toLowerCase(),
+      start_time: dayjs(record.start_time, "HH:mm:ss"),
+      end_time: dayjs(record.end_time, "HH:mm:ss"),
+      STATUS: record.STATUS?.toLowerCase(),
     });
     setModalOpen(true);
   };
 
   const handleSubmit = async (values) => {
     const payload = {
-      patient_id:       values.patient_id,
-      provider_id:      values.provider_id || (role === "DOCTOR" || role === "PROVIDER" ? String(userId) : null),
+      patient_id: values.patient_id,
+      provider_id: values.provider_id || (role === "DOCTOR" || role === "PROVIDER" ? String(userId) : null),
       appointment_date: values.appointment_date.format("YYYY-MM-DD"),
-      start_time:       values.start_time.format("HH:mm:ss"),
-      end_time:         values.end_time.format("HH:mm:ss"),
-      STATUS:           values.STATUS,
+      start_time: values.start_time.format("HH:mm:ss"),
+      end_time: values.end_time.format("HH:mm:ss"),
+      STATUS: values.STATUS,
     };
 
     // ── Conflict Detection ───────────────────────────────────────────────
@@ -339,22 +341,19 @@ const AppointmentList = () => {
   ].filter(col => !col.hidden);
 
   return (
-    <DashboardLayout user={user} currentPath="/appointments">
-      <PageWrapper>
-        {/* ── Header ── */}
-        <PageHeader>
-          <PageTitle>
-            <CalendarOutlined style={{ color: "#1677ff" }} />
-            Appointment Management
-          </PageTitle>
+    <div style={{ padding: 'clamp(12px, 3vw, 24px)' }}>
+      <PageHeader>
+        <h1 style={{ fontWeight: 700, color: '#102d6b' }}>
+          <CalendarOutlined style={{ color: '#2563eb' }} /> Appointment Management
+        </h1>
 
           <Space wrap size="middle">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <FilterOutlined style={{ color: "#1677ff" }} />
               <span style={{ fontWeight: 500, color: '#4a5568' }}>Filter Status:</span>
-              <StatusSelect 
-                value={statusFilter} 
-                onChange={setStatusFilter} 
+              <StatusSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
                 placeholder="Choose status"
               >
                 <Option value="all">All Statuses</Option>
@@ -390,22 +389,21 @@ const AppointmentList = () => {
             rowKey="id"
             loading={loading}
             scroll={{ x: 'max-content' }}
-            pagination={{ 
-              pageSize: 5, 
+            pagination={{
+              pageSize: 5,
               showSizeChanger: false,
               position: ["bottomCenter"]
             }}
             locale={{ emptyText: <Empty description="No appointments matching your criteria" /> }}
           />
         </CardWrapper>
-      </PageWrapper>
 
       {/* ── Create / Edit Modal ── */}
       <Modal
         title={editingId ? "Update Appointment" : "Schedule New Appointment"}
         open={modalOpen}
         onCancel={() => { setModalOpen(false); form.resetFields(); }}
-        footer={null}
+        destroyOnHidden
         width={600}
       >
         <Form
@@ -494,7 +492,7 @@ const AppointmentList = () => {
             name="STATUS"
             label="Status"
           >
-            <Select 
+            <Select
               disabled={editingId && ['completed', 'cancelled'].includes(form.getFieldValue('STATUS'))}
             >
               <Option value="scheduled">Scheduled</Option>
@@ -513,18 +511,6 @@ const AppointmentList = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </DashboardLayout>
-import React from 'react';
-import { Result } from 'antd';
-
-const AppointmentList = () => {
-  return (
-    <div style={{ padding: '40px', background: '#fff', borderRadius: '12px', minHeight: '70vh' }}>
-      <Result
-        status="info"
-        title="Appointments Module"
-        subTitle="This page is under construction. Please use the dashboard to see upcoming appointments."
-      />
     </div>
   );
 };
