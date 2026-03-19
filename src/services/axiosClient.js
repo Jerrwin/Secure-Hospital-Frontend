@@ -9,8 +9,11 @@ export const injectStore = (_store) => {
 // Use current window location — preserves subdomain
 // apollo.localhost:3000 → sends Host: apollo.localhost:3000
 const axiosClient = axios.create({
-  baseURL: `${window.location.protocol}//${window.location.hostname}${process.env.REACT_APP_API_SUFFIX || "/RestAPI_TeamProject/public"}`,
-  withCredentials: true, // IMPORTANT: Allows browser to send the HttpOnly refresh cookie
+  // Hit the backend directly on port 80/443 (omitting :3000)
+  // The backend uses $_SERVER['HTTP_HOST'] to identify the tenant.
+  // Using hostname ensures we send 'abc.localhost' instead of 'abc.localhost:3000'
+  baseURL: `${window.location.protocol}//${window.location.hostname}${process.env.REACT_APP_API_SUFFIX || "/patient/Secure-Hospital-RestAPI/public/Secure-Hospital-RestAPI/public"}`,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
