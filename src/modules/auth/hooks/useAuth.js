@@ -30,17 +30,15 @@ const useAuth = () => {
 
   const userRole = useMemo(() => {
     if (!user) return "";
-    // If user.role is already a string, use it.
-    if (typeof user.role === 'string') return user.role.toUpperCase();
-    
-    // Otherwise, map from role_id.
+    if (user.role) return user.role.toUpperCase();
+
     const roleMap = {
       1: "ADMIN",
       2: "PROVIDER", // Changed from DR/DOCTOR to PROVIDER
       3: "NURSE",
       4: "PHARMACIST",
       5: "RECEPTIONIST",
-      6: "PATIENT"
+      6: "PATIENT",
     };
     return (roleMap[user.role_id] || "").toUpperCase();
   }, [user]);

@@ -1,10 +1,27 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Switch, Space, Tag, message, Popconfirm, Typography, Progress } from 'antd';
-import { PlusOutlined, EditOutlined, TeamOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import DashboardLayout from '../../components/layout/DashboardLayout/DashboardLayout';
-import useAuth from '../../modules/auth/hooks/useAuth';
-import useUsers from '../../modules/users/hooks/useUsers';
-import styled from 'styled-components';
+import React, { useEffect, useState, useMemo } from "react";
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Switch,
+  Space,
+  Tag,
+  Progress,
+  message,
+  Popconfirm,
+} from "antd";
+import {
+  PlusOutlined,
+  EditOutlined,
+  TeamOutlined,
+  DeleteOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
+import useUsers from "../../modules/users/hooks/useUsers";
+import styled from "styled-components";
 
 // const { Option } = Select; // Deprecated in AntD v5, use options prop instead
 
@@ -13,14 +30,23 @@ const PageHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 
   h1 {
     color: #1e3a8a;
-    font-size: 1.75rem;
+    font-size: clamp(1.5rem, 4vw, 1.75rem);
     margin: 0;
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1 1 auto;
+    min-width: 250px;
+  }
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
   }
 `;
 
@@ -35,25 +61,42 @@ const StyledTable = styled(Table)`
     background-color: #f8fafc;
     opacity: 0.6;
     transition: all 0.3s ease;
-    
+
     td {
       color: #94a3b8 !important;
     }
-    
+
     .ant-tag {
       opacity: 0.5;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .ant-table {
+      font-size: 13px;
+    }
+    .ant-tag {
+      margin-right: 0;
+      margin-bottom: 4px;
     }
   }
 `;
 
 const StaffManagement = () => {
-  const { user } = useAuth();
-  const { staffList, loading, error, fetchStaff, addStaff, updateStaff, removeStaff } = useUsers();
+  const {
+    staffList,
+    loading,
+    error,
+    fetchStaff,
+    addStaff,
+    updateStaff,
+    removeStaff,
+  } = useUsers();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form] = Form.useForm();
 
   // Watch password field for strength meter
@@ -85,13 +128,17 @@ const StaffManagement = () => {
 
   const highlightText = (text, query) => {
     if (!query || !text) return text;
-    const parts = String(text).split(new RegExp(`(${query})`, 'gi'));
+    const parts = String(text).split(new RegExp(`(${query})`, "gi"));
     return (
       <span>
         {parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase() ?
-            <mark key={i} style={{ backgroundColor: '#ffea00', padding: 0 }}>{part}</mark> :
+          part.toLowerCase() === query.toLowerCase() ? (
+            <mark key={i} style={{ backgroundColor: "#ffea00", padding: 0 }}>
+              {part}
+            </mark>
+          ) : (
             part
+          ),
         )}
       </span>
     );
@@ -112,10 +159,11 @@ const StaffManagement = () => {
     // 2. Then apply search filter
     if (!debouncedSearch) return nonAdminStaff;
     const lowerQuery = debouncedSearch.toLowerCase();
-    return nonAdminStaff.filter(item =>
-      item.name?.toLowerCase().includes(lowerQuery) ||
-      item.email?.toLowerCase().includes(lowerQuery) ||
-      item.phone_number?.toLowerCase().includes(lowerQuery)
+    return (staffList || []).filter(
+      (item) =>
+        item.name?.toLowerCase().includes(lowerQuery) ||
+        item.email?.toLowerCase().includes(lowerQuery) ||
+        item.phone_number?.toLowerCase().includes(lowerQuery),
     );
   }, [staffList, debouncedSearch]);
 
@@ -125,7 +173,11 @@ const StaffManagement = () => {
 
   useEffect(() => {
     if (error) {
-      message.error(typeof error === 'string' ? error : "An error occurred fetching staff data");
+      message.error(
+        typeof error === "string"
+          ? error
+          : "An error occurred fetching staff data",
+      );
       console.error(error);
     }
   }, [error]);
@@ -136,16 +188,23 @@ const StaffManagement = () => {
       // If the record only has 'name' but form expects first/last, split it
       const formData = {
         ...record,
-        is_active: record.is_active === true || record.is_active === 1 || record.is_active === '1'
+        is_active:
+          record.is_active === true ||
+          record.is_active === 1 ||
+          record.is_active === "1",
       };
       if (!formData.first_name && formData.name) {
-        const parts = formData.name.split(' ');
+        const parts = formData.name.split(" ");
         formData.first_name = parts[0];
-        formData.last_name = parts.slice(1).join(' ');
+        formData.last_name = parts.slice(1).join(" ");
       }
       if (!formData.role_id && formData.role?.id) {
         formData.role_id = formData.role.id;
-      } else if (!formData.role_id && formData.role && typeof formData.role === 'number') {
+      } else if (
+        !formData.role_id &&
+        formData.role &&
+        typeof formData.role === "number"
+      ) {
         formData.role_id = formData.role;
       }
       form.setFieldsValue(formData);
@@ -165,7 +224,7 @@ const StaffManagement = () => {
     // Combine first_name and last_name into 'name' for the backend
     const payload = {
       ...values,
-      name: `${values.first_name || ''} ${values.last_name || ''}`.trim(),
+      name: `${values.first_name || ""} ${values.last_name || ""}`.trim(),
       is_active: values.is_active ? 1 : 0,
     };
 
@@ -179,7 +238,11 @@ const StaffManagement = () => {
 
   const handleToggleActive = (checked, record) => {
     // 1. Find the actual role ID from any potential field in the record
-    const roleId = record.role_id || record.roleId || (record.role?.id) || (typeof record.role === 'number' ? record.role : null);
+    const roleId =
+      record.role_id ||
+      record.roleId ||
+      record.role?.id ||
+      (typeof record.role === "number" ? record.role : null);
 
     // 2. Prepare payload with both possible activity markers (binary and string)
     const cleanRecord = {
@@ -191,52 +254,61 @@ const StaffManagement = () => {
       phone_number: record.phone_number,
       address: record.address,
       is_active: checked ? 1 : 0,
-      status: checked ? 'active' : 'inactive' // Support both column formats
+      status: checked ? "active" : "inactive", // Support both column formats
     };
 
     updateStaff(record.id, cleanRecord);
-    message.success(`User ${checked ? 'activated' : 'deactivated'}`);
+    message.success(`User ${checked ? "activated" : "deactivated"}`);
   };
 
   const handleDelete = (id) => {
     removeStaff(id);
-    message.success('Staff member deleted');
+    message.success("Staff member deleted");
   };
 
   const columns = [
     {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
       render: (_, record) => {
-        const fullName = `${record.first_name || ''} ${record.last_name || ''}`.trim() || record.name;
+        const fullName =
+          `${record.first_name || ""} ${record.last_name || ""}`.trim() ||
+          record.name;
         return highlightText(fullName, debouncedSearch);
-      }
+      },
     },
     {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      render: (text) => highlightText(text, debouncedSearch)
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      render: (text) => highlightText(text, debouncedSearch),
     },
     {
-      title: 'Role',
-      dataIndex: 'role_id',
-      key: 'role',
+      title: "Role",
+      dataIndex: "role_id",
+      key: "role",
       render: (roleId, record) => {
         // 1. Try to find a numeric ID from any potential field
-        const id = roleId || record.role_id || record.roleId || (typeof record.role === 'number' ? record.role : null);
+        const id =
+          roleId ||
+          record.role_id ||
+          record.roleId ||
+          (typeof record.role === "number" ? record.role : null);
 
         // 2. Try to find a string name directly (e.g. from record.role.name or record.role_name)
-        const name = record.role_name || record.role?.name || (typeof record.role === 'string' ? record.role : null);
+        const name =
+          record.role_name ||
+          record.role?.name ||
+          (typeof record.role === "string" ? record.role : null);
 
         // 3. Mapping for known IDs
         const roleMap = {
-          1: { name: 'Admin', color: 'red' },
-          2: { name: 'Doctor', color: 'blue' },
-          3: { name: 'Nurse', color: 'cyan' },
-          4: { name: 'Pharmacist', color: 'purple' },
-          5: { name: 'Receptionist', color: 'orange' },
+          1: { name: "Admin", color: "red" },
+          2: { name: "Doctor", color: "blue" },
+          3: { name: "Nurse", color: "cyan" },
+          4: { name: "Pharmacist", color: "purple" },
+          5: { name: "Receptionist", color: "orange" },
         };
 
         if (id && roleMap[id]) {
@@ -250,15 +322,19 @@ const StaffManagement = () => {
           return <Tag color={colorMap[s] || 'default'}>{name}</Tag>;
         }
 
-        return <Tag color="default">{id ? `Role ${id}` : 'No Role'}</Tag>;
-      }
+        return <Tag color="default">{id ? `Role ${id}` : "No Role"}</Tag>;
+      },
     },
     {
-      title: 'Status',
-      key: 'status',
+      title: "Status",
+      key: "status",
       render: (_, record) => {
         // Prioritize 'status' column if it exists, as it's the more reliable indicator for this backend
-        const isActive = record.status ? record.status === 'active' : (record.is_active === true || record.is_active === 1 || record.is_active === '1');
+        const isActive = record.status
+          ? record.status === "active"
+          : record.is_active === true ||
+          record.is_active === 1 ||
+          record.is_active === "1";
         return (
           <Switch
             checked={isActive}
@@ -267,14 +343,18 @@ const StaffManagement = () => {
             unCheckedChildren="Inactive"
           />
         );
-      }
+      },
     },
     {
-      title: 'Actions',
-      key: 'actions',
+      title: "Actions",
+      key: "actions",
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="link" icon={<EditOutlined />} onClick={() => showModal(record)}>
+        <Space orientation="vertical" size={0}>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => showModal(record)}
+          >
             Edit
           </Button>
           <Popconfirm
@@ -288,59 +368,86 @@ const StaffManagement = () => {
             </Button>
           </Popconfirm>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
-    <DashboardLayout user={user} currentPath="/staff">
+    <div style={{ padding: 'clamp(12px, 3vw, 24px)' }}>
+      <PageHeader>
+        <h1 style={{ fontWeight: 700, color: '#102d6b' }}>
+          <TeamOutlined style={{ color: '#2563eb' }} /> Staff Management
+        </h1>
+        <Space size="middle" style={{ flexWrap: 'wrap' }}>
+          <Input
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder="Search staff..."
+            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTerm}
+            allowClear
+            style={{
+              width: "100%",
+              maxWidth: "300px",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+            size="large"
+          />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => showModal()}
+            style={{
+              background: '#2563eb',
+              height: '48px',
+              padding: '0 24px',
+              borderRadius: '8px',
+              fontWeight: 600,
+              minWidth: '140px'
+            }}
+          >
+            Add Staff
+          </Button>
+        </Space>
+      </PageHeader>
+
       <div style={{
         background: '#fff',
-        padding: 'clamp(16px, 4vw, 32px)',
+        padding: 'clamp(12px, 3vw, 24px)',
         borderRadius: '12px',
-        minHeight: '75vh',
-        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)'
+        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)',
+        minHeight: 'auto',
+        overflow: 'hidden'
       }}>
-        <PageHeader>
-          <h1 style={{ fontSize: '1.75rem' }}>
-            <TeamOutlined style={{ color: '#2563eb' }} /> Staff Management
-          </h1>
-          <Space size="middle">
-            <Input
-              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-              placeholder="Search by name, email or phone..."
-              onChange={(e) => setSearchTerm(e.target.value)}
-              value={searchTerm}
-              allowClear
-              style={{ width: '300px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
-              size="large"
-            />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => showModal()}
-              style={{ background: '#2563eb', height: '40px', borderRadius: '8px', fontWeight: 500 }}
-            >
-              Add Staff
-            </Button>
-          </Space>
-        </PageHeader>
-
         <StyledTable
           columns={columns}
           dataSource={displayData}
           rowKey="id"
-          loading={loading && staffList.length === 0}
-          pagination={{ pageSize: 5, placement: 'bottomCenter', showSizeChanger: false }}
+          loading={loading && (staffList || []).length === 0}
+          pagination={{
+            pageSize: 5,
+            placement: "bottomCenter",
+            showSizeChanger: false,
+          }}
           rowClassName={(record) => {
-            const isActive = record.status ? record.status === 'active' : (record.is_active === 1 || record.is_active === '1' || record.is_active === true);
-            return isActive ? '' : 'inactive-row';
+            const isActive = record.status
+              ? record.status === "active"
+              : record.is_active === 1 ||
+              record.is_active === "1" ||
+              record.is_active === true;
+            return isActive ? "" : "inactive-row";
           }}
           scroll={{ x: 800 }}
         />
 
         <Modal
-          title={<span style={{ color: '#1e3a8a', fontSize: '1.2rem', fontWeight: 600 }}>{editingStaff ? "Edit Staff Details" : "Add New Staff Member"}</span>}
+          title={
+            <span
+              style={{ color: "#1e3a8a", fontSize: "1.2rem", fontWeight: 600 }}
+            >
+              {editingStaff ? "Edit Staff Details" : "Add New Staff Member"}
+            </span>
+          }
           open={isModalVisible}
           onCancel={handleCancel}
           footer={null}
@@ -352,52 +459,64 @@ const StaffManagement = () => {
             layout="vertical"
             onFinish={handleFinish}
             initialValues={{ is_active: true }}
-            style={{ marginTop: '24px' }}
+            style={{ marginTop: "24px" }}
           >
-            <Space style={{ display: 'flex', width: '100%' }}>
+            <Space style={{ display: "flex", width: "100%" }}>
               <Form.Item
                 name="first_name"
                 label="First Name"
-                rules={[{ required: true, message: 'First name is required' }]}
+                rules={[{ required: true, message: "First name is required" }]}
                 style={{ flex: 1 }}
               >
-                <Input size="large" placeholder="E.g. Gregory" style={{ borderRadius: '6px' }} />
+                <Input
+                  size="large"
+                  placeholder="E.g. Gregory"
+                  style={{ borderRadius: "6px" }}
+                />
               </Form.Item>
               <Form.Item
                 name="last_name"
                 label="Last Name"
                 style={{ flex: 1 }}
               >
-                <Input size="large" placeholder="E.g. House" style={{ borderRadius: '6px' }} />
+                <Input
+                  size="large"
+                  placeholder="E.g. House"
+                  style={{ borderRadius: "6px" }}
+                />
               </Form.Item>
             </Space>
 
-            <Space style={{ display: 'flex', width: '100%' }}>
+            <Space style={{ display: "flex", width: "100%" }}>
               <Form.Item
                 name="email"
                 label="Email Address"
                 rules={[
-                  { required: true, message: 'Email is required' },
-                  { type: 'email', message: 'Enter a valid email' }
+                  { required: true, message: "Email is required" },
+                  { type: "email", message: "Enter a valid email" },
                 ]}
                 style={{ flex: 1 }}
               >
-                <Input size="large" placeholder="doctor@hospital.com" style={{ borderRadius: '6px' }} />
+                <Input
+                  size="large"
+                  placeholder="doctor@hospital.com"
+                  style={{ borderRadius: "6px" }}
+                />
               </Form.Item>
 
               <Form.Item
                 name="gender"
                 label="Gender"
-                rules={[{ required: true, message: 'Gender is required' }]}
-                style={{ flex: 1, paddingLeft: '24px' }}
+                rules={[{ required: true, message: "Gender is required" }]}
+                style={{ flex: 1, paddingLeft: "24px" }}
               >
                 <Select
                   size="large"
                   placeholder="Select gender"
                   options={[
-                    { value: 'male', label: 'Male' },
-                    { value: 'female', label: 'Female' },
-                    { value: 'other', label: 'Other' },
+                    { value: "male", label: "Male" },
+                    { value: "female", label: "Female" },
+                    { value: "other", label: "Other" },
                   ]}
                 />
               </Form.Item>
@@ -435,7 +554,7 @@ const StaffManagement = () => {
               </div>
             )}
 
-            <Space style={{ display: 'flex', width: '100%' }}>
+            <Space style={{ display: "flex", width: "100%" }}>
               <Form.Item
                 name="phone_number"
                 label="Phone Number"
@@ -461,18 +580,22 @@ const StaffManagement = () => {
               <Form.Item
                 name="address"
                 label="Address"
-                rules={[{ required: true, message: 'Address is required' }]}
-                style={{ flex: 1, paddingLeft: '24px' }}
+                rules={[{ required: true, message: "Address is required" }]}
+                style={{ flex: 1, paddingLeft: "24px" }}
               >
-                <Input size="large" placeholder="E.g. Chennai" style={{ borderRadius: '6px' }} />
+                <Input
+                  size="large"
+                  placeholder="E.g. Chennai"
+                  style={{ borderRadius: "6px" }}
+                />
               </Form.Item>
             </Space>
 
-            <Space style={{ display: 'flex', width: '100%' }}>
+            <Space style={{ display: "flex", width: "100%" }}>
               <Form.Item
                 name="role_id"
                 label="Assigned Role"
-                rules={[{ required: true, message: 'Select a role' }]}
+                rules={[{ required: true, message: "Select a role" }]}
                 style={{ flex: 1 }}
               >
                 <Select
@@ -491,24 +614,42 @@ const StaffManagement = () => {
                 name="is_active"
                 label="Account Status"
                 valuePropName="checked"
-                style={{ flex: 1, paddingLeft: '24px' }}
+                style={{ flex: 1, paddingLeft: "24px" }}
               >
-                <Switch checkedChildren="Active" unCheckedChildren="Suspended" />
+                <Switch
+                  checkedChildren="Active"
+                  unCheckedChildren="Suspended"
+                />
               </Form.Item>
             </Space>
 
-            <Form.Item style={{ marginBottom: 0, marginTop: '24px', textAlign: 'right' }}>
-              <Button size="large" onClick={handleCancel} style={{ marginRight: 12, borderRadius: '6px' }}>
+            <Form.Item
+              style={{ marginBottom: 0, marginTop: "24px", textAlign: "right" }}
+            >
+              <Button
+                size="large"
+                onClick={handleCancel}
+                style={{ marginRight: 12, borderRadius: "6px" }}
+              >
                 Cancel
               </Button>
-              <Button size="large" type="primary" htmlType="submit" style={{ background: '#2563eb', borderRadius: '6px', fontWeight: 500 }}>
+              <Button
+                size="large"
+                type="primary"
+                htmlType="submit"
+                style={{
+                  background: "#2563eb",
+                  borderRadius: "6px",
+                  fontWeight: 500,
+                }}
+              >
                 {editingStaff ? "Save Changes" : "Create Account"}
               </Button>
             </Form.Item>
           </Form>
         </Modal>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

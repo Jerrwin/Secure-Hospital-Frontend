@@ -6,6 +6,7 @@ import useDashboard from "../../components/layout/DashboardLayout/useDashboard";
 import useAuth from "../../modules/auth/hooks/useAuth";
 
 const DashboardPage = () => {
+  //throw new Error("This is a test crash!");
   const { user, userRole } = useAuth(); // Real user and role from Redux
   const dashboardState = useDashboard(user);
 
@@ -85,7 +86,7 @@ const DashboardPage = () => {
   }
 
   return (
-    <DashboardLayout user={user} currentPath="/dashboard">
+    <>
       <div style={{ marginBottom: "24px" }}>
         <Space align="center" size="middle">
           <h1 style={{ color: "#1e3a8a", fontSize: "1.75rem", margin: 0 }}>
@@ -118,7 +119,7 @@ const DashboardPage = () => {
           loading={dashboardState.loading}
         />
       )}
-    </DashboardLayout>
+    </>
   );
 };
 
