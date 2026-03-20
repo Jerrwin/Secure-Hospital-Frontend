@@ -5,7 +5,8 @@ import {
   TeamOutlined, 
   CalendarOutlined, 
   FileTextOutlined,
-  IdcardOutlined
+  IdcardOutlined,
+  DollarOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
@@ -59,6 +60,9 @@ const Sidebar = ({ currentPath, role, collapsed, setCollapsed }) => {
     }
     if (isPharmacistOrDoctor) {
       baseItems.push({ key: '/prescriptions', icon: <FileTextOutlined />, label: 'Prescriptions' });
+    }
+    if (rawRole === 'ADMIN' || rawRole === 'RECEPTIONIST' || rawRole === 'PROVIDER') {
+      baseItems.push({ key: '/billing', icon: <DollarOutlined />, label: 'Billing' });
     }
     if (rawRole === 'ADMIN') {
       baseItems.push({ key: '/staff', icon: <IdcardOutlined />, label: 'Staff Management' });
