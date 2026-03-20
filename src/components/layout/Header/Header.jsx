@@ -1,12 +1,10 @@
 import React from 'react';
-import { Layout, Avatar, Dropdown, Typography, Space } from 'antd';
-import { UserOutlined, LogoutOutlined, SettingOutlined, MedicineBoxOutlined } from '@ant-design/icons';
+import { Layout, Button, message } from 'antd';
+import { MedicineBoxOutlined, LogoutOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-
 import useAuth from '../../../modules/auth/hooks/useAuth';
 
 const { Header: AntHeader } = Layout;
-const { Text } = Typography;
 
 const StyledHeader = styled(AntHeader)`
   background-color: #ffffff;
@@ -34,16 +32,23 @@ const Brand = styled.div`
   }
 `;
 
-const UserName = styled(Text)`
-  color: #334155;
+const LogoutButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
   font-weight: 500;
-
-  @media (max-width: 480px) {
-    display: none;
+  color: #ef4444;
+  border-color: #fee2e2;
+  background: #fef2f2;
+  
+  &:hover {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+    border-color: #fecaca !important;
   }
 `;
 
-const Header = ({ user }) => {
+const Header = () => {
   const { logout } = useAuth();
   
   // Dynamic Hospital Name from Subdomain
@@ -55,17 +60,9 @@ const Header = ({ user }) => {
     ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) 
     : "MedPortal";
 
-  const menuItems = [
-    { key: 'profile', icon: <UserOutlined />, label: 'Profile' },
-    { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
-    { type: 'divider' },
-    { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true },
-  ];
-
-  const handleMenuClick = ({ key }) => {
-    if (key === 'logout') {
-      logout();
-    }
+  const handleLogout = () => {
+    logout();
+    message.success('Logged out successfully');
   };
 
   return (
@@ -75,25 +72,12 @@ const Header = ({ user }) => {
         <span>{hospitalName}</span>
       </Brand>
       
-      <Dropdown 
-        menu={{ items: menuItems, onClick: handleMenuClick }} 
-        placement="bottomRight" 
-        arrow
+      <LogoutButton 
+        icon={<LogoutOutlined />} 
+        onClick={handleLogout}
       >
-        <Space style={{ cursor: 'pointer' }}>
-          <Avatar 
-            style={{ 
-              backgroundColor: '#eff6ff', 
-              color: '#2563eb',
-              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.1)' 
-            }} 
-            icon={<UserOutlined />} 
-          />
-          <UserName>
-            {user?.name || 'User'}
-          </UserName>
-        </Space>
-      </Dropdown>
+        Logout
+      </LogoutButton>
     </StyledHeader>
   );
 };

@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, Tag, message, Popconfirm, Typography, DatePicker } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Space, Tag, message, Popconfirm, Typography, DatePicker, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, UserOutlined, DeleteOutlined, SearchOutlined, HistoryOutlined } from '@ant-design/icons';
 import useAuth from '../../modules/auth/hooks/useAuth';
 import usePatients from '../../modules/patients/hooks/usePatients';
 import dayjs from 'dayjs';
 import styled from 'styled-components';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const ActionButton = styled(Button)`
   display: flex;
@@ -147,24 +147,31 @@ const PatientList = () => {
   const displayData = useMemo(() => {
     if (!debouncedSearch) return patients;
     const q = debouncedSearch.toLowerCase();
-    return (patients || []).filter(p => 
-      p.name?.toLowerCase().includes(q) ||
-      p.email?.toLowerCase().includes(q) ||
-      p.phone_number?.toLowerCase().includes(q) ||
-      p.uhid?.toLowerCase().includes(q)
-    );
+    return (patients || []).filter(p => {
+      const name = p.name || `${p.first_name || ''} ${p.last_name || ''}`.trim();
+      const patientId = p.uhid || (p.id ? `PAT-${String(p.id).padStart(3, '0')}` : 'NEW-PAT');
+      return name.toLowerCase().includes(q) ||
+             p.email?.toLowerCase().includes(q) ||
+             p.phone_number?.toLowerCase().includes(q) ||
+             patientId.toLowerCase().includes(q);
+    });
   }, [patients, debouncedSearch]);
 
   const columns = [
     {
-      title: 'UHID / Name',
+      title: 'Name',
       key: 'name',
-      render: (_, record) => (
-        <Space orientation="vertical" size={0}>
-          <Text strong style={{ color: '#1e3a8a', fontSize: '13px' }}>{record.uhid || 'NEW-PAT'}</Text>
-          <Text>{highlightText(record.name, debouncedSearch)}</Text>
-        </Space>
-      ),
+      render: (_, record) => {
+        const fullName = record.name || `${record.first_name || ''} ${record.last_name || ''}`.trim() || 'No Name';
+        const patientId = record.uhid || (record.id ? `PAT-${String(record.id).padStart(3, '0')}` : 'NEW-PAT');
+        return (
+          <Tooltip title={`UHID: ${patientId}`} color="#1e3a8a">
+            <Text strong style={{ color: '#2563eb', fontSize: '14px', cursor: 'pointer' }}>
+              {highlightText(fullName, debouncedSearch)}
+            </Text>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Age / Gender',
@@ -185,10 +192,11 @@ const PatientList = () => {
       title: 'Contact',
       key: 'contact',
       render: (_, record) => (
-        <Space orientation="vertical" size={0}>
-          <Text style={{ fontSize: '13px' }}>{highlightText(record.email, debouncedSearch)}</Text>
-          <Text type="secondary" style={{ fontSize: '12px' }}>{highlightText(record.phone_number, debouncedSearch)}</Text>
-        </Space>
+        <Tooltip title={`Email: ${record.email}`} color="#2563eb">
+          <Text strong style={{ fontSize: '13px', display: 'block', cursor: 'pointer' }}>
+            {highlightText(record.phone_number, debouncedSearch)}
+          </Text>
+        </Tooltip>
       ),
     },
     {
