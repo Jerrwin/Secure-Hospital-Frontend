@@ -1,4 +1,4 @@
-import { call, put, takeLatest, all } from "redux-saga/effects";
+import { call, put, takeLatest } from "redux-saga/effects";
 import dashboardAPI from "./dashboardAPI";
 import {
   fetchDashboardDataRequest,
@@ -8,48 +8,27 @@ import {
 
 function* fetchDashboardDataSaga(action) {
   try {
-    const rawRole = action.payload?.role || "";
-    const role = rawRole.toUpperCase();
+    // The backend now returns ALL role-specific data in a single endpoint.
+    // No need for multiple parallel calls — the controller handles switching by role.
+    const statsRes = yield call(dashboardAPI.getStats);
 
-    // If it's a Patient or Nurse, we use mock data in the frontend for now.
-    // We skip the API calls to avoid 403/Forbidden errors from staff-only endpoints.
-    if (role === "PATIENT" || role === "NURSE") {
+    if (statsRes.data.success) {
+      const payload = statsRes.data.data;
+
       yield put(
         fetchDashboardDataSuccess({
-          stats: null,
-          appointments: [],
+          stats: payload.stats || null,
+          appointments: payload.appointments || [],
+          prescriptions: payload.prescriptions || [],
+          weekly_trend: payload.weekly_trend || [],
+          // Preserve legacy fields
+          patients: [],
+          staff: [],
         })
       );
-      return;
+    } else {
+      yield put(fetchDashboardDataFailure(statsRes.data.message || "Failed to load dashboard."));
     }
-
-    // We can run these in parallel
-    const [statsRes, appointmentsRes] = yield all([
-      call(dashboardAPI.getStats),
-      call(dashboardAPI.getUpcomingAppointments),
-    ]);
-
-    let extraData = {};
-    
-    // Role-specific secondary fetches (Normalized)
-    if (role === "ADMIN") {
-      const staffRes = yield call(dashboardAPI.getStaff);
-      extraData.staff = staffRes.data.data;
-    } else if (role === "PROVIDER") {
-      const patientsRes = yield call(dashboardAPI.getPatients);
-      extraData.patients = patientsRes.data.data;
-    } else if (role === "PHARMACIST") {
-      const prescriptionsRes = yield call(dashboardAPI.getPrescriptions);
-      extraData.prescriptions = prescriptionsRes.data.data;
-    }
-
-    yield put(
-      fetchDashboardDataSuccess({
-        stats: statsRes.data.data,
-        appointments: appointmentsRes.data.data,
-        ...extraData,
-      })
-    );
   } catch (error) {
     yield put(
       fetchDashboardDataFailure(

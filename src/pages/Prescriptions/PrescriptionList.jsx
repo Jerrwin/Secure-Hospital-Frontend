@@ -407,7 +407,7 @@ const PrescriptionList = ({
         ))}
       </div>
     ),
-    [isMedicalStaff, isPatientView, searchQuery],
+    [isMedicalStaff, isPatientView, searchQuery, isPharmacist],
   );
 
   // ─── Rendering ────────────────────────────────────────────────

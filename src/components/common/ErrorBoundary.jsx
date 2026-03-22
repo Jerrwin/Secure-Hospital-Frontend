@@ -42,7 +42,21 @@ class ErrorBoundary extends React.Component {
               fontSize: "12px",
             }}
           >
-            Component failed. <a onClick={this.handleReload}>Reload</a>
+            Component failed.{" "}
+            <button
+              onClick={this.handleReload}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#1890ff",
+                cursor: "pointer",
+                padding: 0,
+                textDecoration: "underline",
+                fontSize: "inherit",
+              }}
+            >
+              Reload
+            </button>
           </div>
         );
       }

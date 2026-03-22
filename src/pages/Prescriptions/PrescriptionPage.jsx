@@ -2,11 +2,9 @@ import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PrescriptionList from "./PrescriptionList";
 import {
-  Modal,
   Form,
   Input,
   Select,
-  Spin,
   Row,
   Col,
   Card,
@@ -280,7 +278,7 @@ const PrescriptionPage = () => {
       message.error(error);
       dispatch(clearError());
     }
-  }, [error, message, dispatch]);
+  }, [error, dispatch]);
 
   const handleOpen = useCallback(
     (record = null) => {
@@ -321,7 +319,7 @@ const PrescriptionPage = () => {
         editTarget ? "Prescription updated!" : "Prescription created!",
       );
     } catch (e) {}
-  }, [form, editTarget, dispatch, handleClose, message]);
+  }, [form, editTarget, dispatch, handleClose]);
 
   const handleStatusChange = useCallback(
     (id, type) => {
@@ -335,7 +333,7 @@ const PrescriptionPage = () => {
       dispatch(deleteRequest(id));
       message.success("Prescription deleted");
     },
-    [dispatch, message],
+    [dispatch],
   );
 
   const apptOptions = useMemo(() => {

@@ -6,6 +6,7 @@ const initialState = {
   patients: [],
   prescriptions: [],
   staff: [],
+  weekly_trend: [],
   loading: false,
   fetched: false,
   error: null,
@@ -22,12 +23,13 @@ const dashboardSlice = createSlice({
     fetchDashboardDataSuccess: (state, action) => {
       state.loading = false;
       state.fetched = true;
-      const { stats, appointments, patients, prescriptions, staff } = action.payload;
+      const { stats, appointments, patients, prescriptions, staff, weekly_trend } = action.payload;
       if (stats) state.stats = stats;
       if (appointments) state.appointments = appointments;
       if (patients) state.patients = patients;
       if (prescriptions) state.prescriptions = prescriptions;
       if (staff) state.staff = staff;
+      if (weekly_trend) state.weekly_trend = weekly_trend;
     },
     fetchDashboardDataFailure: (state, action) => {
       state.loading = false;

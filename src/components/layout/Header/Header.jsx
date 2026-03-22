@@ -1,13 +1,17 @@
 import React from "react";
-import { Layout, Avatar, Dropdown, Typography, Space } from "antd";
+import { Layout, Avatar, Dropdown, Typography, Space, Button } from "antd";
 import {
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
   MedicineBoxOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
+import { useDispatch } from "react-redux";
+import { setMobileDrawerOpen } from "../../../modules/ui/uiSlice";
 import useSecurity from "../../../modules/security/hooks/useSecurity";
+import NotificationBell from "../../common/NotificationBell";
 
 import useAuth from "../../../modules/auth/hooks/useAuth";
 
@@ -40,6 +44,17 @@ const Brand = styled.div`
   }
 `;
 
+const HamburgerBtn = styled(Button)`
+  display: none;
+  margin-right: 12px;
+  
+  @media (max-width: 992px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+`;
+
 const UserName = styled(Text)`
   color: #334155;
   font-weight: 500;
@@ -50,6 +65,7 @@ const UserName = styled(Text)`
 `;
 
 const Header = ({ user }) => {
+  const dispatch = useDispatch();
   const { logout } = useAuth();
   const { userRole } = useSecurity();
 
@@ -78,35 +94,45 @@ const Header = ({ user }) => {
 
   return (
     <StyledHeader>
-      <Brand>
-        <MedicineBoxOutlined style={{ fontSize: "1.5rem" }} />
-        <span>{hospitalName}</span>
-      </Brand>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <HamburgerBtn 
+          type="text" 
+          icon={<MenuOutlined style={{ fontSize: '1.25rem' }} />} 
+          onClick={() => dispatch(setMobileDrawerOpen(true))}
+        />
+        <Brand>
+          <MedicineBoxOutlined style={{ fontSize: "1.5rem" }} />
+          <span>{hospitalName}</span>
+        </Brand>
+      </div>
 
-      <Dropdown
-        menu={{ items: menuItems, onClick: handleMenuClick }}
-        placement="bottomRight"
-        arrow
-      >
-        <Space style={{ cursor: "pointer" }}>
-          <Avatar
-            style={{
-              backgroundColor: "#eff6ff",
-              color: "#2563eb",
-              boxShadow: "0 2px 4px rgba(37, 99, 235, 0.1)",
-            }}
-            icon={<UserOutlined />}
-          />
-          <UserName>
-            {user?.name || "User"}{" "}
-            {userRole && (
-              <span style={{ opacity: 0.6, fontSize: "0.85em", marginLeft: 4 }}>
-                ({userRole})
-              </span>
-            )}
-          </UserName>
-        </Space>
-      </Dropdown>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <NotificationBell />
+        <Dropdown
+          menu={{ items: menuItems, onClick: handleMenuClick }}
+          placement="bottomRight"
+          arrow
+        >
+          <Space style={{ cursor: "pointer" }}>
+            <Avatar
+              style={{
+                backgroundColor: "#eff6ff",
+                color: "#2563eb",
+                boxShadow: "0 2px 4px rgba(37, 99, 235, 0.1)",
+              }}
+              icon={<UserOutlined />}
+            />
+            <UserName>
+              {user?.name || "User"}{" "}
+              {userRole && (
+                <span style={{ opacity: 0.6, fontSize: "0.85em", marginLeft: 4 }}>
+                  ({userRole})
+                </span>
+              )}
+            </UserName>
+          </Space>
+        </Dropdown>
+      </div>
     </StyledHeader>
   );
 };

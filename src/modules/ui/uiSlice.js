@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   sidebarCollapsed: false,
+  mobileDrawerOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -14,8 +15,11 @@ const uiSlice = createSlice({
     setSidebarCollapsed: (state, action) => {
       state.sidebarCollapsed = action.payload;
     },
+    setMobileDrawerOpen: (state, action) => {
+      state.mobileDrawerOpen = action.payload;
+    },
   },
 });
 
-export const { toggleSidebar, setSidebarCollapsed } = uiSlice.actions;
+export const { toggleSidebar, setSidebarCollapsed, setMobileDrawerOpen } = uiSlice.actions;
 export default uiSlice.reducer;

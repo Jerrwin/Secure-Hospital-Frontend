@@ -25,15 +25,15 @@ const IconWrapper = styled.div`
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: #eff6ff;
-  color: #2563eb;
+  background: ${(p) => p.$color ? `${p.$color}15` : '#eff6ff'};
+  color: ${(p) => p.$color || '#2563eb'};
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5rem;
 `;
 
-const StatWidget = ({ title, value, icon, trend }) => {
+const StatWidget = ({ title, value, icon, trend, color }) => {
   return (
     <StyledCard variant="borderless">
       <Space align="start" size="large" style={{ width: '100%', justifyContent: 'space-between' }}>
@@ -41,7 +41,7 @@ const StatWidget = ({ title, value, icon, trend }) => {
           <Text style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>
             {title}
           </Text>
-          <Title level={2} style={{ color: '#1e3a8a', margin: '8px 0 0 0', fontWeight: 700 }}>
+          <Title level={2} style={{ color: color || '#1e3a8a', margin: '8px 0 0 0', fontWeight: 700 }}>
             {value !== undefined && value !== null ? value : '-'}
           </Title>
           {trend && (
@@ -50,7 +50,7 @@ const StatWidget = ({ title, value, icon, trend }) => {
             </Text>
           )}
         </div>
-        <IconWrapper>
+        <IconWrapper $color={color}>
           {icon}
         </IconWrapper>
       </Space>

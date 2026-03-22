@@ -26,7 +26,7 @@ import usePatients from "../../modules/patients/hooks/usePatients";
 import dayjs from "dayjs";
 import styled from "styled-components";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const ActionButton = styled(Button)`
   display: flex;
@@ -180,14 +180,20 @@ const PatientList = () => {
   };
 
   const displayData = useMemo(() => {
-    if (!debouncedSearch) return patients;
+    const data = (patients || []).map(p => ({
+      ...p,
+      display_name: `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name || "Unknown Patient",
+      display_uhid: p.uhid || `PT-ID-${p.id?.toString().padStart(4, '0')}`
+    }));
+
+    if (!debouncedSearch) return data;
     const q = debouncedSearch.toLowerCase();
-    return (patients || []).filter(
+    return data.filter(
       (p) =>
-        p.name?.toLowerCase().includes(q) ||
+        p.display_name.toLowerCase().includes(q) ||
         p.email?.toLowerCase().includes(q) ||
         p.phone_number?.toLowerCase().includes(q) ||
-        p.uhid?.toLowerCase().includes(q),
+        p.display_uhid.toLowerCase().includes(q),
     );
   }, [patients, debouncedSearch]);
 
@@ -198,9 +204,9 @@ const PatientList = () => {
       render: (_, record) => (
         <Space orientation="vertical" size={0}>
           <Text strong style={{ color: "#1e3a8a", fontSize: "13px" }}>
-            {record.first_name || "NEW-PAT"}
+            {record.display_uhid}
           </Text>
-          <Text>{highlightText(record.name, debouncedSearch)}</Text>
+          <Text>{highlightText(record.display_name, debouncedSearch)}</Text>
         </Space>
       ),
     },

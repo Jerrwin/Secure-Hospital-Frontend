@@ -1,59 +1,15 @@
-import React, { useMemo } from "react";
-import { useDispatch } from "react-redux";
+import React from "react";
 import { Result, Button, Spin, Tag, Space } from "antd";
-import { fetchDashboardDataRequest } from "../../modules/dashboard/dashboardSlice";
-import DashboardLayout from "../../components/layout/DashboardLayout/DashboardLayout";
+
 import UnifiedDashboard from "../../components/layout/DashboardLayout/UnifiedDashboard";
 import useDashboard from "../../components/layout/DashboardLayout/useDashboard";
 import useAuth from "../../modules/auth/hooks/useAuth";
 
 const DashboardPage = () => {
-  const dispatch = useDispatch();
-  //throw new Error("This is a test crash!");
-  const { user, userRole } = useAuth(); // Real user and role from Redux
-  const dashboardState = useDashboard(user);
+  const { user, userRole } = useAuth();
+  const dashboardData = useDashboard(user);
 
-  // Inject Mock Data for missing backend tables (Nurse/Patient)
-  const dashboardData = useMemo(() => {
-    const baseData = { ...dashboardState };
-
-    if (userRole === "NURSE") {
-      baseData.stats = { wardPatients: 14, pendingVitals: 6 };
-      baseData.appointments = [
-        { id: 1, patientName: "John Doe", time: "09:00 AM", status: "Pending" },
-        {
-          id: 2,
-          patientName: "Jane Smith",
-          time: "11:30 AM",
-          status: "Completed",
-        },
-      ];
-    }
-
-    if (userRole === "PATIENT") {
-      baseData.stats = { upcomingVisits: 1, activePrescriptions: 2 };
-      baseData.appointments = [
-        {
-          id: 1,
-          patientName: "Dr. House (Cardiology)",
-          time: "Tomorrow, 10:00 AM",
-          status: "Pending",
-        },
-      ];
-      baseData.prescriptions = [
-        {
-          id: 1,
-          medication: "Lisinopril",
-          patientName: "Self",
-          dosage: "10mg Daily",
-        },
-      ];
-    }
-
-    return baseData;
-  }, [dashboardState, userRole]);
-
-  //Guard: If user is not yet loaded (e.g. on direct refresh), show loading
+  // Guard: If user is not yet loaded, show loading
   if (!user) {
     return (
       <div
@@ -65,15 +21,15 @@ const DashboardPage = () => {
           background: "#eff6ff",
         }}
       >
-        <Spin size="large" description="Authenticating..." />
+        <Spin size="large" />
       </div>
     );
   }
 
   // Error Handling State
-  if (dashboardState.error) {
+  if (dashboardData.error) {
     return (
-      <DashboardLayout user={user} currentPath="/dashboard">
+      <div style={{ padding: "40px" }}>
         <Result
           status="500"
           title="Data Synchronization Failed"
@@ -84,7 +40,7 @@ const DashboardPage = () => {
             </Button>
           }
         />
-      </DashboardLayout>
+      </div>
     );
   }
 
@@ -111,7 +67,7 @@ const DashboardPage = () => {
         </p>
       </div>
 
-      {dashboardState.loading && !dashboardData.stats ? (
+      {dashboardData.loading && !dashboardData.stats ? (
         <div style={{ textAlign: "center", padding: "100px 0" }}>
           <Spin size="large" />
         </div>
@@ -119,7 +75,7 @@ const DashboardPage = () => {
         <UnifiedDashboard
           role={userRole}
           data={dashboardData}
-          loading={dashboardState.loading}
+          loading={dashboardData.loading}
         />
       )}
     </>

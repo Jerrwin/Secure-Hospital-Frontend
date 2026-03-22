@@ -13,22 +13,37 @@ import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 
 // ─── Lazy Imports (On-Demand Loading) ───────────────────────────────────
-const AppointmentList = lazy(() => import("../pages/Appointments/AppointmentList"));
+const AppointmentCalendar = lazy(
+  () => import("../pages/Appointments/AppointmentCalendar"),
+);
 const PatientList = lazy(() => import("../pages/Patients/PatientList"));
-const PrescriptionPage = lazy(() => import("../pages/Prescriptions/PrescriptionPage"));
+const PrescriptionPage = lazy(
+  () => import("../pages/Prescriptions/PrescriptionPage"),
+);
 const StaffManagement = lazy(() => import("../pages/Staff/StaffManagement"));
+const InvoicePage = lazy(() => import("../pages/Billing/InvoicePage"));
 
 /**
  * Global Loading Fallback for Lazy Components
  */
 const LoadingFallback = () => (
-  <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#eff6ff" }}>
+  <div
+    style={{
+      height: "100vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      background: "#eff6ff",
+    }}
+  >
     <Spin size="large" description="Loading Module..." />
   </div>
 );
 
 const AppRouter = ({ isSubdomain }) => {
-  const { config, loading, error, fetched } = useSelector((state) => state.tenant);
+  const { config, loading, error, fetched } = useSelector(
+    (state) => state.tenant,
+  );
 
   /**
    * 1. If currently loading tenant metadata from Master DB, show a spinner.
@@ -68,7 +83,14 @@ const AppRouter = ({ isSubdomain }) => {
         >
           <Route path="/dashboard" element={<DashboardPage />} />
 
-          <Route path="/appointments" element={<AppointmentList />} />
+          <Route
+            path="/appointments"
+            element={
+              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PROVIDER", "DOCTOR", "NURSE"]}>
+                <AppointmentCalendar />
+              </RoleBasedRoute>
+            }
+          />
 
           {/* Note: RoleBasedRoute still wraps the element inside the layout */}
           <Route
@@ -83,7 +105,9 @@ const AppRouter = ({ isSubdomain }) => {
           <Route
             path="/prescriptions"
             element={
-              <RoleBasedRoute allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}>
+              <RoleBasedRoute
+                allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}
+              >
                 <PrescriptionPage />
               </RoleBasedRoute>
             }
@@ -94,6 +118,16 @@ const AppRouter = ({ isSubdomain }) => {
             element={
               <RoleBasedRoute allowedRoles={["ADMIN"]}>
                 <StaffManagement />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <RoleBasedRoute
+                allowedRoles={["RECEPTIONIST"]}
+              >
+                <InvoicePage />
               </RoleBasedRoute>
             }
           />

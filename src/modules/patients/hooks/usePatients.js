@@ -13,10 +13,10 @@ import {
 const usePatients = () => {
   const dispatch = useDispatch();
   
-  const patients = useSelector(state => state.patients?.patients || []);
-  const selectedPatient = useSelector(state => state.patients?.selectedPatient || null);
-  const loading = useSelector(state => state.patients?.loading || false);
-  const error = useSelector(state => state.patients?.error || null);
+  const patients = useSelector(state => state.patients.patients);
+  const selectedPatient = useSelector(state => state.patients.selectedPatient);
+  const loading = useSelector(state => state.patients.loading);
+  const error = useSelector(state => state.patients.error);
 
   const fetchPatients = useCallback(() => {
     dispatch(fetchPatientsRequest());
