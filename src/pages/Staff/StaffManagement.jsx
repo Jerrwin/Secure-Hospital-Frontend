@@ -152,7 +152,7 @@ const StaffManagement = () => {
       const name = item.role_name || item.role?.name || (typeof item.role === 'string' ? item.role : null);
 
       // role_id 1 is usually Admin, also check by name
-      const isAdmin = id == 1 || (name && name.toLowerCase() === 'admin');
+      const isAdmin = id === 1 || (name && name.toLowerCase() === 'admin');
       return !isAdmin;
     });
 

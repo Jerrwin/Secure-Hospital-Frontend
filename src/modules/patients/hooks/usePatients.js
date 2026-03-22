@@ -16,11 +16,14 @@ const usePatients = () => {
   const patients = useSelector(state => state.patients?.patients || []);
   const selectedPatient = useSelector(state => state.patients?.selectedPatient || null);
   const loading = useSelector(state => state.patients?.loading || false);
+  const isLoaded = useSelector(state => state.patients?.isLoaded || false);
   const error = useSelector(state => state.patients?.error || null);
 
-  const fetchPatients = useCallback(() => {
-    dispatch(fetchPatientsRequest());
-  }, [dispatch]);
+  const fetchPatients = useCallback((force = false) => {
+    if (force || !isLoaded) {
+      dispatch(fetchPatientsRequest());
+    }
+  }, [dispatch, isLoaded]);
 
   const fetchPatientById = useCallback((id) => {
     dispatch(fetchPatientByIdRequest(id));
@@ -51,6 +54,7 @@ const usePatients = () => {
     selectedPatient,
     loading,
     error,
+    isLoaded,
     fetchPatients,
     fetchPatientById,
     addPatient,
@@ -58,7 +62,7 @@ const usePatients = () => {
     removePatient,
     clearError,
     selectPatient
-  }), [patients, selectedPatient, loading, error, fetchPatients, fetchPatientById, addPatient, updatePatient, removePatient, clearError, selectPatient]);
+  }), [patients, selectedPatient, loading, error, isLoaded, fetchPatients, fetchPatientById, addPatient, updatePatient, removePatient, clearError, selectPatient]);
 };
 
 export default usePatients;
