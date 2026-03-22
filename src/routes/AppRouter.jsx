@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "../pages/Auth/LoginPage";
 import LandingPage from "../pages/LandingPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
-import AppointmentList from "../pages/Appointments/AppointmentList";
+import AppointmentCalendar from "../pages/Appointments/AppointmentCalendar";
 import PatientList from "../pages/Patients/PatientList";
 import PrescriptionList from "../pages/Prescriptions/PrescriptionList";
 import StaffManagement from "../pages/Staff/StaffManagement";
@@ -34,7 +34,7 @@ const AppRouter = ({ isSubdomain }) => {
       >
         <Route path="/dashboard" element={<DashboardPage />} />
         
-        <Route path="/appointments" element={<AppointmentList />} />
+        <Route path="/appointments" element={<AppointmentCalendar />} />
 
         {/* Note: RoleBasedRoute still wraps the element inside the layout */}
         <Route
