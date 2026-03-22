@@ -3,8 +3,8 @@ import dashboardReducer from "../modules/dashboard/dashboardSlice";
 import uiReducer from "../modules/ui/uiSlice";
 import appointmentReducer from "../modules/appointments/appointmentSlice";
 import userReducer from "../modules/users/userSlice";
-import patientReducer from "../modules/patients/patientSlice";
-import billingReducer from "../modules/billing/billingSlice";
+import calendarReducer from "../modules/calendar/calendarSlice";
+import chatReducer from "../modules/chat/chatSlice";
 
 const rootReducer = {
   auth: authReducer,
@@ -12,8 +12,8 @@ const rootReducer = {
   ui: uiReducer,
   appointments: appointmentReducer,
   users: userReducer,
-  patients: patientReducer,
-  billing: billingReducer,
+  calendar: calendarReducer,
+  chat: chatReducer,
 };
 
 export default rootReducer;

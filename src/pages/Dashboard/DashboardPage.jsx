@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Result, Button, Spin, Tag, Space } from "antd";
-import DashboardLayout from "../../components/layout/DashboardLayout/DashboardLayout";
+
 import UnifiedDashboard from "../../components/layout/DashboardLayout/UnifiedDashboard";
 import useDashboard from "../../components/layout/DashboardLayout/useDashboard";
 import useAuth from "../../modules/auth/hooks/useAuth";
@@ -70,7 +70,7 @@ const DashboardPage = () => {
   // Error Handling State
   if (dashboardState.error) {
     return (
-      <DashboardLayout user={user} currentPath="/dashboard">
+      <div style={{ padding: "40px" }}>
         <Result
           status="500"
           title="Data Synchronization Failed"
@@ -81,7 +81,7 @@ const DashboardPage = () => {
             </Button>
           }
         />
-      </DashboardLayout>
+      </div>
     );
   }
 

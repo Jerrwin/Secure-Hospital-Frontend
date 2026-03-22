@@ -159,37 +159,73 @@ function* completeAppointmentSaga(action) {
 }
 
 // ── FETCH DROPDOWN DATA ────────────────────────────────────────────────────────
+// function* fetchDropdownDataSaga() {
+//   try {
+//     let patients = [];
+//     let staff = [];
+
+//     // Fetch patients
+//     try {
+//       const patientsRes = yield call(appointmentAPI.getPatients);
+//       if (patientsRes.data.success) {
+//         patients = patientsRes.data.data;
+//       }
+//     } catch (e) {
+//       console.error("Failed to fetch patients:", e);
+//     }
+
+//     // Fetch staff
+//     try {
+//       const staffRes = yield call(appointmentAPI.getStaff);
+//       if (staffRes.data.success) {
+//         staff = staffRes.data.data;
+//       }
+//     } catch (e) {
+//       console.error("Failed to fetch staff:", e);
+//     }
+
+//     yield put(
+//       fetchDropdownDataSuccess({
+//         patients,
+//         staff,
+//       })
+//     );
+//   } catch (error) {
+//     yield put(
+//       fetchDropdownDataFailure(
+//         error.response?.data?.message || "Failed to fetch dropdown data"
+//       )
+//     );
+//   }
+// }
+// ── FETCH DROPDOWN DATA ────────────────────────────────────────────────────────
 function* fetchDropdownDataSaga() {
   try {
     let patients = [];
     let staff = [];
 
-    // Fetch patients
+    // Try patients — may 403 for Nurse role
     try {
       const patientsRes = yield call(appointmentAPI.getPatients);
       if (patientsRes.data.success) {
         patients = patientsRes.data.data;
       }
     } catch (e) {
-      console.error("Failed to fetch patients:", e);
+      console.warn("patients endpoint blocked (role restricted) — will use appointment list fallback");
     }
 
-    // Fetch staff
+    // Try staff — may 403 for Nurse role
     try {
       const staffRes = yield call(appointmentAPI.getStaff);
       if (staffRes.data.success) {
         staff = staffRes.data.data;
       }
     } catch (e) {
-      console.error("Failed to fetch staff:", e);
+      console.warn("staff endpoint blocked (role restricted) — will use appointment list fallback");
     }
 
-    yield put(
-      fetchDropdownDataSuccess({
-        patients,
-        staff,
-      })
-    );
+    yield put(fetchDropdownDataSuccess({ patients, staff }));
+
   } catch (error) {
     yield put(
       fetchDropdownDataFailure(
@@ -198,7 +234,6 @@ function* fetchDropdownDataSaga() {
     );
   }
 }
-
 // ── ROOT APPOINTMENT SAGA ──────────────────────────────────────────────────────
 export default function* appointmentSaga() {
   yield all([

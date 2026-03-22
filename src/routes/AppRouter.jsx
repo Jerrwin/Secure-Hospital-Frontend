@@ -1,83 +1,142 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { Spin } from "antd";
+import { useSelector } from "react-redux";
+import HospitalNotFound from "../pages/Auth/HospitalNotFound";
+
+// ─── Normal Imports (Instant Loading) ───────────────────────────────────
 import LoginPage from "../pages/Auth/LoginPage";
 import LandingPage from "../pages/LandingPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
-import AppointmentList from "../pages/Appointments/AppointmentList";
-import PatientList from "../pages/Patients/PatientList";
-import PrescriptionList from "../pages/Prescriptions/PrescriptionList";
-import StaffManagement from "../pages/Staff/StaffManagement";
-import InvoicePage from "../pages/Billing/InvoicePage";
-import ProfilePage from "../pages/Profile/ProfilePage";
 import DashboardLayout from "../components/layout/DashboardLayout/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
 
+// ─── Lazy Imports (On-Demand Loading) ───────────────────────────────────
+const AppointmentCalendar = lazy(
+  () => import("../pages/Appointments/AppointmentCalendar"),
+);
+const PatientList = lazy(() => import("../pages/Patients/PatientList"));
+const PrescriptionPage = lazy(
+  () => import("../pages/Prescriptions/PrescriptionPage"),
+);
+const StaffManagement = lazy(() => import("../pages/Staff/StaffManagement"));
+const InvoicePage = lazy(() => import("../pages/Billing/InvoicePage"));
+
+/**
+ * Global Loading Fallback for Lazy Components
+ */
+const LoadingFallback = () => (
+  <div
+    style={{
+      height: "100vh",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      background: "#eff6ff",
+    }}
+  >
+    <Spin size="large" description="Loading Module..." />
+  </div>
+);
+
 const AppRouter = ({ isSubdomain }) => {
+  const { config, loading, error, fetched } = useSelector(
+    (state) => state.tenant,
+  );
+
+  /**
+   * 1. If currently loading tenant metadata from Master DB, show a spinner.
+   */
+  if (isSubdomain && loading) {
+    return <LoadingFallback />;
+  }
+
+  /**
+   * 2. If the Master DB says the hospital "does not exist" or returns an error,
+   * block access and show the "Hospital Not Found" page.
+   */
+  if (isSubdomain && (error || (fetched && !config))) {
+    return <HospitalNotFound />;
+  }
+
   return (
-    <Routes>
-      {/* ─── Public Routes ────────────────────────────────────────── */}
-      <Route
-        path="/"
-        element={isSubdomain ? <LoginPage /> : <LandingPage />}
-      />
-      <Route
-        path="/login"
-        element={isSubdomain ? <LoginPage /> : <Navigate to="/" replace />}
-      />
-
-      {/* ─── Protected Routes (Nested under DashboardLayout) ──────── */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/appointments" element={<AppointmentList />} />
-
-        {/* Note: RoleBasedRoute still wraps the element inside the layout */}
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        {/* ─── Public Routes ────────────────────────────────────────── */}
         <Route
-          path="/patients"
-          element={
-            <RoleBasedRoute allowedRoles={["ADMIN", "DOCTOR", "PROVIDER"]}>
-              <PatientList />
-            </RoleBasedRoute>
-          }
-        />
-
-        <Route
-          path="/prescriptions"
-          element={
-            <RoleBasedRoute allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}>
-              <PrescriptionList />
-            </RoleBasedRoute>
-          }
-        />
-
-        <Route
-          path="/staff"
-          element={
-            <RoleBasedRoute allowedRoles={["ADMIN"]}>
-              <StaffManagement />
-            </RoleBasedRoute>
-          }
+          path="/"
+          element={isSubdomain ? <LoginPage /> : <LandingPage />}
         />
         <Route
-          path="/billing"
-          element={
-            <RoleBasedRoute allowedRoles={["ADMIN", "RECEPTIONIST", "PROVIDER"]}>
-              <InvoicePage />
-            </RoleBasedRoute>
-          }
+          path="/login"
+          element={isSubdomain ? <LoginPage /> : <Navigate to="/" replace />}
         />
-      </Route>
 
-      {/* Fallback to root */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* ─── Protected Routes (Nested under DashboardLayout) ──────── */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<DashboardPage />} />
+
+          <Route
+            path="/appointments"
+            element={
+              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PROVIDER", "DOCTOR", "NURSE"]}>
+                <AppointmentCalendar />
+              </RoleBasedRoute>
+            }
+          />
+
+          {/* Note: RoleBasedRoute still wraps the element inside the layout */}
+          <Route
+            path="/patients"
+            element={
+              <RoleBasedRoute allowedRoles={["DOCTOR", "PROVIDER", "NURSE"]}>
+                <PatientList />
+              </RoleBasedRoute>
+            }
+          />
+
+          <Route
+            path="/prescriptions"
+            element={
+              <RoleBasedRoute
+                allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}
+              >
+                <PrescriptionPage />
+              </RoleBasedRoute>
+            }
+          />
+
+          <Route
+            path="/staff"
+            element={
+              <RoleBasedRoute allowedRoles={["ADMIN"]}>
+                <StaffManagement />
+              </RoleBasedRoute>
+            }
+          />
+          <Route
+            path="/billing"
+            element={
+              <RoleBasedRoute
+                allowedRoles={["RECEPTIONIST"]}
+              >
+                <InvoicePage />
+              </RoleBasedRoute>
+            }
+          />
+        </Route>
+
+        {/* Fallback to root */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 

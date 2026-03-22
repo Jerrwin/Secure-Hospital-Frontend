@@ -2,17 +2,18 @@ import React, { useEffect, useState, useMemo } from "react";
 import styled from "styled-components";
 import {
   Table, Tag, Button, Modal, Form, Select,
-  DatePicker, TimePicker, Space, Popconfirm, message, Empty, Input
+  DatePicker, TimePicker, Space, message, Empty, Input, Drawer
 } from "antd";
 import {
   EditOutlined, CalendarOutlined,
   ReloadOutlined, SearchOutlined,
-  FilterOutlined
+  FilterOutlined, MessageOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import DashboardLayout from "../../components/layout/DashboardLayout/DashboardLayout";
+
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
+import ChatPanel from "../../pages/Chat/ChatPanel";
 
 const { Option } = Select;
 
@@ -120,7 +121,7 @@ const AppointmentList = () => {
 
   const {
     list, patients, staff, loading, submitting, dropdownLoading, fetched, submitError,
-    fetchAll, fetchDropdowns, create, update, cancel, clearError,
+    fetchAll, fetchDropdowns, create, update, clearError,
   } = useAppointments();
 
   // Debugging
@@ -129,9 +130,10 @@ const AppointmentList = () => {
       role,
       userId,
       fullUser: user, // Log full user object to see available fields
-      patientsCount: patients.length,
-      staffCount: staff.length,
-      dropdownLoading
+      patientsCount: patients.length, 
+      patientsData: patients.slice(0, 3), // Log first few patients to see structure
+      staffCount: staff.length, 
+      dropdownLoading 
     });
   }, [role, userId, user, patients, staff, dropdownLoading]);
 
@@ -139,6 +141,18 @@ const AppointmentList = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
+  // Chat Drawer State
+  const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [activeChatPatient, setActiveChatPatient] = useState("");
+
+  const openChat = (record) => {
+    setActiveChatId(record.id);
+    const name = record.patient_name || record.patientName || (record.patient ? `${record.patient.first_name || ''} ${record.patient.last_name || ''}`.trim() : `Patient #${record.patient_id || '?'}`);
+    setActiveChatPatient(name);
+    setChatDrawerOpen(true);
+  };
+  
   // Search state & Debounce
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -214,6 +228,31 @@ const AppointmentList = () => {
     return Array.from(map.values());
   }, [staff, list]);
 
+  // ── Fallback Patients (extracted from appointments list when API is 403) ──
+const uniquePatients = useMemo(() => {
+  // If we got real patients from the API, use them
+  if (patients.length > 0) return patients;
+
+  // Otherwise extract from the appointments list already loaded
+  const map = new Map();
+  list.forEach(a => {
+    const pid = a.patient_id;
+    if (pid && !map.has(String(pid))) {
+      const fullName =
+        a.patient_name ||
+        a.patientName ||
+        (a.patient
+          ? `${a.patient.first_name || ""} ${a.patient.last_name || ""}`.trim()
+          : `Patient #${pid}`);
+      map.set(String(pid), {
+        id: pid,
+        first_name: fullName.split(" ")[0] || fullName,
+        last_name: fullName.split(" ").slice(1).join(" ") || "",
+      });
+    }
+  });
+  return Array.from(map.values());
+}, [patients, list]);
   // ── Modal Handlers ──────────────────────────────────────────────────────
   const openCreate = () => {
     form.resetFields();
@@ -334,6 +373,14 @@ const AppointmentList = () => {
             >
               Edit
             </ActionBtn>
+            <ActionBtn
+              type="text"
+              icon={<MessageOutlined />}
+              onClick={() => openChat(record)}
+              style={{ color: "#722ed1" }}
+            >
+              Chat
+            </ActionBtn>
           </Space>
         );
       },
@@ -341,11 +388,14 @@ const AppointmentList = () => {
   ].filter(col => !col.hidden);
 
   return (
-    <div style={{ padding: 'clamp(12px, 3vw, 24px)' }}>
-      <PageHeader>
-        <h1 style={{ fontWeight: 700, color: '#102d6b' }}>
-          <CalendarOutlined style={{ color: '#2563eb' }} /> Appointment Management
-        </h1>
+    <>
+      <PageWrapper>
+        {/* ── Header ── */}
+        <PageHeader>
+          <PageTitle>
+            <CalendarOutlined style={{ color: "#1677ff" }} />
+            Appointment Management
+          </PageTitle>
 
           <Space wrap size="middle">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -426,8 +476,14 @@ const AppointmentList = () => {
                 optionFilterProp="label"
                 optionLabelProp="label"
               >
-                {patients.map(p => {
-                  const fullName = `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.patient_name || `ID: ${p.id}`;
+                {uniquePatients.map(p => {
+                  const fullName = (
+                    `${p.first_name || ''} ${p.last_name || ''}`.trim() || 
+                    p.name || 
+                    p.NAME || 
+                    p.patient_name || 
+                    `ID: ${p.id}`
+                  );
                   return (
                     <Option key={String(p.id)} value={String(p.id)} label={fullName}>
                       {fullName}
@@ -466,7 +522,10 @@ const AppointmentList = () => {
             label="Date"
             rules={[{ required: true, message: "Date is required" }]}
           >
-            <DatePicker style={{ width: "100%" }} />
+            <DatePicker 
+              style={{ width: "100%" }} 
+              disabledDate={(current) => current && current < dayjs().startOf('day')}
+            />
           </Form.Item>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -511,7 +570,27 @@ const AppointmentList = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+
+      {/* ── Chat Side Drawer ── */}
+      <Drawer
+        title={
+          <div style={{ color: "#1e3a5f", fontSize: "16px", fontWeight: "600" }}>
+            Chat & Notes — {activeChatPatient}
+          </div>
+        }
+        placement="right"
+        onClose={() => {
+          setChatDrawerOpen(false);
+          setActiveChatId(null);
+        }}
+        open={chatDrawerOpen}
+        width={700}
+        destroyOnClose
+        styles={{ body: { padding: "20px", backgroundColor: "#f9fafb" } }}
+      >
+        {activeChatId && <ChatPanel appointmentId={activeChatId} />}
+      </Drawer>
+    </>
   );
 };
 

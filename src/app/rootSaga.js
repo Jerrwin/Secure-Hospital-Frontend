@@ -2,8 +2,8 @@ import authSaga from "../modules/auth/authSaga";
 import dashboardSaga from "../modules/dashboard/dashboardSaga";
 import appointmentSaga from "../modules/appointments/appointmentSaga";
 import userSaga from "../modules/users/userSaga";
-import patientSaga from "../modules/patients/patientSaga";
-import billingSaga from "../modules/billing/billingSaga";
+import calendarSaga from "../modules/calendar/calendarSaga";
+import chatSaga from "../modules/chat/chatSaga";
 import { all } from "redux-saga/effects";
 
 export default function* rootSaga() {
@@ -12,7 +12,7 @@ export default function* rootSaga() {
     dashboardSaga(),
     appointmentSaga(),
     userSaga(),
-    patientSaga(),
-    billingSaga(),
+    calendarSaga(),
+    chatSaga(),
   ]);
 }
