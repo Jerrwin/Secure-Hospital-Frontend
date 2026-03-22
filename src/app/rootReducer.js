@@ -4,6 +4,8 @@ import uiReducer from "../modules/ui/uiSlice";
 import appointmentReducer from "../modules/appointments/appointmentSlice";
 import userReducer from "../modules/users/userSlice";
 import patientReducer from "../modules/patients/patientSlice";
+import tenantReducer from "../modules/tenant/tenantSlice";
+import prescriptionReducer from "../modules/prescription/prescriptionSlice";
 
 const rootReducer = {
   auth: authReducer,
@@ -12,6 +14,8 @@ const rootReducer = {
   appointments: appointmentReducer,
   users: userReducer,
   patients: patientReducer,
+  tenant: tenantReducer,
+  prescription: prescriptionReducer,
 };
 
 export default rootReducer;

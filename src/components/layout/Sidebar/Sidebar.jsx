@@ -47,6 +47,7 @@ const Sidebar = ({ currentPath, role, collapsed, setCollapsed }) => {
     const rawRole = (role || '').toUpperCase();
     const isDoctorOrAdmin = rawRole === 'ADMIN' || rawRole === 'DOCTOR' || rawRole === 'PROVIDER';
     const isPharmacistOrDoctor = rawRole === 'PHARMACIST' || rawRole === 'DOCTOR' || rawRole === 'PROVIDER';
+    const isDoctorOrNurse = rawRole === 'DOCTOR' || rawRole === 'NURSE' || rawRole === 'PROVIDER';
 
     const baseItems = [
       { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
@@ -54,7 +55,7 @@ const Sidebar = ({ currentPath, role, collapsed, setCollapsed }) => {
     ];
 
     // Role-based rendering
-    if (isDoctorOrAdmin) {
+    if (isDoctorOrNurse) {
       baseItems.push({ key: '/patients', icon: <TeamOutlined />, label: 'Patients' });
     }
     if (isPharmacistOrDoctor) {

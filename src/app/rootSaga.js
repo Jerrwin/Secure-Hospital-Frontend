@@ -3,6 +3,8 @@ import dashboardSaga from "../modules/dashboard/dashboardSaga";
 import appointmentSaga from "../modules/appointments/appointmentSaga";
 import userSaga from "../modules/users/userSaga";
 import patientSaga from "../modules/patients/patientSaga";
+import tenantSaga from "../modules/tenant/tenantSaga";
+import prescriptionSaga from "../modules/prescription/prescriptionSaga";
 import { all } from "redux-saga/effects";
 
 export default function* rootSaga() {
@@ -12,5 +14,7 @@ export default function* rootSaga() {
     appointmentSaga(),
     userSaga(),
     patientSaga(),
+    tenantSaga(),
+    prescriptionSaga(),
   ]);
 }

@@ -46,6 +46,7 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.csrfToken = null;
+      localStorage.removeItem("user");
     },
 
     // ─── Logout ──────────────────────────────────────────────────

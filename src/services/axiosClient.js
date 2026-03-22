@@ -12,7 +12,7 @@ const axiosClient = axios.create({
   // Hit the backend directly on port 80/443 (omitting :3000)
   // The backend uses $_SERVER['HTTP_HOST'] to identify the tenant.
   // Using hostname ensures we send 'abc.localhost' instead of 'abc.localhost:3000'
-  baseURL: `${window.location.protocol}//${window.location.hostname}${process.env.REACT_APP_API_SUFFIX || "/patient/Secure-Hospital-RestAPI/public/Secure-Hospital-RestAPI/public"}`,
+  baseURL: `${window.location.protocol}//${window.location.hostname}${process.env.REACT_APP_API_SUFFIX || "/RestAPI_TeamProject/public"}`,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -55,7 +55,9 @@ axiosClient.interceptors.request.use(
       const csrfToken = state.auth.csrfToken;
       if (
         csrfToken &&
-        ["post", "put", "delete", "patch"].includes(config.method?.toLowerCase())
+        ["post", "put", "delete", "patch"].includes(
+          config.method?.toLowerCase(),
+        )
       ) {
         if (config.headers.set) {
           config.headers.set("X-CSRF-TOKEN", csrfToken);
@@ -66,7 +68,7 @@ axiosClient.interceptors.request.use(
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // ─── Response Interceptor ────────────────────────────────────────
@@ -98,7 +100,7 @@ axiosClient.interceptors.response.use(
             failedQueue.push({ resolve, reject });
           })
             .then(() => {
-              // The request interceptor will handle the new tokens automatically 
+              // The request interceptor will handle the new tokens automatically
               // as long as the store was updated in the 'initiator' block below.
               return axiosClient(originalRequest);
             })
@@ -109,7 +111,8 @@ axiosClient.interceptors.response.use(
 
         return new Promise(function (resolve, reject) {
           // Call the refresh endpoint (uses axiosClient so it gets CSRF)
-          axiosClient.post("/api/auth/refresh")
+          axiosClient
+            .post("/api/auth/refresh")
             .then(({ data }) => {
               // Extract from ResponseHelper struct: { success: true, message: "...", data: { ... } }
               const newAccessToken = data.data?.access_token;
@@ -133,7 +136,7 @@ axiosClient.interceptors.response.use(
 
               // 3. Retry the original initiator request
               // Note: The Request Interceptor will automatically pick up the new tokens from Redux.
-              resolve(axiosClient(originalRequest)); 
+              resolve(axiosClient(originalRequest));
             })
             .catch((err) => {
               processQueue(err, null);
@@ -149,10 +152,10 @@ axiosClient.interceptors.response.use(
       // 3. Other 401s (Invalid credentials, etc.)
       return Promise.reject(error);
     }
-    
+
     // 403 Forbidden - Permission denied (Token is valid, but role is wrong)
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosClient;

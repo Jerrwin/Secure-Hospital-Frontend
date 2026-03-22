@@ -21,8 +21,7 @@ class ErrorBoundary extends React.Component {
   }
 
   handleReload = () => {
-    // Reset state and try to re-render, or just reload the page for a clean slate
-    this.setState({ hasError: false, error: null });
+    // Standard browser reload for a clean slate
     window.location.reload();
   };
 
@@ -32,8 +31,18 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       if (variant === "mini") {
         return (
-          <div style={{ padding: '10px', color: '#ff4d4f', background: '#fff1f0', border: '1px solid #ffccc7', borderRadius: '4px', textAlign: 'center', fontSize: '12px' }}>
-            Component failed. <a onClick={this.handleReload}>Retry</a>
+          <div
+            style={{
+              padding: "10px",
+              color: "#ff4d4f",
+              background: "#fff1f0",
+              border: "1px solid #ffccc7",
+              borderRadius: "4px",
+              textAlign: "center",
+              fontSize: "12px",
+            }}
+          >
+            Component failed. <a onClick={this.handleReload}>Reload</a>
           </div>
         );
       }
@@ -60,9 +69,6 @@ class ErrorBoundary extends React.Component {
             extra={[
               <Button type="primary" key="reload" onClick={this.handleReload}>
                 Reload Page
-              </Button>,
-              <Button key="home" onClick={() => (window.location.href = "/")}>
-                Back to Login
               </Button>,
             ]}
           />

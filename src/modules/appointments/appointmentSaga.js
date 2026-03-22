@@ -1,4 +1,4 @@
-import { call, put, takeLatest, all } from "redux-saga/effects";
+import { call, put, takeLatest, all, select } from "redux-saga/effects";
 import appointmentAPI from "./appointmentAPI";
 import {
   fetchAppointmentsRequest,
@@ -164,7 +164,11 @@ function* fetchDropdownDataSaga() {
     let patients = [];
     let staff = [];
 
-    // Fetch patients
+    // 1. Get current user from auth state
+    const auth = yield select((state) => state.auth);
+    const userRole = (auth.user?.role || "").toUpperCase();
+
+    // 2. Fetch patients (everyone needs this for scheduling)
     try {
       const patientsRes = yield call(appointmentAPI.getPatients);
       if (patientsRes.data.success) {
@@ -174,14 +178,17 @@ function* fetchDropdownDataSaga() {
       console.error("Failed to fetch patients:", e);
     }
 
-    // Fetch staff
-    try {
-      const staffRes = yield call(appointmentAPI.getStaff);
-      if (staffRes.data.success) {
-        staff = staffRes.data.data;
+    // 3. ONLY Fetch staff if the user is NOT a doctor/provider
+    // Doctors only schedule for themselves, so they don't need to select from a list.
+    if (userRole !== "DOCTOR" && userRole !== "PROVIDER") {
+      try {
+        const staffRes = yield call(appointmentAPI.getStaff);
+        if (staffRes.data.success) {
+          staff = staffRes.data.data;
+        }
+      } catch (e) {
+        console.error("Failed to fetch staff:", e);
       }
-    } catch (e) {
-      console.error("Failed to fetch staff:", e);
     }
 
     yield put(

@@ -154,8 +154,7 @@ const AppointmentList = () => {
   // ── Initial load ────────────────────────────────────────────────────────
   useEffect(() => {
     if (!fetched) fetchAll();
-    fetchDropdowns();
-  }, [fetched, fetchAll, fetchDropdowns]);
+  }, [fetched, fetchAll]);
 
   // ── Show API errors ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -216,6 +215,10 @@ const AppointmentList = () => {
 
   // ── Modal Handlers ──────────────────────────────────────────────────────
   const openCreate = () => {
+    // Only fetch dropdown data if not already present
+    if (patients.length === 0 || staff.length === 0) {
+      fetchDropdowns();
+    }
     form.resetFields();
     if (role === "DOCTOR" || role === "PROVIDER") {
       form.setFieldsValue({ provider_id: String(userId) });
@@ -225,6 +228,10 @@ const AppointmentList = () => {
   };
 
   const openEdit = (record) => {
+    // Only fetch dropdown data if not already present
+    if (patients.length === 0 || staff.length === 0) {
+      fetchDropdowns();
+    }
     setEditingId(record.id);
     form.setFieldsValue({
       patient_id: String(record.patient_id),
@@ -392,7 +399,7 @@ const AppointmentList = () => {
             pagination={{
               pageSize: 5,
               showSizeChanger: false,
-              position: ["bottomCenter"]
+              placement: ["bottomCenter"]
             }}
             locale={{ emptyText: <Empty description="No appointments matching your criteria" /> }}
           />

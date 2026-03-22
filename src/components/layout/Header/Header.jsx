@@ -1,9 +1,15 @@
-import React from 'react';
-import { Layout, Avatar, Dropdown, Typography, Space } from 'antd';
-import { UserOutlined, LogoutOutlined, SettingOutlined, MedicineBoxOutlined } from '@ant-design/icons';
-import styled from 'styled-components';
+import React from "react";
+import { Layout, Avatar, Dropdown, Typography, Space } from "antd";
+import {
+  UserOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  MedicineBoxOutlined,
+} from "@ant-design/icons";
+import styled from "styled-components";
+import useSecurity from "../../../modules/security/hooks/useSecurity";
 
-import useAuth from '../../../modules/auth/hooks/useAuth';
+import useAuth from "../../../modules/auth/hooks/useAuth";
 
 const { Header: AntHeader } = Layout;
 const { Text } = Typography;
@@ -45,25 +51,27 @@ const UserName = styled(Text)`
 
 const Header = ({ user }) => {
   const { logout } = useAuth();
-  
+  const { userRole } = useSecurity();
+
   // Dynamic Hospital Name from Subdomain
   const hostname = window.location.hostname;
   const subdomain = hostname.split(".")[0];
-  const isSubdomain = subdomain !== "localhost" && subdomain !== "www" && hostname.includes(".");
-  
-  const hospitalName = isSubdomain 
-    ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) 
+  const isSubdomain =
+    subdomain !== "localhost" && subdomain !== "www" && hostname.includes(".");
+
+  const hospitalName = isSubdomain
+    ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1)
     : "MedPortal";
 
   const menuItems = [
-    { key: 'profile', icon: <UserOutlined />, label: 'Profile' },
-    { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
-    { type: 'divider' },
-    { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true },
+    { key: "profile", icon: <UserOutlined />, label: "Profile" },
+    { key: "settings", icon: <SettingOutlined />, label: "Settings" },
+    { type: "divider" },
+    { key: "logout", icon: <LogoutOutlined />, label: "Logout", danger: true },
   ];
 
   const handleMenuClick = ({ key }) => {
-    if (key === 'logout') {
+    if (key === "logout") {
       logout();
     }
   };
@@ -71,26 +79,31 @@ const Header = ({ user }) => {
   return (
     <StyledHeader>
       <Brand>
-        <MedicineBoxOutlined style={{ fontSize: '1.5rem' }} />
+        <MedicineBoxOutlined style={{ fontSize: "1.5rem" }} />
         <span>{hospitalName}</span>
       </Brand>
-      
-      <Dropdown 
-        menu={{ items: menuItems, onClick: handleMenuClick }} 
-        placement="bottomRight" 
+
+      <Dropdown
+        menu={{ items: menuItems, onClick: handleMenuClick }}
+        placement="bottomRight"
         arrow
       >
-        <Space style={{ cursor: 'pointer' }}>
-          <Avatar 
-            style={{ 
-              backgroundColor: '#eff6ff', 
-              color: '#2563eb',
-              boxShadow: '0 2px 4px rgba(37, 99, 235, 0.1)' 
-            }} 
-            icon={<UserOutlined />} 
+        <Space style={{ cursor: "pointer" }}>
+          <Avatar
+            style={{
+              backgroundColor: "#eff6ff",
+              color: "#2563eb",
+              boxShadow: "0 2px 4px rgba(37, 99, 235, 0.1)",
+            }}
+            icon={<UserOutlined />}
           />
           <UserName>
-            {user?.name || 'User'}
+            {user?.name || "User"}{" "}
+            {userRole && (
+              <span style={{ opacity: 0.6, fontSize: "0.85em", marginLeft: 4 }}>
+                ({userRole})
+              </span>
+            )}
           </UserName>
         </Space>
       </Dropdown>

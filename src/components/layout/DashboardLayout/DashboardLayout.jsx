@@ -1,5 +1,5 @@
-import React from "react";
-import { Layout } from "antd";
+import React, { Suspense } from "react";
+import { Layout, Spin } from "antd";
 import styled from "styled-components";
 import { useSelector, useDispatch } from "react-redux";
 import { Outlet, useLocation } from "react-router-dom";
@@ -9,6 +9,7 @@ import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
 import ErrorBoundary from "../../common/ErrorBoundary";
 import useAuth from "../../../modules/auth/hooks/useAuth";
+import useIdleLogout from "../../../hooks/useIdleLogout";
 
 const { Content } = Layout;
 
@@ -34,6 +35,9 @@ const DashboardLayout = () => {
   const dispatch = useDispatch();
   const location = useLocation();
   const { user, userRole } = useAuth();
+  
+  // Start inactivity timer (5 minutes auto-logout)
+  useIdleLogout();
   const collapsed = useSelector((state) => state.ui.sidebarCollapsed);
 
   const handleToggle = (value) => {
@@ -67,7 +71,17 @@ const DashboardLayout = () => {
         >
           <StyledContent>
             <ErrorBoundary key={location.key}>
-              <Outlet />
+              {/* Localized Suspense: Only the page content area shows a loader */}
+              {/* Sidebar and Header stay visible and responsive! */}
+              <Suspense
+                fallback={
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "100px 0" }}>
+                    <Spin size="large" description="Loading Page..." />
+                  </div>
+                }
+              >
+                <Outlet />
+              </Suspense>
             </ErrorBoundary>
           </StyledContent>
           <Footer />

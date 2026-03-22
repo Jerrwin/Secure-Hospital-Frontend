@@ -1,11 +1,14 @@
 import React, { useMemo } from "react";
+import { useDispatch } from "react-redux";
 import { Result, Button, Spin, Tag, Space } from "antd";
+import { fetchDashboardDataRequest } from "../../modules/dashboard/dashboardSlice";
 import DashboardLayout from "../../components/layout/DashboardLayout/DashboardLayout";
 import UnifiedDashboard from "../../components/layout/DashboardLayout/UnifiedDashboard";
 import useDashboard from "../../components/layout/DashboardLayout/useDashboard";
 import useAuth from "../../modules/auth/hooks/useAuth";
 
 const DashboardPage = () => {
+  const dispatch = useDispatch();
   //throw new Error("This is a test crash!");
   const { user, userRole } = useAuth(); // Real user and role from Redux
   const dashboardState = useDashboard(user);
@@ -62,7 +65,7 @@ const DashboardPage = () => {
           background: "#eff6ff",
         }}
       >
-        <Spin size="large" tip="Authenticating..." />
+        <Spin size="large" description="Authenticating..." />
       </div>
     );
   }
@@ -77,7 +80,7 @@ const DashboardPage = () => {
           subTitle="We couldn't load your dashboard data. Please check your connection."
           extra={
             <Button type="primary" onClick={() => window.location.reload()}>
-              Retry
+              Reload Page
             </Button>
           }
         />

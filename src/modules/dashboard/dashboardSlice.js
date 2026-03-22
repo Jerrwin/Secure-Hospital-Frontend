@@ -43,14 +43,24 @@ const dashboardSlice = createSlice({
     // successfully updates data, we mark the dashboard as "stale" (fetched: false).
     // This forces a re-fetch the next time the user views the dashboard.
     builder.addMatcher(
-      (action) => 
-        action.type.endsWith("/success") || 
-        action.type.includes("Success"),
-      (state, action) => {
-        // Only invalidate if the action DID NOT come from the dashboard itself
-        if (!action.type.startsWith("dashboard/")) {
-          state.fetched = false;
-        }
+      (action) => {
+        const type = action.type;
+        // ONLY invalidate the dashboard if a real DATA CHANGE occurred in another module.
+        // We exclude "fetch" and "login" success actions to prevent infinite loading loops.
+        return (
+          (type.includes("Success") || type.endsWith("/success")) &&
+          !type.startsWith("dashboard/") &&
+          !type.includes("fetch") &&
+          !type.includes("login") &&
+          (type.includes("create") ||
+            type.includes("update") ||
+            type.includes("delete") ||
+            type.includes("cancel") ||
+            type.includes("complete"))
+        );
+      },
+      (state) => {
+        state.fetched = false;
       }
     );
   },
