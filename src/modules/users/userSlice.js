@@ -39,14 +39,14 @@ const userSlice = createSlice({
       state.error = null;
       // Optimistic update: instantly update the local state for a smoother UI
       const { id, data } = action.payload;
-      const index = state.staffList.findIndex(staff => staff.id === id);
+      const index = state.staffList.findIndex(staff => staff.id == id);
       if (index !== -1) {
         state.staffList[index] = { ...state.staffList[index], ...data };
       }
     },
     updateStaffSuccess(state, action) {
       state.loading = false;
-      const index = state.staffList.findIndex(staff => staff.id === action.payload.id);
+      const index = state.staffList.findIndex(staff => staff.id == action.payload.id);
       if (index !== -1) {
         state.staffList[index] = action.payload;
       }
@@ -61,7 +61,7 @@ const userSlice = createSlice({
     },
     deleteStaffSuccess(state, action) {
       state.loading = false;
-      state.staffList = state.staffList.filter(staff => staff.id !== action.payload);
+      state.staffList = state.staffList.filter(staff => staff.id != action.payload);
     },
     deleteStaffFailure(state, action) {
       state.loading = false;

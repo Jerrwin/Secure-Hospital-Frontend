@@ -7,6 +7,7 @@ import AppointmentCalendar from "../pages/Appointments/AppointmentCalendar";
 import PatientList from "../pages/Patients/PatientList";
 import PrescriptionList from "../pages/Prescriptions/PrescriptionList";
 import StaffManagement from "../pages/Staff/StaffManagement";
+import InvoicePage from "../pages/Billing/InvoicePage";
 import DashboardLayout from "../components/layout/DashboardLayout/DashboardLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedRoute from "./RoleBasedRoute";
@@ -36,6 +37,8 @@ const AppRouter = ({ isSubdomain }) => {
         
         <Route path="/appointments" element={<AppointmentCalendar />} />
 
+        <Route path="/appointments" element={<AppointmentList />} />
+
         {/* Note: RoleBasedRoute still wraps the element inside the layout */}
         <Route
           path="/patients"
@@ -60,6 +63,14 @@ const AppRouter = ({ isSubdomain }) => {
           element={
             <RoleBasedRoute allowedRoles={["ADMIN"]}>
               <StaffManagement />
+            </RoleBasedRoute>
+          }
+        />
+        <Route
+          path="/billing"
+          element={
+            <RoleBasedRoute allowedRoles={["ADMIN", "RECEPTIONIST", "PROVIDER"]}>
+              <InvoicePage />
             </RoleBasedRoute>
           }
         />

@@ -22,7 +22,7 @@ const StyledContent = styled(Content)`
   margin: 24px 24px 0;
   padding: 24px;
   background: transparent;
-  min-height: 280px;
+  min-height: auto;
 
   @media (max-width: 768px) {
     margin: 12px 12px 0;

@@ -99,7 +99,7 @@ const UnifiedDashboard = ({ role, data, loading }) => {
           },
         ],
       },
-      DOCTOR: {
+      PROVIDER: {
         stats: [
           {
             title: "Today's Appointments",
@@ -209,11 +209,9 @@ const UnifiedDashboard = ({ role, data, loading }) => {
     [data, appointmentCols, prescriptionCols],
   );
 
-  // Normalize role and handle aliases (e.g., Provider -> DOCTOR)
+  // Normalize role
   const normalizedRole = useMemo(() => {
-    const rawRole = (role || "").toUpperCase();
-    if (rawRole === "PROVIDER") return "DOCTOR";
-    return rawRole;
+    return (role || "").toUpperCase();
   }, [role]);
 
   const currentConfig =

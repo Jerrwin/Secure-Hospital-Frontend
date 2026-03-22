@@ -9,6 +9,7 @@ import {
   Switch,
   Space,
   Tag,
+  Progress,
   message,
   Popconfirm,
 } from "antd";
@@ -29,14 +30,23 @@ const PageHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 
   h1 {
     color: #1e3a8a;
-    font-size: 1.75rem;
+    font-size: clamp(1.5rem, 4vw, 1.75rem);
     margin: 0;
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1 1 auto;
+    min-width: 250px;
+  }
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
   }
 `;
 
@@ -60,6 +70,16 @@ const StyledTable = styled(Table)`
       opacity: 0.5;
     }
   }
+  
+  @media (max-width: 768px) {
+    .ant-table {
+      font-size: 13px;
+    }
+    .ant-tag {
+      margin-right: 0;
+      margin-bottom: 4px;
+    }
+  }
 `;
 
 const StaffManagement = () => {
@@ -78,6 +98,25 @@ const StaffManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form] = Form.useForm();
+
+  // Watch password field for strength meter
+  const password = Form.useWatch('password', form);
+
+  const getPasswordStrength = (pwd) => {
+    if (!pwd) return { score: 0, label: '', color: '#e2e8f0' };
+    let score = 0;
+    if (pwd.length >= 8) score += 1;
+    if (/[0-9]/.test(pwd)) score += 1;
+    if (/[A-Z]/.test(pwd)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
+
+    if (pwd.length < 6) return { score: 25, label: 'Very Weak', color: '#ff4d4f' };
+    if (score <= 1) return { score: 33, label: 'Weak', color: '#ff4d4f' };
+    if (score <= 3) return { score: 66, label: 'Average', color: '#faad14' };
+    return { score: 100, label: 'Strong', color: '#52c41a' };
+  };
+
+  const strength = getPasswordStrength(password);
 
   // Debounce search term
   useEffect(() => {
@@ -105,9 +144,20 @@ const StaffManagement = () => {
     );
   };
 
-  // Filter data based on search
+  // Filter data based on search and roles
   const displayData = useMemo(() => {
-    if (!debouncedSearch) return staffList || [];
+    // 1. First, exclude 'Admin' role from the general staff list view
+    const nonAdminStaff = (staffList || []).filter(item => {
+      const id = item.role_id || item.roleId || (item.role?.id) || (typeof item.role === 'number' ? item.role : null);
+      const name = item.role_name || item.role?.name || (typeof item.role === 'string' ? item.role : null);
+
+      // role_id 1 is usually Admin, also check by name
+      const isAdmin = id == 1 || (name && name.toLowerCase() === 'admin');
+      return !isAdmin;
+    });
+
+    // 2. Then apply search filter
+    if (!debouncedSearch) return nonAdminStaff;
     const lowerQuery = debouncedSearch.toLowerCase();
     return (staffList || []).filter(
       (item) =>
@@ -196,6 +246,7 @@ const StaffManagement = () => {
 
     // 2. Prepare payload with both possible activity markers (binary and string)
     const cleanRecord = {
+      user_id: record.user_id, // Include user_id to trigger status sync across tables
       name: record.name,
       email: record.email,
       role_id: roleId,
@@ -267,14 +318,8 @@ const StaffManagement = () => {
         // 4. Fallback to name if ID mapping failed
         if (name) {
           const s = name.toUpperCase();
-          const colorMap = {
-            ADMIN: "red",
-            DOCTOR: "blue",
-            NURSE: "cyan",
-            PHARMACIST: "purple",
-            PROVIDER: "blue",
-          };
-          return <Tag color={colorMap[s] || "default"}>{name}</Tag>;
+          const colorMap = { ADMIN: 'red', NURSE: 'cyan', PHARMACIST: 'purple', PROVIDER: 'blue' };
+          return <Tag color={colorMap[s] || 'default'}>{name}</Tag>;
         }
 
         return <Tag color="default">{id ? `Role ${id}` : "No Role"}</Tag>;
@@ -288,8 +333,8 @@ const StaffManagement = () => {
         const isActive = record.status
           ? record.status === "active"
           : record.is_active === true ||
-            record.is_active === 1 ||
-            record.is_active === "1";
+          record.is_active === 1 ||
+          record.is_active === "1";
         return (
           <Switch
             checked={isActive}
@@ -304,7 +349,7 @@ const StaffManagement = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <Space size="middle">
+        <Space orientation="vertical" size={0}>
           <Button
             type="link"
             icon={<EditOutlined />}
@@ -328,55 +373,57 @@ const StaffManagement = () => {
   ];
 
   return (
-    <>
-      <div
-        style={{
-          background: "#fff",
-          padding: "32px",
-          borderRadius: "12px",
-          minHeight: "75vh",
-          boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.05)",
-        }}
-      >
-        <PageHeader>
-          <h1>
-            <TeamOutlined style={{ color: "#2563eb" }} /> Staff Management
-          </h1>
-          <Space size="large">
-            <Input
-              prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
-              placeholder="Search by name, email or phone..."
-              onChange={(e) => setSearchTerm(e.target.value)}
-              value={searchTerm}
-              allowClear
-              style={{
-                width: "300px",
-                borderRadius: "8px",
-                border: "1px solid #e2e8f0",
-              }}
-              size="large"
-            />
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => showModal()}
-              style={{
-                background: "#2563eb",
-                height: "40px",
-                borderRadius: "8px",
-                fontWeight: 500,
-              }}
-            >
-              Add Staff
-            </Button>
-          </Space>
-        </PageHeader>
+    <div style={{ padding: 'clamp(12px, 3vw, 24px)' }}>
+      <PageHeader>
+        <h1 style={{ fontWeight: 700, color: '#102d6b' }}>
+          <TeamOutlined style={{ color: '#2563eb' }} /> Staff Management
+        </h1>
+        <Space size="middle" style={{ flexWrap: 'wrap' }}>
+          <Input
+            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+            placeholder="Search staff..."
+            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTerm}
+            allowClear
+            style={{
+              width: "100%",
+              maxWidth: "300px",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+            size="large"
+          />
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => showModal()}
+            style={{
+              background: '#2563eb',
+              height: '48px',
+              padding: '0 24px',
+              borderRadius: '8px',
+              fontWeight: 600,
+              minWidth: '140px'
+            }}
+          >
+            Add Staff
+          </Button>
+        </Space>
+      </PageHeader>
 
+      <div style={{
+        background: '#fff',
+        padding: 'clamp(12px, 3vw, 24px)',
+        borderRadius: '12px',
+        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)',
+        minHeight: 'auto',
+        overflow: 'hidden'
+      }}>
         <StyledTable
           columns={columns}
           dataSource={displayData}
           rowKey="id"
-          loading={loading && staffList.length === 0}
+          loading={loading && (staffList || []).length === 0}
           pagination={{
             pageSize: 5,
             placement: "bottomCenter",
@@ -386,10 +433,11 @@ const StaffManagement = () => {
             const isActive = record.status
               ? record.status === "active"
               : record.is_active === 1 ||
-                record.is_active === "1" ||
-                record.is_active === true;
+              record.is_active === "1" ||
+              record.is_active === true;
             return isActive ? "" : "inactive-row";
           }}
+          scroll={{ x: 800 }}
         />
 
         <Modal
@@ -429,7 +477,6 @@ const StaffManagement = () => {
               <Form.Item
                 name="last_name"
                 label="Last Name"
-                rules={[{ required: true, message: "Last name is required" }]}
                 style={{ flex: 1 }}
               >
                 <Input
@@ -476,22 +523,35 @@ const StaffManagement = () => {
             </Space>
 
             {!editingStaff && (
-              <Form.Item
-                name="password"
-                label="Temporary Password"
-                rules={[
-                  {
-                    required: true,
-                    message: "Password is required for new users",
-                  },
-                ]}
-              >
-                <Input.Password
-                  size="large"
-                  placeholder="Secure password"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
+              <div style={{ marginBottom: '24px' }}>
+                <Form.Item
+                  name="password"
+                  label="Password"
+                  rules={[{ required: true, message: 'Password is required for new users' }]}
+                  style={{ marginBottom: 8 }}
+                >
+                  <Input.Password size="large" placeholder="Secure password" style={{ borderRadius: '6px' }} />
+                </Form.Item>
+                {password && (
+                  <div style={{ marginTop: '-4px' }}>
+                    <Progress
+                      percent={strength.score}
+                      showInfo={false}
+                      strokeColor={strength.color}
+                      size="small"
+                      style={{ marginBottom: 4 }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12px', color: strength.color, fontWeight: 600 }}>
+                        Strength: {strength.label}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                        Use 8+ chars with mix of letters, numbers & symbols
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             <Space style={{ display: "flex", width: "100%" }}>
@@ -499,14 +559,21 @@ const StaffManagement = () => {
                 name="phone_number"
                 label="Phone Number"
                 rules={[
-                  { required: true, message: "Phone number is required" },
+                  { required: true, message: 'Phone number is required' },
+                  { pattern: /^\d{10}$/, message: 'Please enter exactly 10 digits' }
                 ]}
                 style={{ flex: 1 }}
               >
                 <Input
                   size="large"
                   placeholder="9070503210"
-                  style={{ borderRadius: "6px" }}
+                  style={{ borderRadius: '6px' }}
+                  maxLength={10}
+                  onKeyPress={(event) => {
+                    if (!/[0-9]/.test(event.key)) {
+                      event.preventDefault();
+                    }
+                  }}
                 />
               </Form.Item>
 
@@ -535,11 +602,10 @@ const StaffManagement = () => {
                   size="large"
                   placeholder="Select role"
                   options={[
-                    { value: 1, label: "System Administrator" },
-                    { value: 2, label: "Provider / Doctor" },
-                    { value: 3, label: "Nurse" },
-                    { value: 4, label: "Pharmacist" },
-                    { value: 5, label: "Receptionist" },
+                    { value: 2, label: 'Provider' },
+                    { value: 3, label: 'Nurse' },
+                    { value: 4, label: 'Pharmacist' },
+                    { value: 5, label: 'Receptionist' },
                   ]}
                 />
               </Form.Item>
@@ -583,7 +649,7 @@ const StaffManagement = () => {
           </Form>
         </Modal>
       </div>
-    </>
+    </div>
   );
 };
 
