@@ -1,22 +1,13 @@
-import React from "react";
-import { Layout, Avatar, Dropdown, Typography, Space, Button } from "antd";
-import {
-  UserOutlined,
-  LogoutOutlined,
-  SettingOutlined,
-  MedicineBoxOutlined,
-  MenuOutlined,
-} from "@ant-design/icons";
-import styled from "styled-components";
-import { useDispatch } from "react-redux";
-import { setMobileDrawerOpen } from "../../../modules/ui/uiSlice";
-import useSecurity from "../../../modules/security/hooks/useSecurity";
-import NotificationBell from "../../common/NotificationBell";
-
-import useAuth from "../../../modules/auth/hooks/useAuth";
+import React from 'react';
+import { Layout, Button, message, Space } from 'antd';
+import { MedicineBoxOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons';
+import styled from 'styled-components';
+import { useDispatch } from 'react-redux';
+import { setMobileDrawerOpen } from '../../../modules/ui/uiSlice';
+import useAuth from '../../../modules/auth/hooks/useAuth';
+import NotificationBell from '../../common/NotificationBell';
 
 const { Header: AntHeader } = Layout;
-const { Text } = Typography;
 
 const StyledHeader = styled(AntHeader)`
   background-color: #ffffff;
@@ -28,6 +19,22 @@ const StyledHeader = styled(AntHeader)`
   position: sticky;
   top: 0;
   z-index: 10;
+`;
+
+const LeftSection = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const HamburgerBtn = styled(Button)`
+  display: none;
+  
+  @media (max-width: 992px) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
 `;
 
 const Brand = styled.div`
@@ -44,95 +51,72 @@ const Brand = styled.div`
   }
 `;
 
-const HamburgerBtn = styled(Button)`
-  display: none;
-  margin-right: 12px;
-  
-  @media (max-width: 992px) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-`;
-
-const UserName = styled(Text)`
-  color: #334155;
+const LogoutButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
   font-weight: 500;
+  color: #ef4444;
+  border-color: #fee2e2;
+  background: #fef2f2;
+  
+  &:hover {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+    border-color: #fecaca !important;
+  }
 
-  @media (max-width: 480px) {
-    display: none;
+  @media (max-width: 576px) {
+    span { display: none; }
+    padding: 4px 8px;
   }
 `;
 
-const Header = ({ user }) => {
+const Header = () => {
   const dispatch = useDispatch();
   const { logout } = useAuth();
-  const { userRole } = useSecurity();
-
+  
   // Dynamic Hospital Name from Subdomain
   const hostname = window.location.hostname;
   const subdomain = hostname.split(".")[0];
-  const isSubdomain =
-    subdomain !== "localhost" && subdomain !== "www" && hostname.includes(".");
-
-  const hospitalName = isSubdomain
-    ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1)
+  const isSubdomain = subdomain !== "localhost" && subdomain !== "www" && hostname.includes(".");
+  
+  const hospitalName = isSubdomain 
+    ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) 
     : "MedPortal";
 
-  const menuItems = [
-    { key: "profile", icon: <UserOutlined />, label: "Profile" },
-    { key: "settings", icon: <SettingOutlined />, label: "Settings" },
-    { type: "divider" },
-    { key: "logout", icon: <LogoutOutlined />, label: "Logout", danger: true },
-  ];
+  const handleLogout = () => {
+    logout();
+    message.success('Logged out successfully');
+  };
 
-  const handleMenuClick = ({ key }) => {
-    if (key === "logout") {
-      logout();
-    }
+  const showDrawer = () => {
+    dispatch(setMobileDrawerOpen(true));
   };
 
   return (
     <StyledHeader>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
+      <LeftSection>
         <HamburgerBtn 
           type="text" 
-          icon={<MenuOutlined style={{ fontSize: '1.25rem' }} />} 
-          onClick={() => dispatch(setMobileDrawerOpen(true))}
+          icon={<MenuOutlined />} 
+          onClick={showDrawer} 
         />
         <Brand>
-          <MedicineBoxOutlined style={{ fontSize: "1.5rem" }} />
+          <MedicineBoxOutlined style={{ fontSize: '1.5rem' }} />
           <span>{hospitalName}</span>
         </Brand>
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+      </LeftSection>
+      
+      <Space size="large">
         <NotificationBell />
-        <Dropdown
-          menu={{ items: menuItems, onClick: handleMenuClick }}
-          placement="bottomRight"
-          arrow
+        <LogoutButton 
+          icon={<LogoutOutlined />} 
+          onClick={handleLogout}
         >
-          <Space style={{ cursor: "pointer" }}>
-            <Avatar
-              style={{
-                backgroundColor: "#eff6ff",
-                color: "#2563eb",
-                boxShadow: "0 2px 4px rgba(37, 99, 235, 0.1)",
-              }}
-              icon={<UserOutlined />}
-            />
-            <UserName>
-              {user?.name || "User"}{" "}
-              {userRole && (
-                <span style={{ opacity: 0.6, fontSize: "0.85em", marginLeft: 4 }}>
-                  ({userRole})
-                </span>
-              )}
-            </UserName>
-          </Space>
-        </Dropdown>
-      </div>
+          Logout
+        </LogoutButton>
+      </Space>
     </StyledHeader>
   );
 };

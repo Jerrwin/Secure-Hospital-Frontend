@@ -15,15 +15,18 @@ const { Content } = Layout;
 
 // The main background is set to your specified #eff6ff token
 const MainLayout = styled(Layout)`
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #eff6ff;
 `;
 
 const StyledContent = styled(Content)`
-  margin: 24px 24px 0;
+  margin: 0;
   padding: 24px;
   background: transparent;
-  min-height: auto;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
 
   @media (max-width: 992px) {
     margin: 12px 12px 0;
@@ -63,6 +66,7 @@ const DashboardLayout = () => {
         {/* Persistent Sidebar for Desktop */}
         <Sidebar
           role={currentUserRole}
+          user={safeUser}
           currentPath={location.pathname}
           collapsed={collapsed}
           setCollapsed={handleToggle}

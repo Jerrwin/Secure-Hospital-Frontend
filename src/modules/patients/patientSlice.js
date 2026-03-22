@@ -5,6 +5,7 @@ const initialState = {
   selectedPatient: null,
   loading: false,
   error: null,
+  isLoaded: false,
 };
 
 const patientSlice = createSlice({
@@ -18,6 +19,7 @@ const patientSlice = createSlice({
     fetchPatientsSuccess(state, action) {
       state.loading = false;
       state.patients = action.payload;
+      state.isLoaded = true;
     },
     fetchPatientsFailure(state, action) {
       state.loading = false;
@@ -55,14 +57,14 @@ const patientSlice = createSlice({
       state.error = null;
       // Optimistic update
       const { id, data } = action.payload;
-      const index = state.patients.findIndex(p => p.id == id);
+      const index = state.patients.findIndex(p => p.id === id);
       if (index !== -1) {
         state.patients[index] = { ...state.patients[index], ...data };
       }
     },
     updatePatientSuccess(state, action) {
       state.loading = false;
-      const index = state.patients.findIndex(p => p.id == action.payload.id);
+      const index = state.patients.findIndex(p => p.id === action.payload.id);
       if (index !== -1) {
         state.patients[index] = action.payload;
       }
@@ -78,7 +80,7 @@ const patientSlice = createSlice({
     },
     deletePatientSuccess(state, action) {
       state.loading = false;
-      state.patients = state.patients.filter(p => p.id != action.payload);
+      state.patients = state.patients.filter(p => p.id !== action.payload);
     },
     deletePatientFailure(state, action) {
       state.loading = false;
