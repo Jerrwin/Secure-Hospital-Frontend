@@ -1,11 +1,15 @@
-import React from 'react';
-import { Layout, Button, message, Space } from 'antd';
-import { MedicineBoxOutlined, LogoutOutlined, MenuOutlined } from '@ant-design/icons';
-import styled from 'styled-components';
-import { useDispatch } from 'react-redux';
-import { setMobileDrawerOpen } from '../../../modules/ui/uiSlice';
-import useAuth from '../../../modules/auth/hooks/useAuth';
-import NotificationBell from '../../common/NotificationBell';
+import React from "react";
+import { Layout, Button, message, Space } from "antd";
+import {
+  MedicineBoxOutlined,
+  PoweroffOutlined,
+  MenuOutlined,
+} from "@ant-design/icons";
+import styled from "styled-components";
+import { useDispatch } from "react-redux";
+import { setMobileDrawerOpen } from "../../../modules/ui/uiSlice";
+import useAuth from "../../../modules/auth/hooks/useAuth";
+import NotificationBell from "../../common/NotificationBell";
 
 const { Header: AntHeader } = Layout;
 
@@ -19,6 +23,10 @@ const StyledHeader = styled(AntHeader)`
   position: sticky;
   top: 0;
   z-index: 10;
+
+  @media (max-width: 576px) {
+    padding: 0 12px;
+  }
 `;
 
 const LeftSection = styled.div`
@@ -29,7 +37,7 @@ const LeftSection = styled.div`
 
 const HamburgerBtn = styled(Button)`
   display: none;
-  
+
   @media (max-width: 992px) {
     display: inline-flex;
     align-items: center;
@@ -59,7 +67,7 @@ const LogoutButton = styled(Button)`
   color: #ef4444;
   border-color: #fee2e2;
   background: #fef2f2;
-  
+
   &:hover {
     background: #fee2e2 !important;
     color: #dc2626 !important;
@@ -67,27 +75,40 @@ const LogoutButton = styled(Button)`
   }
 
   @media (max-width: 576px) {
-    span { display: none; }
-    padding: 4px 8px;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+    background: #ef4444 !important; /* Solid red on mobile for visibility */
+    border: none;
+    .anticon {
+      font-size: 18px;
+      color: #ffffff;
+      margin: 0;
+    }
   }
 `;
 
 const Header = () => {
   const dispatch = useDispatch();
   const { logout } = useAuth();
-  
+
   // Dynamic Hospital Name from Subdomain
   const hostname = window.location.hostname;
   const subdomain = hostname.split(".")[0];
-  const isSubdomain = subdomain !== "localhost" && subdomain !== "www" && hostname.includes(".");
-  
-  const hospitalName = isSubdomain 
-    ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1) 
+  const isSubdomain =
+    subdomain !== "localhost" && subdomain !== "www" && hostname.includes(".");
+
+  const hospitalName = isSubdomain
+    ? subdomain.charAt(0).toUpperCase() + subdomain.slice(1)
     : "MedPortal";
 
   const handleLogout = () => {
     logout();
-    message.success('Logged out successfully');
+    message.success("Logged out successfully");
   };
 
   const showDrawer = () => {
@@ -97,25 +118,24 @@ const Header = () => {
   return (
     <StyledHeader>
       <LeftSection>
-        <HamburgerBtn 
-          type="text" 
-          icon={<MenuOutlined />} 
-          onClick={showDrawer} 
+        <HamburgerBtn
+          type="text"
+          icon={<MenuOutlined />}
+          onClick={showDrawer}
         />
         <Brand>
-          <MedicineBoxOutlined style={{ fontSize: '1.5rem' }} />
+          <MedicineBoxOutlined style={{ fontSize: "1.5rem" }} />
           <span>{hospitalName}</span>
         </Brand>
       </LeftSection>
-      
-      <Space size="large">
+
+      <Space size="middle">
         <NotificationBell />
-        <LogoutButton 
-          icon={<LogoutOutlined />} 
+        <LogoutButton
+          icon={<PoweroffOutlined />}
           onClick={handleLogout}
-        >
-          Logout
-        </LogoutButton>
+          title="Logout"
+        />
       </Space>
     </StyledHeader>
   );

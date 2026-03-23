@@ -11,6 +11,7 @@ import {
   Tag,
   Progress,
   message,
+  Tooltip,
   Popconfirm,
 } from "antd";
 import {
@@ -23,30 +24,112 @@ import {
 import useUsers from "../../modules/users/hooks/useUsers";
 import styled from "styled-components";
 
-// const { Option } = Select; // Deprecated in AntD v5, use options prop instead
+const bp = {
+  xs: "480px",
+  sm: "576px",
+  md: "768px",
+  lg: "992px",
+  xl: "1200px",
+};
 
-const PageHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+const HeaderCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   margin-bottom: 24px;
-  flex-wrap: wrap;
-  gap: 16px;
+  overflow: hidden;
+`;
 
-  h1 {
-    color: #1e3a8a;
-    font-size: clamp(1.5rem, 4vw, 1.75rem);
-    margin: 0;
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+
+  @media (min-width: ${bp.lg}) {
+    padding: 16px 22px;
+  }
+`;
+
+const MobileRow = styled.div`
+  display: flex;
+  padding: 0 16px 16px 16px;
+  width: 100%;
+
+  @media (min-width: ${bp.lg}) {
+    display: none;
+  }
+`;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const TitleIcon = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #e8f0fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  @media (min-width: ${bp.md}) {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+`;
+
+const PageTitle = styled.h2`
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @media (min-width: ${bp.sm}) {
+    font-size: 17px;
+  }
+  @media (min-width: ${bp.md}) {
+    font-size: 18px;
+  }
+`;
+
+const SearchWrapper = styled.div`
+  display: none;
+  @media (min-width: ${bp.lg}) {
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex: 1 1 auto;
-    min-width: 250px;
+    max-width: 320px;
+    flex: 1;
   }
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
+`;
+
+const AddButtonMobile = styled(Button)`
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: #2563eb !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 0 12px !important;
+  height: 36px !important;
+  font-size: 13px !important;
+  color: #ffffff !important;
+
+  @media (min-width: ${bp.lg}) {
+    display: none !important;
   }
 `;
 
@@ -70,14 +153,10 @@ const StyledTable = styled(Table)`
       opacity: 0.5;
     }
   }
-  
+
   @media (max-width: 768px) {
     .ant-table {
       font-size: 13px;
-    }
-    .ant-tag {
-      margin-right: 0;
-      margin-bottom: 4px;
     }
   }
 `;
@@ -100,20 +179,21 @@ const StaffManagement = () => {
   const [form] = Form.useForm();
 
   // Watch password field for strength meter
-  const password = Form.useWatch('password', form);
+  const password = Form.useWatch("password", form);
 
   const getPasswordStrength = (pwd) => {
-    if (!pwd) return { score: 0, label: '', color: '#e2e8f0' };
+    if (!pwd) return { score: 0, label: "", color: "#e2e8f0" };
     let score = 0;
     if (pwd.length >= 8) score += 1;
     if (/[0-9]/.test(pwd)) score += 1;
     if (/[A-Z]/.test(pwd)) score += 1;
     if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
 
-    if (pwd.length < 6) return { score: 25, label: 'Very Weak', color: '#ff4d4f' };
-    if (score <= 1) return { score: 33, label: 'Weak', color: '#ff4d4f' };
-    if (score <= 3) return { score: 66, label: 'Average', color: '#faad14' };
-    return { score: 100, label: 'Strong', color: '#52c41a' };
+    if (pwd.length < 6)
+      return { score: 25, label: "Very Weak", color: "#ff4d4f" };
+    if (score <= 1) return { score: 33, label: "Weak", color: "#ff4d4f" };
+    if (score <= 3) return { score: 66, label: "Average", color: "#faad14" };
+    return { score: 100, label: "Strong", color: "#52c41a" };
   };
 
   const strength = getPasswordStrength(password);
@@ -147,12 +227,19 @@ const StaffManagement = () => {
   // Filter data based on search and roles
   const displayData = useMemo(() => {
     // 1. First, exclude 'Admin' role from the general staff list view
-    const nonAdminStaff = (staffList || []).filter(item => {
-      const id = item.role_id || item.roleId || (item.role?.id) || (typeof item.role === 'number' ? item.role : null);
-      const name = item.role_name || item.role?.name || (typeof item.role === 'string' ? item.role : null);
+    const nonAdminStaff = (staffList || []).filter((item) => {
+      const id =
+        item.role_id ||
+        item.roleId ||
+        item.role?.id ||
+        (typeof item.role === "number" ? item.role : null);
+      const name =
+        item.role_name ||
+        item.role?.name ||
+        (typeof item.role === "string" ? item.role : null);
 
       // role_id 1 is usually Admin, also check by name
-      const isAdmin = id === 1 || (name && name.toLowerCase() === 'admin');
+      const isAdmin = id === 1 || (name && name.toLowerCase() === "admin");
       return !isAdmin;
     });
 
@@ -318,8 +405,13 @@ const StaffManagement = () => {
         // 4. Fallback to name if ID mapping failed
         if (name) {
           const s = name.toUpperCase();
-          const colorMap = { ADMIN: 'red', NURSE: 'cyan', PHARMACIST: 'purple', PROVIDER: 'blue' };
-          return <Tag color={colorMap[s] || 'default'}>{name}</Tag>;
+          const colorMap = {
+            ADMIN: "red",
+            NURSE: "cyan",
+            PHARMACIST: "purple",
+            PROVIDER: "blue",
+          };
+          return <Tag color={colorMap[s] || "default"}>{name}</Tag>;
         }
 
         return <Tag color="default">{id ? `Role ${id}` : "No Role"}</Tag>;
@@ -333,8 +425,8 @@ const StaffManagement = () => {
         const isActive = record.status
           ? record.status === "active"
           : record.is_active === true ||
-          record.is_active === 1 ||
-          record.is_active === "1";
+            record.is_active === 1 ||
+            record.is_active === "1";
         return (
           <Switch
             checked={isActive}
@@ -349,23 +441,23 @@ const StaffManagement = () => {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
-        <Space orientation="vertical" size={0}>
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => showModal(record)}
-          >
-            Edit
-          </Button>
+        <Space size="small">
+          <Tooltip title="Edit">
+            <Button
+              type="text"
+              icon={<EditOutlined style={{ color: "#2563eb" }} />}
+              onClick={() => showModal(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Are you sure you want to delete this staff member?"
             onConfirm={() => handleDelete(record.id)}
             okText="Yes"
             cancelText="No"
           >
-            <Button type="link" danger icon={<DeleteOutlined />}>
-              Delete
-            </Button>
+            <Tooltip title="Delete">
+              <Button type="text" danger icon={<DeleteOutlined />} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -373,52 +465,75 @@ const StaffManagement = () => {
   ];
 
   return (
-    <div style={{ padding: 'clamp(12px, 3vw, 24px)' }}>
-      <PageHeader>
-        <h1 style={{ fontWeight: 700, color: '#102d6b' }}>
-          <TeamOutlined style={{ color: '#2563eb' }} /> Staff Management
-        </h1>
-        <Space size="middle" style={{ flexWrap: 'wrap' }}>
-          <Input
-            prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
-            placeholder="Search staff..."
-            onChange={(e) => setSearchTerm(e.target.value)}
-            value={searchTerm}
-            allowClear
-            style={{
-              width: "100%",
-              maxWidth: "300px",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-            size="large"
-          />
+    <div style={{ background: "#eff6ff", minHeight: "100vh" }}>
+      <HeaderCard>
+        <HeaderRow>
+          <HeaderLeft>
+            <TitleIcon>
+              <TeamOutlined style={{ fontSize: 20, color: "#2563eb" }} />
+            </TitleIcon>
+            <PageTitle>Staff Management</PageTitle>
+          </HeaderLeft>
+
+          <SearchWrapper>
+            <Input
+              prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+              placeholder="Search staff..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchTerm}
+              allowClear
+              size="large"
+              style={{ borderRadius: "8px" }}
+            />
+          </SearchWrapper>
+
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => showModal()}
+            size="large"
             style={{
-              background: '#2563eb',
-              height: '48px',
-              padding: '0 24px',
-              borderRadius: '8px',
+              background: "#2563eb",
+              borderRadius: "8px",
               fontWeight: 600,
-              minWidth: '140px'
+              display: window.innerWidth >= 992 ? "flex" : "none",
             }}
           >
             Add Staff
           </Button>
-        </Space>
-      </PageHeader>
 
-      <div style={{
-        background: '#fff',
-        padding: 'clamp(12px, 3vw, 24px)',
-        borderRadius: '12px',
-        boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.05)',
-        minHeight: 'auto',
-        overflow: 'hidden'
-      }}>
+          <AddButtonMobile
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => showModal()}
+          >
+            Add Staff
+          </AddButtonMobile>
+        </HeaderRow>
+
+        <MobileRow>
+          <Input
+            prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+            placeholder="Search staff..."
+            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchTerm}
+            allowClear
+            size="large"
+            style={{ borderRadius: "8px", width: "100%" }}
+          />
+        </MobileRow>
+      </HeaderCard>
+
+      <div
+        style={{
+          background: "#fff",
+          padding: "clamp(12px, 3vw, 24px)",
+          borderRadius: "12px",
+          boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.05)",
+          minHeight: "auto",
+          overflow: "hidden",
+        }}
+      >
         <StyledTable
           columns={columns}
           dataSource={displayData}
@@ -433,8 +548,8 @@ const StaffManagement = () => {
             const isActive = record.status
               ? record.status === "active"
               : record.is_active === 1 ||
-              record.is_active === "1" ||
-              record.is_active === true;
+                record.is_active === "1" ||
+                record.is_active === true;
             return isActive ? "" : "inactive-row";
           }}
           scroll={{ x: 800 }}
@@ -474,11 +589,7 @@ const StaffManagement = () => {
                   style={{ borderRadius: "6px" }}
                 />
               </Form.Item>
-              <Form.Item
-                name="last_name"
-                label="Last Name"
-                style={{ flex: 1 }}
-              >
+              <Form.Item name="last_name" label="Last Name" style={{ flex: 1 }}>
                 <Input
                   size="large"
                   placeholder="E.g. House"
@@ -523,17 +634,26 @@ const StaffManagement = () => {
             </Space>
 
             {!editingStaff && (
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: "24px" }}>
                 <Form.Item
                   name="password"
                   label="Password"
-                  rules={[{ required: true, message: 'Password is required for new users' }]}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Password is required for new users",
+                    },
+                  ]}
                   style={{ marginBottom: 8 }}
                 >
-                  <Input.Password size="large" placeholder="Secure password" style={{ borderRadius: '6px' }} />
+                  <Input.Password
+                    size="large"
+                    placeholder="Secure password"
+                    style={{ borderRadius: "6px" }}
+                  />
                 </Form.Item>
                 {password && (
-                  <div style={{ marginTop: '-4px' }}>
+                  <div style={{ marginTop: "-4px" }}>
                     <Progress
                       percent={strength.score}
                       showInfo={false}
@@ -541,11 +661,23 @@ const StaffManagement = () => {
                       size="small"
                       style={{ marginBottom: 4 }}
                     />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '12px', color: strength.color, fontWeight: 600 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: strength.color,
+                          fontWeight: 600,
+                        }}
+                      >
                         Strength: {strength.label}
                       </span>
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      <span style={{ fontSize: "11px", color: "#94a3b8" }}>
                         Use 8+ chars with mix of letters, numbers & symbols
                       </span>
                     </div>
@@ -559,15 +691,18 @@ const StaffManagement = () => {
                 name="phone_number"
                 label="Phone Number"
                 rules={[
-                  { required: true, message: 'Phone number is required' },
-                  { pattern: /^\d{10}$/, message: 'Please enter exactly 10 digits' }
+                  { required: true, message: "Phone number is required" },
+                  {
+                    pattern: /^\d{10}$/,
+                    message: "Please enter exactly 10 digits",
+                  },
                 ]}
                 style={{ flex: 1 }}
               >
                 <Input
                   size="large"
                   placeholder="9070503210"
-                  style={{ borderRadius: '6px' }}
+                  style={{ borderRadius: "6px" }}
                   maxLength={10}
                   onKeyPress={(event) => {
                     if (!/[0-9]/.test(event.key)) {
@@ -602,10 +737,10 @@ const StaffManagement = () => {
                   size="large"
                   placeholder="Select role"
                   options={[
-                    { value: 2, label: 'Provider' },
-                    { value: 3, label: 'Nurse' },
-                    { value: 4, label: 'Pharmacist' },
-                    { value: 5, label: 'Receptionist' },
+                    { value: 2, label: "Provider" },
+                    { value: 3, label: "Nurse" },
+                    { value: 4, label: "Pharmacist" },
+                    { value: 5, label: "Receptionist" },
                   ]}
                 />
               </Form.Item>

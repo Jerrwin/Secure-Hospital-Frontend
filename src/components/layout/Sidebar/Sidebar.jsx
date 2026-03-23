@@ -37,9 +37,7 @@ const SidebarProfile = styled.div`
   margin-top: auto;
   margin-left: 12px;
   margin-right: 12px;
-  padding-bottom: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 24px;
   transition: all 0.3s;
   overflow: hidden;
   display: flex;
@@ -60,8 +58,20 @@ const UserProfile = styled(Space)`
 
 // ─── Sidebar Content Component ─────────────────────────
 // Exported so DashboardLayout can use it for the mobile drawer
-export const SidebarContent = ({ currentPath, role, onMobileClick }) => {
+export const SidebarContent = ({ currentPath, role, user, collapsed, onMobileClick, onClose }) => {
   const navigate = useNavigate();
+  const handleClose = onMobileClick || onClose;
+
+  const profileMenuItems = [
+    { key: 'profile', icon: <UserOutlined />, label: 'Profile' },
+    { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
+  ];
+
+  const handleProfileClick = ({ key }) => {
+    if (key === 'profile') navigate('/profile');
+    if (key === 'settings') navigate('/settings');
+    if (handleClose) handleClose();
+  };
 
   const navItems = useMemo(() => {
     const rawRole = (role || '').toUpperCase();
@@ -76,13 +86,13 @@ export const SidebarContent = ({ currentPath, role, onMobileClick }) => {
       baseItems.push({ key: '/appointments', icon: <CalendarOutlined />, label: 'Appointments' });
     }
 
-    if (isDoctorOrNurse || rawRole === 'ADMIN') {
+    if (isDoctorOrNurse) {
       baseItems.push({ key: '/patients', icon: <TeamOutlined />, label: 'Patients' });
     }
     if (isPharmacistOrDoctor) {
       baseItems.push({ key: '/prescriptions', icon: <FileTextOutlined />, label: 'Prescriptions' });
     }
-    if (rawRole === 'RECEPTIONIST' || rawRole === 'ADMIN') {
+    if (rawRole === 'RECEPTIONIST') {
       baseItems.push({ key: '/billing', icon: <DollarOutlined />, label: 'Billing' });
     }
     if (rawRole === 'ADMIN') {
@@ -100,49 +110,21 @@ export const SidebarContent = ({ currentPath, role, onMobileClick }) => {
   };
 
   return (
-    <Menu
-      mode="inline"
-      selectedKeys={[currentPath || '/dashboard']}
-      items={navItems}
-      onClick={handleMenuClick}
-      theme="dark"
-      style={{ 
-        marginTop: '24px', 
-        background: 'transparent', 
-        borderRight: 'none',
-        flex: 1,
-        overflowY: 'auto',
-        overflowX: 'hidden'
-      }}
-    />
-  );
-};
-
-// ─── Main Sidebar (Desktop) ─────────────────────────────
-const Sidebar = ({ currentPath, role, user, collapsed, setCollapsed }) => {
-  const navigate = useNavigate();
-  
-  const profileMenuItems = [
-    { key: 'profile', icon: <UserOutlined />, label: 'Profile' },
-    { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
-  ];
-
-  const handleProfileClick = ({ key }) => {
-    if (key === 'profile') navigate('/profile');
-    if (key === 'settings') navigate('/settings');
-  };
-
-  return (
-    <StyledSider 
-      width={240} 
-      breakpoint="lg" 
-      collapsedWidth="80"
-      collapsed={collapsed}
-      onCollapse={(value) => setCollapsed(value)}
-    >
-      <SidebarContent 
-        currentPath={currentPath} 
-        role={role} 
+    <>
+      <Menu
+        mode="inline"
+        selectedKeys={[currentPath || '/dashboard']}
+        items={navItems}
+        onClick={handleMenuClick}
+        theme="dark"
+        style={{ 
+          marginTop: '24px', 
+          background: 'transparent', 
+          borderRight: 'none',
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
       />
 
       <SidebarProfile $collapsed={collapsed}>
@@ -172,6 +154,27 @@ const Sidebar = ({ currentPath, role, user, collapsed, setCollapsed }) => {
           </UserProfile>
         </Dropdown>
       </SidebarProfile>
+    </>
+  );
+};
+
+// ─── Main Sidebar (Desktop) ─────────────────────────────
+const Sidebar = ({ currentPath, role, user, collapsed, setCollapsed }) => {
+
+  return (
+    <StyledSider 
+      width={240} 
+      breakpoint="lg" 
+      collapsedWidth="80"
+      collapsed={collapsed}
+      onCollapse={(value) => setCollapsed(value)}
+    >
+      <SidebarContent 
+        currentPath={currentPath} 
+        role={role} 
+        user={user}
+        collapsed={collapsed}
+      />
     </StyledSider>
   );
 };

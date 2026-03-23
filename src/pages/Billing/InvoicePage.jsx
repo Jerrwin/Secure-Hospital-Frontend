@@ -11,29 +11,80 @@ import CreateInvoiceTab from "./tabs/CreateInvoiceTab";
 import PendingPaymentsTab from "./tabs/PendingPaymentsTab";
 import CompletedPaymentsTab from "./tabs/CompletedPaymentsTab";
 
+const bp = {
+  xs: "480px",
+  sm: "576px",
+  md: "768px",
+  lg: "992px",
+  xl: "1200px",
+};
+
 const Container = styled.div`
-  padding: clamp(12px, 3vw, 24px);
-  background: #ffffff;
+  padding: 0;
+  background: #eff6ff;
   min-height: calc(100vh - 64px);
 `;
 
-const Header = styled.div`
+const HeaderCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   margin-bottom: 24px;
-  h1 {
-    color: #1a3353;
-    font-size: clamp(20px, 4vw, 24px);
-    margin: 0 0 8px 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  overflow: hidden;
+`;
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+
+  @media (min-width: ${bp.lg}) {
+    padding: 16px 22px;
   }
-  p {
-    color: #64748b;
-    font-size: clamp(13px, 2.5vw, 14px);
+`;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const TitleIcon = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #e8f0fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  @media (min-width: ${bp.md}) {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
   }
-  
-  @media (max-width: 576px) {
-    margin-bottom: 16px;
+`;
+
+const PageTitle = styled.h2`
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @media (min-width: ${bp.sm}) {
+    font-size: 17px;
+  }
+  @media (min-width: ${bp.md}) {
+    font-size: 18px;
   }
 `;
 
@@ -133,16 +184,27 @@ const InvoicePage = () => {
 
   return (
     <Container>
-      <Header>
-        <h1><DollarOutlined style={{ color: '#1677ff' }} /> Billing & Payments</h1>
-        <p>Manage patient invoices and record transactions</p>
-      </Header>
+      <HeaderCard>
+        <HeaderRow>
+          <HeaderLeft>
+            <TitleIcon>
+              <DollarOutlined style={{ fontSize: 20, color: "#1677ff" }} />
+            </TitleIcon>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <PageTitle>Billing & Payments</PageTitle>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>Manage patient invoices and transactions</span>
+            </div>
+          </HeaderLeft>
+        </HeaderRow>
+      </HeaderCard>
 
-      <StyledTabs 
-        activeKey={activeKey} 
-        onChange={setActiveKey}
-        items={tabItems} 
-      />
+      <div style={{ padding: '0 4px' }}>
+        <StyledTabs 
+          activeKey={activeKey} 
+          onChange={setActiveKey}
+          items={tabItems} 
+        />
+      </div>
     </Container>
   );
 };

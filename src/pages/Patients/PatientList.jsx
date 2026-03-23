@@ -13,53 +13,174 @@ import {
   Typography,
   DatePicker,
   Tooltip,
+  Row,
+  Col,
+  Drawer,
 } from "antd";
 import {
-  PlusOutlined,
-  EditOutlined,
-  UserOutlined,
-  DeleteOutlined,
   SearchOutlined,
   HistoryOutlined,
+  CloseOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  UserOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
+import { useRef } from "react";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import usePatients from "../../modules/patients/hooks/usePatients";
+import useAppointments from "../../modules/appointments/hooks/useAppointments";
+import usePrescription from "../../modules/prescription/hooks/usePrescription";
+import useBilling from "../../modules/billing/hooks/useBilling";
 import dayjs from "dayjs";
 import styled from "styled-components";
+import PatientTimeline from "./components/PatientTimeline";
 
 const { Text } = Typography;
 
-const ActionButton = styled(Button)`
+// ─── Breakpoints ──────────────────────────────────────────────────────────────
+const bp = {
+  xs: "480px",
+  sm: "576px",
+  md: "768px",
+  lg: "992px",
+  xl: "1200px",
+};
+
+// ─── Styled Components ────────────────────────────────────────────────────────
+
+const PageWrapper = styled.div`
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: all 0.2s;
+  flex-direction: column;
+  gap: 16px;
+  @media (min-width: ${bp.md}) {
+    gap: 20px;
+  }
 `;
 
 const PageHeader = styled.div`
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+
+  @media (min-width: ${bp.md}) {
+    border-radius: 14px;
+  }
+`;
+
+const HeaderRow = styled.div`
+  display: flex;
   align-items: center;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 16px;
+  padding: 12px 16px;
 
-  h1 {
-    color: #1e3a8a;
-    font-size: clamp(1.5rem, 4vw, 1.75rem);
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 0 1 auto;
+  @media (min-width: ${bp.lg}) {
+    padding: 16px 22px;
+    flex-wrap: nowrap;
+    border-bottom: 1px solid #f1f5f9;
   }
+`;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
+const MobileRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f1f5f9;
+
+  @media (min-width: ${bp.lg}) {
+    display: none; // Hidden on desktop, moved into HeaderRow
   }
+`;
+
+const AddButtonMobile = styled(Button)`
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: #2563eb !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 0 12px !important;
+  height: 36px !important;
+  font-size: 13px !important;
+  color: #ffffff !important;
+
+  @media (min-width: ${bp.lg}) {
+    display: none !important;
+  }
+`;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const TitleIcon = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #e8f0fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  @media (min-width: ${bp.md}) {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+`;
+
+const PageTitle = styled.h2`
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @media (min-width: ${bp.sm}) {
+    font-size: 17px;
+  }
+  @media (min-width: ${bp.md}) {
+    font-size: 18px;
+  }
+`;
+
+const SearchWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+  @media (min-width: ${bp.md}) {
+    max-width: 320px;
+  }
+`;
+
+const SearchInput = styled(Input)`
+  border-radius: 8px;
+  width: 100%;
+`;
+
+const ActionButton = styled(Button)`
+  border-radius: 8px;
+  font-weight: 600;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 `;
 
 const StyledTable = styled(Table)`
@@ -67,19 +188,44 @@ const StyledTable = styled(Table)`
     background: #f8fafc;
     color: #475569;
     font-weight: 600;
+    font-size: 13px;
+    border-bottom: 1px solid #eef2f6;
   }
-  .ant-table-row:hover {
+  .ant-table-tbody > tr > td {
+    padding: 12px 16px;
+  }
+  .ant-table-row:hover > td {
     background-color: #f1f5f9 !important;
   }
+`;
 
-  @media (max-width: 768px) {
-    .ant-table {
-      font-size: 13px;
-    }
-    .ant-tag {
-      margin-right: 0;
-      margin-bottom: 4px;
-    }
+const StyledFormCard = styled.div`
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+  margin-top: 24px;
+  overflow: hidden;
+
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+  }
+
+  .card-title {
+    font-family: "Sora", sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    margin: 0;
+  }
+
+  .card-content {
+    padding: 24px 20px;
   }
 `;
 
@@ -96,12 +242,19 @@ const PatientList = () => {
     clearError,
   } = usePatients();
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const { list: apptList, fetchAll: fetchAppts, loading: apptLoading } = useAppointments();
+  const { list: rxList, fetchPrescriptions: fetchRxs, loading: rxLoading } = usePrescription();
+  const { invoices: billingList, fetchInvoices: fetchBillings, loading: billingLoading } = useBilling();
+
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [isTimelineVisible, setIsTimelineVisible] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
+  const [selectedPatientForTimeline, setSelectedPatientForTimeline] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form] = Form.useForm();
   const passwordValue = Form.useWatch("password", form);
+  const formRef = useRef(null);
 
   useEffect(() => {
     fetchPatients();
@@ -119,7 +272,7 @@ const PatientList = () => {
     }
   }, [error, clearError]);
 
-  const showModal = (patient = null) => {
+  const showForm = (patient = null) => {
     setEditingPatient(patient);
     if (patient) {
       form.setFieldsValue({
@@ -129,13 +282,30 @@ const PatientList = () => {
     } else {
       form.resetFields();
     }
-    setIsModalVisible(true);
+    setIsFormVisible(true);
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
   const handleCancel = () => {
-    setIsModalVisible(false);
+    setIsFormVisible(false);
     setEditingPatient(null);
     form.resetFields();
+  };
+
+  const showTimeline = (patient) => {
+    setSelectedPatientForTimeline(patient);
+    setIsTimelineVisible(true);
+    // Fetch real data for this patient
+    fetchAppts({ patient_id: patient.id });
+    fetchRxs(); // Currently fetches all, we'll filter in the component
+    fetchBillings({ patient_id: patient.id });
+  };
+
+  const closeTimeline = () => {
+    setIsTimelineVisible(false);
+    setSelectedPatientForTimeline(null);
   };
 
   const onFinish = (values) => {
@@ -153,7 +323,7 @@ const PatientList = () => {
       addPatient(payload);
       message.success("New patient registered successfully");
     }
-    setIsModalVisible(false);
+    setIsFormVisible(false);
     setEditingPatient(null);
     form.resetFields();
   };
@@ -192,11 +362,9 @@ const PatientList = () => {
 
     if (!debouncedSearch) return data;
     const q = debouncedSearch.toLowerCase();
-    return (patients || []).filter((p) => {
-      const name =
-        p.name || `${p.first_name || ""} ${p.last_name || ""}`.trim();
-      const patientId =
-        p.uhid || (p.id ? `PAT-${String(p.id).padStart(3, "0")}` : "NEW-PAT");
+    return data.filter((p) => {
+      const name = p.display_name;
+      const patientId = p.display_uhid;
       return (
         name.toLowerCase().includes(q) ||
         p.email?.toLowerCase().includes(q) ||
@@ -211,13 +379,8 @@ const PatientList = () => {
       title: "Name",
       key: "name",
       render: (_, record) => {
-        const fullName =
-          record.name ||
-          `${record.first_name || ""} ${record.last_name || ""}`.trim() ||
-          "No Name";
-        const patientId =
-          record.uhid ||
-          (record.id ? `PAT-${String(record.id).padStart(3, "0")}` : "NEW-PAT");
+        const fullName = record.display_name;
+        const patientId = record.display_uhid;
         return (
           <Tooltip title={`UHID: ${patientId}`} color="#1e3a8a">
             <Text
@@ -282,20 +445,20 @@ const PatientList = () => {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <ActionButton
-            type="text"
-            icon={<EditOutlined style={{ color: "#2563eb" }} />}
-            onClick={() => showModal(record)}
-          >
-            Edit
-          </ActionButton>
-          <ActionButton
-            type="text"
-            icon={<HistoryOutlined style={{ color: "#0891b2" }} />}
-            onClick={() => message.info("Medical History Coming Soon")}
-          >
-            History
-          </ActionButton>
+          <Tooltip title="Edit Profile">
+            <ActionButton
+              type="text"
+              icon={<EditOutlined style={{ color: "#2563eb" }} />}
+              onClick={() => showForm(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Medical History">
+            <ActionButton
+              type="text"
+              icon={<HistoryOutlined style={{ color: "#0891b2" }} />}
+              onClick={() => showTimeline(record)}
+            />
+          </Tooltip>
           {(user?.role === "Admin" || user?.role === "Provider") && (
             <Popconfirm
               title="Delete patient record?"
@@ -304,9 +467,9 @@ const PatientList = () => {
               cancelText="No"
               okButtonProps={{ danger: true }}
             >
-              <ActionButton type="text" danger icon={<DeleteOutlined />}>
-                Delete
-              </ActionButton>
+              <Tooltip title="Remove Record">
+                <ActionButton type="text" danger icon={<DeleteOutlined />} />
+              </Tooltip>
             </Popconfirm>
           )}
         </Space>
@@ -315,41 +478,78 @@ const PatientList = () => {
   ];
 
   return (
-    <div style={{ padding: "clamp(12px, 3vw, 24px)" }}>
+    <PageWrapper>
+      {/* ── Page Header (Unified Controls) ── */}
       <PageHeader>
-        <h1 style={{ fontWeight: 700, color: "#102d6b" }}>
-          <UserOutlined style={{ color: "#2563eb" }} /> Patient Management
-        </h1>
-        <Space size="middle" style={{ flexWrap: "wrap" }}>
-          <Input
-            placeholder="Search patients..."
-            prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
-            size="large"
-            style={{
-              width: "100%",
-              maxWidth: "300px",
-              borderRadius: "8px",
-            }}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            allowClear
-          />
+        <HeaderRow>
+          <HeaderLeft>
+            <TitleIcon>
+              <UserOutlined style={{ fontSize: 16, color: "#1677ff" }} />
+            </TitleIcon>
+            <PageTitle>Patient Management</PageTitle>
+          </HeaderLeft>
+
+          {/* New Patient (Mobile) */}
+          <AddButtonMobile
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => showForm(null)}
+          >
+            Add Patient
+          </AddButtonMobile>
+
+          {/* New Patient (Desktop) */}
           <Button
             type="primary"
-            size="large"
             icon={<PlusOutlined />}
-            onClick={() => showModal()}
+            onClick={() => showForm()}
             style={{
-              height: "48px",
-              padding: "0 24px",
+              display: window.innerWidth >= 992 ? "flex" : "none",
               borderRadius: "8px",
-              background: "#2563eb",
+              height: "38px",
               fontWeight: 600,
-              minWidth: "140px",
+              background: "#2563eb",
             }}
           >
             Add Patient
           </Button>
-        </Space>
+
+          {/* Desktop Only controls (Optional extra space) */}
+          <style>{`
+            @media (min-width: ${bp.lg}) {
+              .desktop-search-wrapper { display: flex !important; max-width: 320px; flex: 1; }
+              .mobile-search-row { display: none !important; }
+            }
+            @media (max-width: ${bp.lg}) {
+              .desktop-search-wrapper { display: none !important; }
+              .mobile-search-row { display: flex !important; }
+            }
+          `}</style>
+
+          {/* Desktop Search (Aligned right, next to button on large screens) */}
+          <div className="desktop-search-wrapper" style={{ marginLeft: "12px" }}>
+            <SearchInput
+              placeholder="Search patients..."
+              prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+            />
+          </div>
+        </HeaderRow>
+
+        {/* Mobile View: Row 2 (Search Only) */}
+        <MobileRow className="mobile-search-row">
+          <SearchWrapper>
+            <SearchInput
+              placeholder="Search patients..."
+              prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              allowClear
+            />
+          </SearchWrapper>
+        </MobileRow>
       </PageHeader>
 
       <div
@@ -372,269 +572,339 @@ const PatientList = () => {
         />
       </div>
 
-      <Modal
-        title={
-          <span
-            style={{ color: "#1e3a8a", fontSize: "1.2rem", fontWeight: 600 }}
-          >
-            {editingPatient
-              ? "Modify Patient Profile"
-              : "New Patient Registration"}
-          </span>
-        }
-        open={isModalVisible}
-        onCancel={handleCancel}
-        footer={null}
-        destroyOnHidden
-        width={700}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          style={{ marginTop: "24px" }}
-        >
-          <Space orientation="vertical" style={{ width: "100%" }} size={16}>
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-              <Form.Item
-                name="first_name"
-                label="First Name"
-                rules={[{ required: true, message: "First name is required" }]}
-                style={{ flex: "1 1 200px", marginBottom: 0 }}
-              >
-                <Input
-                  size="large"
-                  placeholder="E.g. Gregory"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
-              <Form.Item
-                name="last_name"
-                label="Last Name"
-                style={{ flex: "1 1 200px", marginBottom: 0 }}
-              >
-                <Input
-                  size="large"
-                  placeholder="E.g. House"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
-            </div>
+      {isFormVisible && (
+        <StyledFormCard ref={formRef}>
+          <div className="card-header">
+            <h3 className="card-title">
+              {editingPatient
+                ? "Modify Patient Profile"
+                : "New Patient Registration"}
+            </h3>
+            <CloseOutlined
+              onClick={handleCancel}
+              style={{
+                cursor: "pointer",
+                color: "#64748b",
+                fontSize: "1.1rem",
+              }}
+            />
+          </div>
 
-            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-              <Form.Item
-                name="email"
-                label="Email Address"
-                rules={[
-                  { required: true, message: "Email is required" },
-                  { type: "email", message: "Enter a valid email" },
-                ]}
-                style={{ flex: "1 1 200px", marginBottom: 0 }}
+          <div className="card-content">
+            <Form form={form} layout="vertical" onFinish={onFinish}>
+              <Space
+                className="orientation-fix"
+                orientation="vertical"
+                style={{ width: "100%" }}
+                size={16}
               >
-                <Input
-                  size="large"
-                  placeholder="patient@example.com"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
+                <Row gutter={16}>
+                  <Col xs={12}>
+                    <Form.Item
+                      name="first_name"
+                      label="First Name"
+                      rules={[
+                        { required: true, message: "Required" },
+                      ]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input
+                        size="large"
+                        placeholder="Gregory"
+                        style={{ borderRadius: "6px" }}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={12}>
+                    <Form.Item
+                      name="last_name"
+                      label="Last Name"
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input
+                        size="large"
+                        placeholder="House"
+                        style={{ borderRadius: "6px" }}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={16}>
+                  <Col xs={12}>
+                    <Form.Item
+                      name="email"
+                      label="Email"
+                      rules={[
+                        { required: true, message: "Required" },
+                        { type: "email", message: "Invalid" },
+                      ]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input
+                        size="large"
+                        placeholder="Email"
+                        style={{ borderRadius: "6px" }}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={12}>
+                    <Form.Item
+                      name="phone_number"
+                      label="Phone"
+                      rules={[
+                        { required: true, message: "Required" },
+                        {
+                          pattern: /^\d{10}$/,
+                          message: "10 digits",
+                        },
+                      ]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input
+                        size="large"
+                        placeholder="Phone"
+                        style={{ borderRadius: "6px" }}
+                        maxLength={10}
+                        onKeyPress={(e) => {
+                          if (!/[0-9]/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                        }}
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </Space>
+
+              {!editingPatient && (
+                <Form.Item
+                  name="password"
+                  label="Password"
+                  rules={[{ required: true, message: "Password is required" }]}
+                  extra={
+                    <div style={{ marginTop: "8px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "4px",
+                          height: "4px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        {[1, 2, 3].map((i) => (
+                          <div
+                            key={i}
+                            style={{
+                              flex: 1,
+                              borderRadius: "2px",
+                              background:
+                                passwordValue?.length > 0
+                                  ? getPasswordStrength(passwordValue).score >= i
+                                    ? getPasswordStrength(passwordValue).color
+                                    : "#e5e7eb"
+                                  : "#e5e7eb",
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: passwordValue
+                            ? getPasswordStrength(passwordValue).color
+                            : "#94a3b8",
+                        }}
+                      >
+                        {passwordValue
+                          ? `Strength: ${
+                              getPasswordStrength(passwordValue).label
+                            }`
+                          : "Enter password"}
+                      </span>
+                    </div>
+                  }
+                >
+                  <Input.Password
+                    size="large"
+                    placeholder="Set patient portal password"
+                    style={{ borderRadius: "6px" }}
+                  />
+                </Form.Item>
+              )}
+
+              <Row gutter={16}>
+                <Col xs={12}>
+                  <Form.Item
+                    name="gender"
+                    label="Gender"
+                    rules={[{ required: true, message: "Required" }]}
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Select
+                      size="large"
+                      options={[
+                        { value: "male", label: "Male" },
+                        { value: "female", label: "Female" },
+                        { value: "other", label: "Other" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={12}>
+                  <Form.Item
+                    name="dob"
+                    label="Date of Birth"
+                    rules={[{ required: true, message: "Required" }]}
+                    style={{ marginBottom: 16 }}
+                  >
+                    <DatePicker
+                      size="large"
+                      style={{ width: "100%", borderRadius: "6px" }}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Row gutter={16}>
+                <Col xs={12}>
+                  <Form.Item
+                    name="blood_group"
+                    label="Blood Group"
+                    rules={[{ required: true, message: "Required" }]}
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Select
+                      size="large"
+                      options={[
+                        "A+",
+                        "A-",
+                        "B+",
+                        "B-",
+                        "AB+",
+                        "AB-",
+                        "O+",
+                        "O-",
+                      ].map((g) => ({ value: g, label: g }))}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={12}>
+                  <Form.Item
+                    name="status"
+                    label="Status"
+                    rules={[{ required: true, message: "Required" }]}
+                    style={{ marginBottom: 16 }}
+                  >
+                    <Select
+                      size="large"
+                      options={[
+                        { value: "Regular", label: "Regular" },
+                        { value: "Emergency", label: "Emergency" },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+
               <Form.Item
-                name="phone_number"
-                label="Phone Number"
+                name="medical_history"
+                label="Medical History / Clinical Notes"
                 rules={[
-                  { required: true, message: "Phone number is required" },
                   {
-                    pattern: /^\d{10}$/,
-                    message: "Phone number must be exactly 10 digits",
+                    required: true,
+                    message: "Please enter brief medical notes",
                   },
                 ]}
-                style={{ flex: "1 1 200px", marginBottom: 0 }}
               >
-                <Input
+                <Input.TextArea
                   size="large"
-                  placeholder="10-digit number"
+                  rows={2}
+                  placeholder="E.g. No known allergies, chronic asthma..."
                   style={{ borderRadius: "6px" }}
-                  maxLength={10}
-                  onKeyPress={(e) => {
-                    if (!/[0-9]/.test(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
                 />
               </Form.Item>
-            </div>
-          </Space>
 
-          <Form.Item
-            name="password"
-            label="Password"
-            rules={[{ required: true, message: "Password is required" }]}
-            extra={
-              <div style={{ marginTop: "8px" }}>
-                <div
+              <Form.Item
+                name="address"
+                label="Permanent Address"
+                rules={[{ required: true, message: "Address is required" }]}
+                style={{ marginBottom: "8px" }}
+              >
+                <Input.TextArea
+                  size="large"
+                  rows={2}
+                  placeholder="Full street address..."
+                  style={{ borderRadius: "6px" }}
+                />
+              </Form.Item>
+
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "32px",
+                  gap: "12px",
+                }}
+              >
+                <Button
+                  size="large"
+                  onClick={handleCancel}
+                  style={{ borderRadius: "6px", minWidth: "100px" }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  size="large"
+                  htmlType="submit"
                   style={{
-                    display: "flex",
-                    gap: "4px",
-                    height: "4px",
-                    marginBottom: "4px",
+                    borderRadius: "6px",
+                    minWidth: "150px",
+                    background: "#2563eb",
                   }}
                 >
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      style={{
-                        flex: 1,
-                        borderRadius: "2px",
-                        background:
-                          passwordValue?.length > 0
-                            ? getPasswordStrength(passwordValue).score >= i
-                              ? getPasswordStrength(passwordValue).color
-                              : "#e5e7eb"
-                            : "#e5e7eb",
-                      }}
-                    />
-                  ))}
-                </div>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: passwordValue
-                      ? getPasswordStrength(passwordValue).color
-                      : "#94a3b8",
-                  }}
-                >
-                  {passwordValue
-                    ? `Strength: ${getPasswordStrength(passwordValue).label}`
-                    : "Enter password"}
-                </span>
+                  {editingPatient ? "Save Changes" : "Register Patient"}
+                </Button>
               </div>
-            }
-          >
-            <Input.Password
-              size="large"
-              placeholder="Set patient portal password"
-              style={{ borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          <Space style={{ display: "flex", width: "100%" }}>
-            <Form.Item
-              name="gender"
-              label="Gender"
-              rules={[{ required: true, message: "Select gender" }]}
-              style={{ flex: 1 }}
-            >
-              <Select
-                size="large"
-                options={[
-                  { value: "male", label: "Male" },
-                  { value: "female", label: "Female" },
-                  { value: "other", label: "Other" },
-                ]}
-              />
-            </Form.Item>
-            <Form.Item
-              name="dob"
-              label="Date of Birth"
-              rules={[{ required: true, message: "DOB is required" }]}
-              style={{ flex: 1 }}
-            >
-              <DatePicker
-                size="large"
-                style={{ width: "100%", borderRadius: "6px" }}
-              />
-            </Form.Item>
-          </Space>
-
-          <Space style={{ display: "flex", width: "100%" }}>
-            <Form.Item
-              name="blood_group"
-              label="Blood Group"
-              rules={[{ required: true, message: "Select blood group" }]}
-              style={{ flex: 1 }}
-            >
-              <Select
-                size="large"
-                options={["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
-                  (g) => ({ value: g, label: g }),
-                )}
-              />
-            </Form.Item>
-            <Form.Item
-              name="status"
-              label="Status Category"
-              rules={[{ required: true, message: "Select status" }]}
-              style={{ flex: 1 }}
-            >
-              <Select
-                size="large"
-                options={[
-                  { value: "Regular", label: "Regular" },
-                  { value: "Emergency", label: "Emergency" },
-                ]}
-              />
-            </Form.Item>
-          </Space>
-
-          <Form.Item
-            name="medical_history"
-            label="Medical History / Clinical Notes"
-            rules={[
-              { required: true, message: "Please enter brief medical notes" },
-            ]}
-          >
-            <Input.TextArea
-              size="large"
-              rows={2}
-              placeholder="E.g. No known allergies, chronic asthma..."
-              style={{ borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="address"
-            label="Permanent Address"
-            rules={[{ required: true, message: "Address is required" }]}
-            style={{ marginBottom: "8px" }}
-          >
-            <Input.TextArea
-              size="large"
-              rows={2}
-              placeholder="Full street address..."
-              style={{ borderRadius: "6px" }}
-            />
-          </Form.Item>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: "32px",
-              gap: "12px",
-            }}
-          >
-            <Button
-              size="large"
-              onClick={handleCancel}
-              style={{ borderRadius: "6px", minWidth: "100px" }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="primary"
-              size="large"
-              htmlType="submit"
-              style={{
-                borderRadius: "6px",
-                minWidth: "150px",
-                background: "#2563eb",
-              }}
-            >
-              {editingPatient ? "Save Changes" : "Register Patient"}
-            </Button>
+            </Form>
           </div>
-        </Form>
-      </Modal>
-    </div>
+        </StyledFormCard>
+      )}
+
+      <Drawer
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <TitleIcon style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#f0f9ff" }}>
+              <HistoryOutlined style={{ fontSize: "16px", color: "#0369a1" }} />
+            </TitleIcon>
+            <span style={{ fontSize: "16px", fontWeight: 700, color: "#1e3a5f" }}>
+              Patient Medical History
+            </span>
+          </div>
+        }
+        placement="right"
+        onClose={closeTimeline}
+        open={isTimelineVisible}
+        extra={
+          <Button type="text" onClick={closeTimeline} icon={<CloseOutlined />} />
+        }
+        closable={false}
+        styles={{
+          body: { background: "#f8fafc", padding: "20px" },
+          header: { borderBottom: "1px solid #eef2f6", padding: "16px 24px" },
+          wrapper: { width: window.innerWidth > 576 ? 500 : "100%" },
+        }}
+      >
+        <PatientTimeline
+          patient={selectedPatientForTimeline}
+          appointments={apptList}
+          prescriptions={rxList}
+          invoices={billingList}
+          loading={apptLoading || rxLoading || billingLoading}
+        />
+      </Drawer>
+    </PageWrapper>
   );
 };
 

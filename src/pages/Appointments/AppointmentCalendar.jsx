@@ -1,12 +1,34 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import styled from "styled-components";
-import { Calendar, Spin, Tag, Popover, Badge } from "antd";
-import { CalendarOutlined, UnorderedListOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
+import {
+  CalendarOutlined,
+  UnorderedListOutlined,
+  LeftOutlined,
+  RightOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
+import { 
+  Calendar, 
+  Spin, 
+  Tag, 
+  Popover, 
+  Badge, 
+  Input, 
+  Select, 
+  Button, 
+  Space 
+} from "antd";
 
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useCalendar from "../../modules/calendar/hooks/useCalendar";
+import useAppointments from "../../modules/appointments/hooks/useAppointments";
 import AppointmentList from "./AppointmentList";
+
+const { Option } = Select;
 
 // ─── Breakpoints ──────────────────────────────────────────────────────────────
 const bp = {
@@ -28,18 +50,63 @@ const PageWrapper = styled.div`
 
 const PageHeader = styled.div`
   display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+
+  @media (min-width: ${bp.md}) {
+    border-radius: 14px;
+  }
+`;
+
+const HeaderRow = styled.div`
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  background: #ffffff;
-  border-radius: 12px;
   padding: 12px 16px;
-  box-shadow: 0 2px 10px rgba(30, 58, 95, 0.07);
-  border: 1px solid #eef2f8;
-  @media (min-width: ${bp.md}) {
-    border-radius: 14px;
+  
+  @media (min-width: ${bp.lg}) {
     padding: 16px 22px;
+    flex-wrap: nowrap;
+    border-bottom: 1px solid #f1f5f9;
+  }
+`;
+
+const MobileRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  
+  @media (min-width: ${bp.lg}) {
+    display: none; // Hidden on desktop, moved into HeaderRow
+  }
+`;
+
+const SearchWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+  @media (min-width: ${bp.md}) {
+    max-width: 320px;
+  }
+`;
+
+const SearchInput = styled(Input)`
+  border-radius: 8px;
+  width: 100%;
+`;
+
+const StatusSelect = styled(Select)`
+  min-width: 140px;
+  .ant-select-selector {
+    border-radius: 8px !important;
   }
 `;
 
@@ -199,8 +266,8 @@ const CalendarCard = styled.div`
     box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1) !important;
   }
 
-  /* Hide the Month/Year radio toggle (keep only selects) */
-  .ant-picker-calendar-header .ant-radio-group {
+  /* Hide the default Ant Design header completely — we have a custom one */
+  .ant-picker-calendar-header {
     display: none !important;
   }
 
@@ -230,7 +297,7 @@ const CalendarCard = styled.div`
     margin: 1px;
     transition: background 0.14s;
     border: 1px solid transparent;
-    min-height: 52px;
+    min-height: 42px; /* Reduced for XS */
     @media (min-width: ${bp.sm}) {
       min-height: 64px;
       border-radius: 7px;
@@ -255,11 +322,11 @@ const CalendarCard = styled.div`
     background: #f0f5ff;
   }
   .ant-picker-calendar-date-value {
-    font-size: 11px;
+    font-size: 10px; /* Scaled down for mobile */
     font-weight: 500;
     color: #374151;
     line-height: 1.4;
-    padding: 3px 4px;
+    padding: 2px 4px;
     @media (min-width: ${bp.md}) {
       font-size: 13px;
       padding: 4px 6px;
@@ -267,7 +334,7 @@ const CalendarCard = styled.div`
   }
   .ant-picker-calendar-date-content {
     height: auto !important;
-    min-height: 28px;
+    min-height: 20px; /* Reduced for XS */
     overflow: visible;
     @media (min-width: ${bp.md}) { min-height: 44px; }
   }
@@ -287,11 +354,14 @@ const CalTopBar = styled.div`
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 12px 14px 10px;
+  gap: 8px; /* Slightly reduced gap */
+  padding: 10px 12px; /* Slightly more compact padding for mobile */
   border-bottom: 1px solid #eef2f8;
   background: #fafbfe;
-  @media (min-width: ${bp.md}) { padding: 14px 20px 12px; }
+  @media (min-width: ${bp.md}) { 
+    padding: 14px 20px 12px;
+    gap: 10px;
+  }
 `;
 
 const LegendRow = styled.div`
@@ -305,7 +375,7 @@ const LegendItem = styled.div`
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: 10px; /* Reduced for XS */
   font-weight: 500;
   color: #555;
   @media (min-width: ${bp.md}) {
@@ -349,10 +419,10 @@ const NavArrowBtn = styled.button`
 `;
 
 const MonthLabel = styled.div`
-  font-size: 13px;
+  font-size: 12px; /* Scaled down for XS */
   font-weight: 700;
   color: #1e3a5f;
-  min-width: 100px;
+  min-width: 90px;
   text-align: center;
   letter-spacing: -0.2px;
   @media (min-width: ${bp.md}) {
@@ -393,12 +463,13 @@ const EventBadgeWrapper = styled.div`
   margin-bottom: 2px;
   cursor: pointer;
   .ant-badge-status-dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     flex-shrink: 0;
     @media (min-width: ${bp.md}) { width: 6px; height: 6px; }
   }
   .ant-badge-status-text {
+    display: none; /* Hidden on XS by default */
     font-size: 9px;
     font-weight: 500;
     margin-left: 4px;
@@ -406,9 +477,11 @@ const EventBadgeWrapper = styled.div`
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    display: inline-block;
     max-width: 80%;
     vertical-align: middle;
+    @media (min-width: ${bp.sm}) {
+      display: inline-block;
+    }
     @media (min-width: ${bp.md}) {
       font-size: 10.5px;
       max-width: 88%;
@@ -441,7 +514,7 @@ const TooltipContent = styled.div`
 const TooltipApptBlock = styled.div`
   padding-bottom: 10px;
   margin-bottom: 8px;
-  border-bottom: ${({ last }) => (last ? "none" : "1px solid #f0f0f0")};
+  border-bottom: ${({ $last }) => ($last ? "none" : "1px solid #f0f0f0")};
 `;
 
 const TooltipRow = styled.div`
@@ -521,8 +594,25 @@ const AppointmentCalendar = () => {
     fetchByDate,
   } = useCalendar();
 
-  const [viewMode, setViewMode]       = useState("list");
+  const [viewMode, setViewMode] = useState("list");
   const [currentMonth, setCurrentMonth] = useState(dayjs());
+  
+  // Unified Control State
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const listRef = useRef(null);
+  const { fetchAll, loading } = useAppointments();
+
+  const handleRefresh = () => {
+    fetchAll();
+  };
+
+  const handleNewAppointment = () => {
+    if (listRef.current?.openCreate) {
+      listRef.current.openCreate();
+    }
+  };
 
   useEffect(() => {
     if (viewMode === "calendar") {
@@ -546,11 +636,26 @@ const AppointmentCalendar = () => {
   const rangeDict = useMemo(() => {
     const dict = {};
     if (!Array.isArray(rangeData)) return dict;
+    
+    const q = (searchText || "").toLowerCase();
+    const sFilter = (statusFilter || "all").toLowerCase();
+
     rangeData.forEach((dayGroup) => {
-      dict[dayGroup.date] = dayGroup.appointments || [];
+      // Apply Search and Status filters to each day's appointments
+      const filtered = (dayGroup.appointments || []).filter(appt => {
+        // 1. Status Filter
+        const statusMatch = sFilter === "all" || (appt.status || "").toLowerCase() === sFilter;
+        
+        // 2. Search Filter (Patient Name)
+        const nameMatch = !q || (appt.patient || "").toLowerCase().includes(q);
+
+        return statusMatch && nameMatch;
+      });
+
+      dict[dayGroup.date] = filtered;
     });
     return dict;
-  }, [rangeData]);
+  }, [rangeData, searchText, statusFilter]);
 
   const dateCellRender = (value) => {
     const dateStr         = value.format("YYYY-MM-DD");
@@ -580,7 +685,7 @@ const AppointmentCalendar = () => {
                 {tooltipData.map((appt, idx) => (
                   <TooltipApptBlock
                     key={idx}
-                    last={idx === tooltipData.length - 1}
+                    $last={idx === tooltipData.length - 1}
                   >
                     <TooltipRow>
                       <TimeLabel>{appt.time}</TimeLabel>
@@ -649,41 +754,171 @@ const AppointmentCalendar = () => {
 
   return (
     <PageWrapper>
-      {/* ── Page Header ── */}
+      {/* ── Page Header (Unified Controls) ── */}
       <PageHeader>
-        <HeaderLeft>
-          <TitleIcon>
-            {viewMode === "list"
-              ? <UnorderedListOutlined style={{ fontSize: 16, color: "#1677ff" }} />
-              : <CalendarOutlined     style={{ fontSize: 16, color: "#1677ff" }} />}
-          </TitleIcon>
-          <PageTitle>Appointment Management</PageTitle>
-        </HeaderLeft>
+           <HeaderRow>
+          <HeaderLeft>
+            <TitleIcon>
+              {viewMode === "list" ? (
+                <UnorderedListOutlined
+                  style={{ fontSize: 16, color: "#1677ff" }}
+                />
+              ) : (
+                <CalendarOutlined style={{ fontSize: 16, color: "#1677ff" }} />
+              )}
+            </TitleIcon>
+            <PageTitle>Appointment Management</PageTitle>
+          </HeaderLeft>
 
-        <ViewToggle>
-          <ToggleBtn
-            $active={viewMode === "list"}
-            onClick={() => setViewMode("list")}
+          {/* Desktop Only: Inline Controls */}
+          <Space size="middle" className="desktop-only" style={{ display: "none" }}>
+            <SearchWrapper>
+              <SearchInput
+                placeholder="Search..."
+                prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                allowClear
+              />
+            </SearchWrapper>
+            
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <FilterOutlined style={{ color: "#1677ff" }} />
+              <StatusSelect
+                value={statusFilter}
+                onChange={setStatusFilter}
+                placeholder="Status"
+                style={{ width: 140 }}
+              >
+                <Select.Option value="all">All Status</Select.Option>
+                <Select.Option value="scheduled">Scheduled</Select.Option>
+                <Select.Option value="completed">Completed</Select.Option>
+                <Select.Option value="cancelled">Cancelled</Select.Option>
+              </StatusSelect>
+            </div>
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
+              disabled={loading}
+              style={{ borderRadius: "8px" }}
+            />
+
+            <ViewToggle>
+              <ToggleBtn
+                $active={viewMode === "list"}
+                onClick={() => setViewMode("list")}
+              >
+                <UnorderedListOutlined />
+              </ToggleBtn>
+              <ToggleBtn
+                $active={viewMode === "calendar"}
+                onClick={() => setViewMode("calendar")}
+              >
+                <CalendarOutlined />
+              </ToggleBtn>
+            </ViewToggle>
+
+            {role !== "PATIENT" && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleNewAppointment}
+                style={{ borderRadius: "8px", height: "38px", fontWeight: 600 }}
+              >
+                New Appointment
+              </Button>
+            )}
+          </Space>
+          
+          <style>{`
+            @media (min-width: ${bp.lg}) {
+              .desktop-only { display: flex !important; }
+            }
+          `}</style>
+        </HeaderRow>
+
+        {/* Mobile View: Row 2 (Actions) */}
+        <MobileRow>
+          <ViewToggle>
+            <ToggleBtn
+              $active={viewMode === "list"}
+              onClick={() => setViewMode("list")}
+            >
+              <UnorderedListOutlined />
+              <span className="btn-text">List</span>
+            </ToggleBtn>
+            <ToggleBtn
+              $active={viewMode === "calendar"}
+              onClick={() => setViewMode("calendar")}
+            >
+              <CalendarOutlined />
+              <span className="btn-text">Cal</span>
+            </ToggleBtn>
+          </ViewToggle>
+
+          {role !== "PATIENT" && (
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleNewAppointment}
+              style={{ borderRadius: "8px", height: "36px", fontWeight: 600 }}
+            >
+              New Appt
+            </Button>
+          )}
+        </MobileRow>
+
+        {/* Mobile View: Row 3 (Search) */}
+        <MobileRow>
+          <SearchWrapper>
+            <SearchInput
+              placeholder="Search by Doctor or Patient..."
+              prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+            />
+          </SearchWrapper>
+        </MobileRow>
+
+        {/* Mobile View: Row 4 (Filter + Refresh) */}
+        <MobileRow style={{ backgroundColor: "#fbfcfe" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+            <FilterOutlined style={{ color: "#1677ff" }} />
+            <StatusSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ flex: 1 }}
+            >
+              <Select.Option value="all">All Status</Select.Option>
+              <Select.Option value="scheduled">Scheduled</Select.Option>
+              <Select.Option value="completed">Completed</Select.Option>
+              <Select.Option value="cancelled">Cancelled</Select.Option>
+            </StatusSelect>
+          </div>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            disabled={loading}
+            style={{ borderRadius: "8px" }}
           >
-            <UnorderedListOutlined style={{ fontSize: 12 }} />
-            <span className="btn-text">Appointments</span>
-          </ToggleBtn>
-          <ToggleBtn
-            $active={viewMode === "calendar"}
-            onClick={() => setViewMode("calendar")}
-          >
-            <CalendarOutlined style={{ fontSize: 12 }} />
-            <span className="btn-text">Calendar</span>
-          </ToggleBtn>
-        </ViewToggle>
+            Refresh
+          </Button>
+        </MobileRow>
       </PageHeader>
 
       {/* ── Content ── */}
-      {viewMode === "list" ? (
-        <AppointmentList />
-      ) : (
-        <CalendarCard>
+      <div style={{ display: viewMode === "list" ? "block" : "none" }}>
+        <AppointmentList 
+          ref={listRef}
+          searchText={searchText}
+          statusFilter={statusFilter}
+        />
+      </div>
 
+      {viewMode === "calendar" && (
+        <CalendarCard>
           {/* Row 1 — Legend + ‹ Month Year › + Today */}
           <CalTopBar>
             <LegendRow>
@@ -716,7 +951,7 @@ const AppointmentCalendar = () => {
             <Spin spinning={rangeLoading}>
               <Calendar
                 cellRender={dateCellRender}
-                onPanelChange={(value) => setCurrentMonth(value)}
+                headerRender={() => null} // Default header hidden in CSS, but this is an extra layer of safety
                 value={currentMonth}
                 onChange={setCurrentMonth}
               />

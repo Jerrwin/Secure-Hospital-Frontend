@@ -22,6 +22,8 @@ const PrescriptionPage = lazy(
 );
 const StaffManagement = lazy(() => import("../pages/Staff/StaffManagement"));
 const InvoicePage = lazy(() => import("../pages/Billing/InvoicePage"));
+const ProfilePage = lazy(() => import("../pages/Profile/ProfilePage"));
+const SettingsPage = lazy(() => import("../pages/Settings/SecuritySettings")); // Using SecuritySettings as placeholder for now
 
 /**
  * Global Loading Fallback for Lazy Components
@@ -131,6 +133,9 @@ const AppRouter = ({ isSubdomain }) => {
               </RoleBasedRoute>
             }
           />
+
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         {/* Fallback to root */}

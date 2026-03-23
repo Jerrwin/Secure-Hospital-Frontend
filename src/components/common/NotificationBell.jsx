@@ -87,7 +87,7 @@ const NotificationBell = () => {
   };
 
   const content = (
-    <div style={{ width: 340, maxHeight: 420, overflowY: "auto" }}>
+    <div style={{ width: "100%", maxWidth: 340, minWidth: 280, maxHeight: 420, overflowY: "auto" }}>
       <NotifHeader>
         <Text strong style={{ fontSize: 15 }}>Notifications</Text>
         {unreadCount > 0 && (

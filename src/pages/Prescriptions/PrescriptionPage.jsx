@@ -51,25 +51,98 @@ const PageWrap = styled.div`
   font-family: "DM Sans", sans-serif;
 `;
 
-const PageHeader = styled.div`
+const bp = {
+  xs: "480px",
+  sm: "576px",
+  md: "768px",
+  lg: "992px",
+  xl: "1200px",
+};
+
+const HeaderCard = styled.div`
+  background: #ffffff;
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  margin-bottom: 20px;
+  overflow: hidden;
+`;
+
+const HeaderRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+
+  @media (min-width: ${bp.lg}) {
+    padding: 16px 22px;
+    flex-wrap: nowrap;
+    border-bottom: 1px solid #f1f5f9;
+  }
 `;
 
-const PageTitle = styled.h1`
-  font-family: "Sora", sans-serif;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: ${C.secondary};
-  margin: 0;
-  letter-spacing: -0.02em;
+const MobileRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #f1f5f9;
+
+  @media (min-width: ${bp.lg}) {
+    display: none; // Hidden on desktop, moved into HeaderRow
+  }
+`;
+
+const HeaderLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const TitleIcon = styled.div`
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #e8f0fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  @media (min-width: ${bp.md}) {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+`;
+
+const PageTitle = styled.h2`
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e3a5f;
+  margin: 0;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @media (min-width: ${bp.sm}) {
+    font-size: 17px;
+  }
+  @media (min-width: ${bp.md}) {
+    font-size: 18px;
+  }
+`;
+
+const SearchWrapper = styled.div`
+  flex: 1;
+  min-width: 0;
+  @media (min-width: ${bp.lg}) {
+    max-width: 320px;
+  }
 `;
 
 const StyledCard = styled(Card)`
@@ -99,10 +172,35 @@ const MedRow = styled.div`
 // (MedGrid moved to PrescriptionList.jsx)
 
 const SearchInput = styled(Input)`
-  width: 300px;
   border-radius: 8px;
-  @media (max-width: 576px) {
-    width: 100%;
+  width: 100%;
+`;
+
+const AddButtonMobile = styled(Button)`
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: ${C.primary} !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  padding: 0 12px !important;
+  height: 36px !important;
+  font-size: 13px !important;
+  color: #ffffff !important;
+  
+  @media (min-width: ${bp.lg}) {
+    display: none !important;
+  }
+`;
+
+const DesktopActions = styled.div`
+  display: none;
+  align-items: center;
+  gap: 16px;
+  
+  @media (min-width: ${bp.lg}) {
+    display: flex;
   }
 `;
 
@@ -357,18 +455,39 @@ const PrescriptionPage = () => {
 
   return (
     <PageWrap>
-      <PageHeader>
-        <PageTitle>
-          <FileTextOutlined style={{ color: C.primary }} />{" "}
-          {roleLabel[userRole] || "Prescriptions"}
-        </PageTitle>
+      <HeaderCard>
+        <HeaderRow>
+          <HeaderLeft>
+            <TitleIcon>
+              <FileTextOutlined style={{ fontSize: "20px", color: C.primary }} />
+            </TitleIcon>
+            <PageTitle>{roleLabel[userRole] || "Prescriptions"}</PageTitle>
+          </HeaderLeft>
 
-        <Space wrap size="middle">
-          {/* Status Filter - Only for Pharmacist and Doctor (Patient has cards) */}
-          {userRole !== "PATIENT" && (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <FilterOutlined style={{ color: C.primary }} />
-              <span style={{ fontWeight: 500, color: C.text }}>Status:</span>
+          {/* New Prescription (Mobile) */}
+          {["DOCTOR", "PROVIDER", "ADMIN"].includes(userRole) && (
+            <AddButtonMobile
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => handleOpen(null)}
+            >
+              New Prescription
+            </AddButtonMobile>
+          )}
+
+          {/* Desktop Controls (Merged row) */}
+          <DesktopActions>
+            <SearchWrapper>
+              <SearchInput
+                placeholder={userRole === "PATIENT" ? "Search meds..." : "Search patient, meds..."}
+                prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                allowClear
+              />
+            </SearchWrapper>
+
+            {userRole !== "PATIENT" && (
               <Select
                 value={statusFilter}
                 onChange={setStatusFilter}
@@ -380,43 +499,63 @@ const PrescriptionPage = () => {
                   { value: "dispensed", label: "Dispensed" },
                 ]}
               />
-            </div>
-          )}
+            )}
 
-          <SearchInput
-            placeholder={
-              userRole === "PATIENT"
-                ? "Search by Doctor or Medicine..."
-                : "Search by Patient, Doctor or Medicine..."
-            }
-            prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
-            value={searchText}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSearchText(val);
-              if (!val) setDebouncedSearch("");
-            }}
-            allowClear
-          />
-
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => dispatch(fetchRequest())}
-            loading={loading}
-          />
-
-          {["DOCTOR", "PROVIDER", "ADMIN"].includes(userRole) && (
             <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => handleOpen(null)}
-              style={{ background: C.primary, border: "none" }}
-            >
-              New Prescription
-            </Button>
-          )}
-        </Space>
-      </PageHeader>
+              icon={<ReloadOutlined />}
+              onClick={() => dispatch(fetchRequest())}
+              loading={loading}
+            />
+
+            {["DOCTOR", "PROVIDER", "ADMIN"].includes(userRole) && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => handleOpen(null)}
+                style={{ background: C.primary, border: "none" }}
+              >
+                New Prescription
+              </Button>
+            )}
+          </DesktopActions>
+        </HeaderRow>
+
+        {/* Mobile Controls (Second row) */}
+        <MobileRow>
+          <div style={{ display: "flex", gap: "8px", width: "100%" }}>
+            <SearchWrapper>
+              <SearchInput
+                placeholder="Search..."
+                prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                allowClear
+              />
+            </SearchWrapper>
+            
+            {userRole !== "PATIENT" && (
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: 120 }}
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "created", label: "Recent" },
+                  { value: "verified", label: "Verified" },
+                  { value: "dispensed", label: "Done" },
+                ]}
+              />
+            )}
+            
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => dispatch(fetchRequest())}
+              loading={loading}
+              style={{ flexShrink: 0 }}
+            />
+          </div>
+        </MobileRow>
+      </HeaderCard>
 
       <PrescriptionList
         prescriptions={filteredList}

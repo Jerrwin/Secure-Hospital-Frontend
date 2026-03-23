@@ -32,6 +32,9 @@ const StyledContent = styled(Content)`
     margin: 12px 12px 0;
     padding: 16px;
   }
+
+  display: flex;
+  flex-direction: column;
 `;
 
 const DashboardLayout = () => {
@@ -80,14 +83,16 @@ const DashboardLayout = () => {
           open={mobileDrawerOpen}
           styles={{
             body: { padding: 0, background: '#1e3a8a' },
-            header: { borderBottom: '1px solid rgba(255,255,255,0.1)' }
+            header: { borderBottom: '1px solid rgba(255,255,255,0.1)' },
+            wrapper: { width: 280 }
           }}
-          width={280}
         >
-          <div style={{ background: '#1e3a8a', height: '100%' }}>
+          <div style={{ background: '#1e3a8a', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <SidebarContent 
               role={currentUserRole}
+              user={safeUser}
               currentPath={location.pathname}
+              collapsed={false}
               onMobileClick={closeMobileDrawer}
             />
           </div>
@@ -100,21 +105,23 @@ const DashboardLayout = () => {
             flexDirection: "column",
           }}
         >
-          <StyledContent>
-            <ErrorBoundary key={location.key}>
-              <Suspense
-                fallback={
-                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "100px 0" }}>
-                    <Spin size="large" description="Loading Page..." />
-                  </div>
-                }
-              >
-                <Outlet />
-              </Suspense>
-            </ErrorBoundary>
-          </StyledContent>
-          <Footer />
-        </Layout>
+            <StyledContent>
+              <ErrorBoundary key={location.key}>
+                <Suspense
+                  fallback={
+                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "100px 0" }}>
+                      <Spin size="large" description="Loading Page..." />
+                    </div>
+                  }
+                >
+                  <Outlet />
+                </Suspense>
+              </ErrorBoundary>
+              <div style={{ marginTop: 'auto' }}>
+                <Footer />
+              </div>
+            </StyledContent>
+          </Layout>
       </Layout>
     </MainLayout>
   );
