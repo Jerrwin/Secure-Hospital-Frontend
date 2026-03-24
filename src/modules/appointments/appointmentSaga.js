@@ -37,11 +37,15 @@ function* fetchAppointmentsSaga(action) {
       yield put(fetchAppointmentsFailure(res.data.message || "Failed to fetch appointments"));
     }
   } catch (error) {
-    yield put(
-      fetchAppointmentsFailure(
-        error.response?.data?.message || "Failed to fetch appointments"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchAppointmentsFailure(null));
+    } else {
+      yield put(
+        fetchAppointmentsFailure(
+          error.response?.data?.message || "Failed to fetch appointments"
+        )
+      );
+    }
   }
 }
 
@@ -55,11 +59,15 @@ function* fetchUpcomingSaga() {
       yield put(fetchUpcomingFailure(res.data.message || "Failed to fetch upcoming"));
     }
   } catch (error) {
-    yield put(
-      fetchUpcomingFailure(
-        error.response?.data?.message || "Failed to fetch upcoming appointments"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchUpcomingFailure(null));
+    } else {
+      yield put(
+        fetchUpcomingFailure(
+          error.response?.data?.message || "Failed to fetch upcoming appointments"
+        )
+      );
+    }
   }
 }
 
@@ -73,11 +81,15 @@ function* fetchAppointmentByIdSaga(action) {
       yield put(fetchAppointmentByIdFailure(res.data.message || "Not found"));
     }
   } catch (error) {
-    yield put(
-      fetchAppointmentByIdFailure(
-        error.response?.data?.message || "Failed to fetch appointment"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchAppointmentByIdFailure(null));
+    } else {
+      yield put(
+        fetchAppointmentByIdFailure(
+          error.response?.data?.message || "Failed to fetch appointment"
+        )
+      );
+    }
   }
 }
 
@@ -91,11 +103,15 @@ function* createAppointmentSaga(action) {
       yield put(createAppointmentFailure(res.data.message || "Failed to create"));
     }
   } catch (error) {
-    yield put(
-      createAppointmentFailure(
-        error.response?.data?.message || "Failed to create appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(createAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        createAppointmentFailure(
+          error.response?.data?.message || "Failed to create appointment"
+        )
+      );
+    }
   }
 }
 
@@ -112,11 +128,15 @@ function* updateAppointmentSaga(action) {
       yield put(updateAppointmentFailure(res.data.message || "Update failed"));
     }
   } catch (error) {
-    yield put(
-      updateAppointmentFailure(
-        error.response?.data?.message || "Failed to update appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(updateAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        updateAppointmentFailure(
+          error.response?.data?.message || "Failed to update appointment"
+        )
+      );
+    }
   }
 }
 
@@ -131,11 +151,15 @@ function* cancelAppointmentSaga(action) {
       yield put(cancelAppointmentFailure(res.data.message || "Cancel failed"));
     }
   } catch (error) {
-    yield put(
-      cancelAppointmentFailure(
-        error.response?.data?.message || "Failed to cancel appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(cancelAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        cancelAppointmentFailure(
+          error.response?.data?.message || "Failed to cancel appointment"
+        )
+      );
+    }
   }
 }
 
@@ -150,11 +174,15 @@ function* completeAppointmentSaga(action) {
       yield put(completeAppointmentFailure(res.data.message || "Complete failed"));
     }
   } catch (error) {
-    yield put(
-      completeAppointmentFailure(
-        error.response?.data?.message || "Failed to complete appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(completeAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        completeAppointmentFailure(
+          error.response?.data?.message || "Failed to complete appointment"
+        )
+      );
+    }
   }
 }
 
@@ -234,11 +262,15 @@ function* fetchDropdownDataSaga() {
     yield put(fetchDropdownDataSuccess({ patients, staff }));
 
   } catch (error) {
-    yield put(
-      fetchDropdownDataFailure(
-        error.response?.data?.message || "Failed to fetch dropdown data"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchDropdownDataFailure(null));
+    } else {
+      yield put(
+        fetchDropdownDataFailure(
+          error.response?.data?.message || "Failed to fetch dropdown data"
+        )
+      );
+    }
   }
 }
 // ── ROOT APPOINTMENT SAGA ──────────────────────────────────────────────────────

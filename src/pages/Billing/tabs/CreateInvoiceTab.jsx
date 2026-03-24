@@ -55,7 +55,9 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
 
   useEffect(() => {
     if (submitError) {
-      message.error(submitError);
+      if (submitError !== "OFFLINE_QUEUED") {
+        message.error(submitError);
+      }
       clearBillingError();
     }
     
@@ -96,13 +98,10 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
   };
 
   const handleFormSubmit = (values) => {
-    const appId = String(selectedAppointment.id);
     createInvoice({
       appointment_id: selectedAppointment.id,
       amount: values.amount,
     });
-    // Optimistic local update
-    setLocalBilledIds(prev => new Set(prev).add(appId));
     setIsModalOpen(false);
     form.resetFields();
   };

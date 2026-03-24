@@ -47,11 +47,15 @@ function* fetchDashboardDataSaga(action) {
       })
     );
   } catch (error) {
-    yield put(
-      fetchDashboardDataFailure(
-        error.response?.data?.message || "Failed to fetch dashboard data"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchDashboardDataFailure(null));
+    } else {
+      yield put(
+        fetchDashboardDataFailure(
+          error.response?.data?.message || "Failed to fetch dashboard data"
+        )
+      );
+    }
   }
 }
 

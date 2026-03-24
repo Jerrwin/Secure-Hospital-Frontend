@@ -139,6 +139,7 @@ const AppointmentList = forwardRef(
 
     const [modalOpen, setModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [isSubmittingLocal, setIsSubmittingLocal] = useState(false);
 
     // Chat Drawer State
     const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
@@ -208,6 +209,34 @@ const AppointmentList = forwardRef(
       }, 500);
       return () => clearTimeout(timer);
     }, [propSearchText]);
+
+    const { clearError, submitError } = useAppointments();
+
+    useEffect(() => {
+      if (submitError) {
+        if (submitError === "OFFLINE_QUEUED") {
+          setModalOpen(false);
+          form.resetFields();
+          setEditingId(null);
+        } else {
+          message.error(submitError);
+        }
+        clearError();
+        setIsSubmittingLocal(false);
+      }
+    }, [submitError, clearError, form]);
+
+    useEffect(() => {
+      if (isSubmittingLocal && !submitting && !submitError) {
+        message.success(
+          editingId ? "Appointment updated successfully" : "Appointment scheduled successfully"
+        );
+        setIsSubmittingLocal(false);
+        setModalOpen(false);
+        form.resetFields();
+        setEditingId(null);
+      }
+    }, [isSubmittingLocal, submitting, submitError, editingId, form]);
 
     // ── Initial load ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -349,15 +378,12 @@ const AppointmentList = forwardRef(
         );
       }
 
+      setIsSubmittingLocal(true);
       if (editingId) {
         update(editingId, payload);
       } else {
         create(payload);
       }
-
-      setModalOpen(false);
-      form.resetFields();
-      setEditingId(null);
     };
 
     // ─── Table Columns ────────────────────────────────────────────────────────

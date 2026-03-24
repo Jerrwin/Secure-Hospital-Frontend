@@ -284,6 +284,7 @@ const PrescriptionPage = () => {
   const [searchText, setSearchText] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form] = Form.useForm();
 
@@ -337,10 +338,23 @@ const PrescriptionPage = () => {
 
   useEffect(() => {
     if (error) {
-      message.error(error);
+      if (error === "OFFLINE_QUEUED") {
+        handleClose();
+      } else {
+        message.error(error);
+      }
       dispatch(clearError());
+      setIsSubmitting(false);
     }
-  }, [error, dispatch]);
+  }, [error, dispatch, handleClose]);
+
+  useEffect(() => {
+    if (isSubmitting && !submitting && !error) {
+      message.success(editTarget ? "Prescription updated!" : "Prescription created!");
+      setIsSubmitting(false);
+      handleClose();
+    }
+  }, [isSubmitting, submitting, error, editTarget, handleClose]);
 
   const handleOpen = useCallback(
     (record = null) => {
@@ -368,17 +382,14 @@ const PrescriptionPage = () => {
   const handleSubmit = useCallback(async () => {
     try {
       const values = await form.validateFields();
+      setIsSubmitting(true);
       if (editTarget) {
         dispatch(updateRequest({ id: editTarget.id, data: values }));
       } else {
         dispatch(createRequest(values));
       }
-      handleClose();
-      message.success(
-        editTarget ? "Prescription updated!" : "Prescription created!",
-      );
     } catch (e) {}
-  }, [form, editTarget, dispatch, handleClose]);
+  }, [form, editTarget, dispatch]);
 
   const handleStatusChange = useCallback(
     (id, type) => {

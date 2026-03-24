@@ -60,7 +60,6 @@ const HeaderCard = styled.div`
   border: 1px solid ${(props) => props.theme.border};
   border-radius: ${(props) => props.theme.borderRadius.lg};
   box-shadow: ${(props) => props.theme.shadow};
-  margin-bottom: 24px;
   overflow: hidden;
 
   @media (min-width: ${(props) => props.theme.breakpoints.md}) {
@@ -224,11 +223,17 @@ const PatientList = () => {
 
   useEffect(() => {
     if (error) {
-      message.error(error);
+      if (error === "OFFLINE_QUEUED") {
+        setIsFormVisible(false);
+        setEditingPatient(null);
+        form.resetFields();
+      } else {
+        message.error(error);
+      }
       clearError();
       setIsSubmitting(false);
     }
-  }, [error, clearError]);
+  }, [error, clearError, form]);
 
   useEffect(() => {
     if (isSubmitting && !loading && !error) {
@@ -256,27 +261,26 @@ const PatientList = () => {
         dob,
         gender,
         blood_group,
-        status,
         medical_history,
         address,
         password,
       } = values;
 
-      const requiredFilled = 
-        first_name && 
-        email && 
-        phone_number && 
+      const requiredFilled =
+        first_name &&
+        email &&
+        phone_number &&
         phone_number.length === 10 &&
-        dob && 
-        gender && 
-        blood_group && 
-        status && 
-        medical_history && 
+        dob &&
+        gender &&
+        blood_group &&
+        medical_history &&
         address;
 
       // Password Complexity: At least 8 chars, 1 Uppercase, 1 Special
       const passRegex = /^(?=.*[A-Z])(?=.*[\W_]).{8,}$/;
-      const isPassValid = editingPatient || (password && passRegex.test(password));
+      const isPassValid =
+        editingPatient || (password && passRegex.test(password));
 
       setIsSubmitDisabled(!(requiredFilled && isPassValid));
     };
@@ -292,7 +296,6 @@ const PatientList = () => {
     const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
     return () => clearTimeout(timer);
   }, [searchTerm]);
-
 
   const showForm = (patient = null) => {
     setEditingPatient(patient);
@@ -356,7 +359,7 @@ const PatientList = () => {
     if (!pass) return { score: 0, label: "None", color: theme.border };
     if (pass.length < 6)
       return { score: 1, label: "Weak", color: theme.status.error };
-    if (pass.length < 10)
+    if (pass.length < 8)
       return { score: 2, label: "Average", color: theme.status.warning };
     return { score: 3, label: "Strong", color: theme.status.success };
   };
@@ -388,7 +391,9 @@ const PatientList = () => {
         `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
         p.name ||
         "Unknown Patient",
-      display_uhid: p.uhid || `PT-ID-${p.id?.toString().padStart(4, "0")}`,
+      display_uhid:
+        p.uhid ||
+        (p.id ? `PT-ID-${p.id.toString().padStart(4, "0")}` : "PT-ID-NEW"),
     }));
 
     if (!debouncedSearch) return data;
@@ -602,7 +607,9 @@ const PatientList = () => {
           rowKey="id"
           loading={loading && (patients || []).length === 0}
           pagination={{ pageSize: 8, placement: "bottomCenter" }}
-          rowClassName={(record) => record.status === "inactive" ? "inactive-row" : ""}
+          rowClassName={(record) =>
+            record.status === "inactive" ? "inactive-row" : ""
+          }
           scroll={{ x: 800 }}
         />
       </div>
@@ -751,15 +758,23 @@ const PatientList = () => {
                             borderRadius: "2px",
                             background:
                               formValues?.password?.length > 0
-                                ? getPasswordStrength(formValues.password).score >= i
-                                  ? getPasswordStrength(formValues.password).color
+                                ? getPasswordStrength(formValues.password)
+                                    .score >= i
+                                  ? getPasswordStrength(formValues.password)
+                                      .color
                                   : "#e5e7eb"
                                 : "#e5e7eb",
                           }}
                         />
                       ))}
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: "12px",
@@ -774,7 +789,9 @@ const PatientList = () => {
                             }`
                           : "Enter password"}
                       </span>
-                      <span style={{ fontSize: '11px', color: theme.text.light }}>
+                      <span
+                        style={{ fontSize: "11px", color: theme.text.light }}
+                      >
                         Min 8 chars, 1 Uppercase, 1 Special
                       </span>
                     </div>
@@ -902,7 +919,7 @@ const PatientList = () => {
                   background: isSubmitDisabled ? theme.border : theme.primary,
                   border: "none",
                   opacity: isSubmitDisabled ? 0.7 : 1,
-                  cursor: isSubmitDisabled ? 'not-allowed' : 'pointer'
+                  cursor: isSubmitDisabled ? "not-allowed" : "pointer",
                 }}
               >
                 {editingPatient ? "Save Changes" : "Register Patient"}
@@ -923,10 +940,16 @@ const PatientList = () => {
                 background: theme.primaryLight,
               }}
             >
-              <HistoryOutlined style={{ fontSize: "16px", color: theme.primary }} />
+              <HistoryOutlined
+                style={{ fontSize: "16px", color: theme.primary }}
+              />
             </TitleIcon>
             <span
-              style={{ fontSize: "16px", fontWeight: 700, color: theme.text.primary }}
+              style={{
+                fontSize: "16px",
+                fontWeight: 700,
+                color: theme.text.primary,
+              }}
             >
               Patient Medical History
             </span>
@@ -945,7 +968,11 @@ const PatientList = () => {
         closable={false}
         styles={{
           body: { background: theme.background.main, padding: "20px" },
-          header: { borderBottom: `1px solid ${theme.border}`, padding: "16px 24px", background: theme.background.card },
+          header: {
+            borderBottom: `1px solid ${theme.border}`,
+            padding: "16px 24px",
+            background: theme.background.card,
+          },
           wrapper: { width: window.innerWidth > 576 ? 500 : "100%" },
         }}
       >

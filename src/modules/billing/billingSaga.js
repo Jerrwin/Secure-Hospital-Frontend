@@ -68,7 +68,11 @@ function* fetchInvoicesSaga(action) {
       yield put(fetchInvoicesFailure("Invalid response format"));
     }
   } catch (error) {
-    yield put(fetchInvoicesFailure(error.response?.data?.message || "Error fetching invoices"));
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchInvoicesFailure(null));
+    } else {
+      yield put(fetchInvoicesFailure(error.response?.data?.message || "Error fetching invoices"));
+    }
   }
 }
 
@@ -84,7 +88,11 @@ function* fetchCompletedAppointmentsSaga() {
       yield put(fetchCompletedAppointmentsFailure("Invalid response format"));
     }
   } catch (error) {
-    yield put(fetchCompletedAppointmentsFailure(error.response?.data?.message || "Error fetching appointments"));
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchCompletedAppointmentsFailure(null));
+    } else {
+      yield put(fetchCompletedAppointmentsFailure(error.response?.data?.message || "Error fetching appointments"));
+    }
   }
 }
 
@@ -102,7 +110,11 @@ function* createInvoiceSaga(action) {
       yield put(createInvoiceFailure("Failed to create invoice"));
     }
   } catch (error) {
-    yield put(createInvoiceFailure(error.response?.data?.message || "Error creating invoice"));
+    if (error.isOfflineQueued) {
+      yield put(createInvoiceFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(createInvoiceFailure(error.response?.data?.message || "Error creating invoice"));
+    }
   }
 }
 
@@ -120,7 +132,11 @@ function* processPaymentSaga(action) {
       yield put(processPaymentFailure("Failed to process payment"));
     }
   } catch (error) {
-    yield put(processPaymentFailure(error.response?.data?.message || "Error processing payment"));
+    if (error.isOfflineQueued) {
+      yield put(processPaymentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(processPaymentFailure(error.response?.data?.message || "Error processing payment"));
+    }
   }
 }
 

@@ -78,10 +78,14 @@ function* fetchPrescriptionsSaga() {
     yield put(fetchAppointmentsSuccess(appointments));
     yield put(fetchSuccess(data));
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      "Failed to load medications. Please try again.";
-    yield put(fetchFailure(message));
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchFailure(null));
+    } else {
+      const message =
+        error.response?.data?.message ||
+        "Failed to load medications. Please try again.";
+      yield put(fetchFailure(message));
+    }
   }
 }
 
@@ -92,10 +96,14 @@ function* createPrescriptionSaga(action) {
     const created = response.data?.data || response.data;
     yield put(createSuccess(created));
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      "Failed to create prescription. Please try again.";
-    yield put(createFailure(message));
+    if (error.isOfflineQueued) {
+      yield put(createFailure("OFFLINE_QUEUED"));
+    } else {
+      const message =
+        error.response?.data?.message ||
+        "Failed to create prescription. Please try again.";
+      yield put(createFailure(message));
+    }
   }
 }
 
@@ -107,10 +115,14 @@ function* updatePrescriptionSaga(action) {
     const updated = response.data?.data || response.data;
     yield put(updateSuccess(updated));
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      "Failed to update prescription. Please try again.";
-    yield put(updateFailure(message));
+    if (error.isOfflineQueued) {
+      yield put(updateFailure("OFFLINE_QUEUED"));
+    } else {
+      const message =
+        error.response?.data?.message ||
+        "Failed to update prescription. Please try again.";
+      yield put(updateFailure(message));
+    }
   }
 }
 
@@ -129,10 +141,14 @@ function* statusChangeSaga(action) {
     const updated = response.data?.data || response.data;
     yield put(statusChangeSuccess(updated));
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      "Status update failed. Please try again.";
-    yield put(statusChangeFailure(message));
+    if (error.isOfflineQueued) {
+      yield put(statusChangeFailure("OFFLINE_QUEUED"));
+    } else {
+      const message =
+        error.response?.data?.message ||
+        "Status update failed. Please try again.";
+      yield put(statusChangeFailure(message));
+    }
   }
 }
 
@@ -143,10 +159,14 @@ function* deletePrescriptionSaga(action) {
     yield call(prescriptionAPI.delete, id);
     yield put(deleteSuccess(id));
   } catch (error) {
-    const message =
-      error.response?.data?.message ||
-      "Failed to delete prescription. Please try again.";
-    yield put(deleteFailure(message));
+    if (error.isOfflineQueued) {
+      yield put(deleteFailure("OFFLINE_QUEUED"));
+    } else {
+      const message =
+        error.response?.data?.message ||
+        "Failed to delete prescription. Please try again.";
+      yield put(deleteFailure(message));
+    }
   }
 }
 

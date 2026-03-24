@@ -144,6 +144,19 @@ export const syncOfflineRequests = async () => {
       description: `Successfully synced ${successCount} requests.${failCount > 0 ? ` ${failCount} failed and will be retried.` : ""}`,
       placement: "topRight",
     });
+
+    // ─── GLOBAL REFRESH AFTER SYNC ──────────────────────────────────────────
+    // We dispatch these to clear any 'temp' offline data and get fresh server state.
+    if (store) {
+      console.log("Offline sync complete. Triggering global UI refresh...");
+      store.dispatch({ type: 'patients/fetchPatientsRequest' });
+      store.dispatch({ type: 'appointments/fetchAppointmentsRequest' });
+      store.dispatch({ type: 'appointments/fetchUpcomingRequest' });
+      store.dispatch({ type: 'billing/fetchInvoicesRequest' });
+      store.dispatch({ type: 'billing/fetchCompletedAppointmentsRequest' });
+      store.dispatch({ type: 'prescription/fetchRequest' });
+      store.dispatch({ type: 'dashboard/fetchDashboardDataRequest' });
+    }
   }
 
   isSyncing = false;

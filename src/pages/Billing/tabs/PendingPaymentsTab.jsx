@@ -68,7 +68,9 @@ const PendingPaymentsTab = ({ setActiveKey }) => {
 
   useEffect(() => {
     if (submitError) {
-      message.error(submitError);
+      if (submitError !== "OFFLINE_QUEUED") {
+        message.error(submitError);
+      }
       clearBillingError();
     }
 

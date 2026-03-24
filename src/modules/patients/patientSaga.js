@@ -13,7 +13,11 @@ function* fetchPatientsSaga() {
     const response = yield call(fetchPatientsAPI);
     yield put(fetchPatientsSuccess(response.data || response));
   } catch (error) {
-    yield put(fetchPatientsFailure(error.response?.data?.message || "Failed to fetch patients"));
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchPatientsFailure(null));
+    } else {
+      yield put(fetchPatientsFailure(error.response?.data?.message || "Failed to fetch patients"));
+    }
   }
 }
 
@@ -22,7 +26,11 @@ function* fetchPatientByIdSaga(action) {
     const response = yield call(fetchPatientByIdAPI, action.payload);
     yield put(fetchPatientByIdSuccess(response.data || response));
   } catch (error) {
-    yield put(fetchPatientByIdFailure(error.response?.data?.message || "Failed to fetch patient details"));
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchPatientByIdFailure(null));
+    } else {
+      yield put(fetchPatientByIdFailure(error.response?.data?.message || "Failed to fetch patient details"));
+    }
   }
 }
 
@@ -33,7 +41,12 @@ function* createPatientSaga(action) {
     // Re-fetch to guarantee state sync if needed
     yield put(fetchPatientsRequest());
   } catch (error) {
-    yield put(createPatientFailure(error.response?.data?.message || "Failed to create patient"));
+    if (error.isOfflineQueued) {
+      // Signal offline queueing to the UI without adding temporary data back to the list
+      yield put(createPatientFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(createPatientFailure(error.response?.data?.message || "Failed to create patient"));
+    }
   }
 }
 
@@ -46,7 +59,11 @@ function* updatePatientSaga(action) {
     // Optional refresh
     yield put(fetchPatientsRequest());
   } catch (error) {
-    yield put(updatePatientFailure(error.response?.data?.message || "Failed to update patient"));
+    if (error.isOfflineQueued) {
+      yield put(updatePatientFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(updatePatientFailure(error.response?.data?.message || "Failed to update patient"));
+    }
   }
 }
 
@@ -55,7 +72,11 @@ function* deletePatientSaga(action) {
     yield call(deletePatientAPI, action.payload);
     yield put(deletePatientSuccess(action.payload));
   } catch (error) {
-    yield put(deletePatientFailure(error.response?.data?.message || "Failed to delete patient"));
+    if (error.isOfflineQueued) {
+      yield put(deletePatientFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(deletePatientFailure(error.response?.data?.message || "Failed to delete patient"));
+    }
   }
 }
 
