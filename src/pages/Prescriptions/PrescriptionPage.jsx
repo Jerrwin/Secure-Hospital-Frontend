@@ -7,7 +7,6 @@ import {
   Select,
   Row,
   Col,
-  Card,
   Button,
   message,
   Drawer,
@@ -132,20 +131,6 @@ const SearchWrapper = styled.div`
   min-width: 0;
   @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     max-width: 320px;
-  }
-`;
-
-const StyledCard = styled(Card)`
-  border-radius: ${(props) => props.theme.borderRadius.lg} !important;
-  border: 1px solid ${(props) => props.theme.border} !important;
-  box-shadow: ${(props) => props.theme.shadow} !important;
-
-  .ant-card-head {
-    border-bottom: 1px solid ${(props) => props.theme.border};
-    font-family: "Sora", sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: ${(props) => props.theme.secondary};
   }
 `;
 
@@ -301,7 +286,6 @@ const PrescriptionPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [form] = Form.useForm();
-  const formRef = React.useRef(null);
 
   useEffect(() => {
     dispatch(fetchRequest());
