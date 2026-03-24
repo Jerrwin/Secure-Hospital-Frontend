@@ -88,7 +88,7 @@ const AppRouter = ({ isSubdomain }) => {
           <Route
             path="/appointments"
             element={
-              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PROVIDER", "DOCTOR", "NURSE"]}>
+              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PROVIDER", "DOCTOR", "NURSE", "PATIENT"]}>
                 <AppointmentCalendar />
               </RoleBasedRoute>
             }
@@ -108,7 +108,7 @@ const AppRouter = ({ isSubdomain }) => {
             path="/prescriptions"
             element={
               <RoleBasedRoute
-                allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}
+                allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER", "PATIENT"]}
               >
                 <PrescriptionPage />
               </RoleBasedRoute>
@@ -127,7 +127,7 @@ const AppRouter = ({ isSubdomain }) => {
             path="/billing"
             element={
               <RoleBasedRoute
-                allowedRoles={["RECEPTIONIST"]}
+                allowedRoles={["RECEPTIONIST", "PATIENT"]}
               >
                 <InvoicePage />
               </RoleBasedRoute>

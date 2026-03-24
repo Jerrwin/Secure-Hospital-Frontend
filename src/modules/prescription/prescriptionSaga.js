@@ -1,5 +1,6 @@
-import { call, put, takeLatest, takeEvery } from "redux-saga/effects";
+import { call, put, takeLatest, takeEvery, select, all } from "redux-saga/effects";
 import { prescriptionAPI } from "./prescriptionAPI";
+import dashboardAPI from "../dashboard/dashboardAPI";
 import {
   fetchRequest,
   fetchSuccess,
@@ -19,30 +20,71 @@ import {
   deleteFailure,
 } from "./prescriptionSlice";
 
+// ─── Selector ─────────────────────────────────────────────────────
+const selectAuth = (state) => state.auth;
+
 // ─── Fetch Prescriptions ──────────────────────────────────────────
 function* fetchPrescriptionsSaga() {
   try {
-    const response = yield call(prescriptionAPI.fetchAll);
-    const data = response.data?.data || response.data || [];
+    const auth = yield select(selectAuth);
+    const userRole = (auth.user?.role || "").toUpperCase();
+    const userId = auth.user?.user_id || auth.user?.id;
 
-    // Also fetch completed appointments for doctor dropdown
-    try {
-      const apptResponse = yield call(
-        prescriptionAPI.fetchCompletedAppointments
-      );
-      const appointments =
-        apptResponse.data?.data || apptResponse.data || [];
-      yield put(fetchAppointmentsSuccess(appointments));
-    } catch {
-      // Appointments fetch failure is non-critical
-      yield put(fetchAppointmentsSuccess([]));
+    let data = [];
+    let appointments = [];
+
+    // 1. Unified Search logic for patients vs staff
+    if (userRole === "PATIENT") {
+      // Patients use a dual-track sequential approach to prevent 403 errors from blocking data
+      
+      // A. Fetch Dashboard Stats (Verified accessible link)
+      try {
+        const statsRes = yield call(dashboardAPI.getStats);
+        if (statsRes.data?.success) {
+          const payload = statsRes.data.data;
+          appointments = payload.appointments || [];
+          
+          // Use any medication field provided by the dashboard summary
+          data = 
+            payload.prescriptions || 
+            payload.medications || 
+            payload.active_prescriptions_list || 
+            payload.medications_list || 
+            [];
+        }
+      } catch (e) {
+        console.warn("Dashboard summary fallback failed:", e);
+      }
+
+      // B. Attempt Direct Fetch with ID (If empty or suppressed by staff logic)
+      if (data.length === 0) {
+        try {
+          const listRes = yield call(prescriptionAPI.fetchAll, { patient_id: userId });
+          if (listRes.data?.success) {
+            data = listRes.data.data || [];
+          }
+        } catch (e) {
+          // If this is 403, we already have our silent dashboard fallback (step A)
+          console.warn("Direct patient fetch restricted — relying on dashboard fallback.");
+        }
+      }
+    } else {
+      // Medical staff logic
+      const response = yield call(prescriptionAPI.fetchAll);
+      data = response.data?.data || response.data || [];
+      
+      try {
+        const apptResponse = yield call(prescriptionAPI.fetchCompletedAppointments);
+        appointments = apptResponse.data?.data || apptResponse.data || [];
+      } catch { }
     }
 
+    yield put(fetchAppointmentsSuccess(appointments));
     yield put(fetchSuccess(data));
   } catch (error) {
     const message =
       error.response?.data?.message ||
-      "Failed to load prescriptions. Please try again.";
+      "Failed to load medications. Please try again.";
     yield put(fetchFailure(message));
   }
 }

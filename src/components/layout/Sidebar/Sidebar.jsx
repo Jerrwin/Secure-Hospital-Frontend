@@ -73,34 +73,50 @@ export const SidebarContent = ({ currentPath, role, user, collapsed, onMobileCli
     if (handleClose) handleClose();
   };
 
-  const navItems = useMemo(() => {
-    const rawRole = (role || '').toUpperCase();
-    const isPharmacistOrDoctor = rawRole === 'PHARMACIST' || rawRole === 'DOCTOR' || rawRole === 'PROVIDER';
-    const isDoctorOrNurse = rawRole === 'DOCTOR' || rawRole === 'NURSE' || rawRole === 'PROVIDER';
+    const navItems = useMemo(() => {
+      const rawRole = (role || '').toUpperCase();
+      const isPatient = rawRole === 'PATIENT';
+      const isPharmacistOrDoctor = rawRole === 'PHARMACIST' || rawRole === 'DOCTOR' || rawRole === 'PROVIDER';
+      const isDoctorOrNurse = rawRole === 'DOCTOR' || rawRole === 'NURSE' || rawRole === 'PROVIDER';
 
-    const baseItems = [
-      { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' }
-    ];
+      const baseItems = [
+        { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' }
+      ];
 
-    if (rawRole === 'RECEPTIONIST' || isDoctorOrNurse) {
-      baseItems.push({ key: '/appointments', icon: <CalendarOutlined />, label: 'Appointments' });
-    }
+      if (rawRole === 'RECEPTIONIST' || isDoctorOrNurse || isPatient) {
+        baseItems.push({ 
+          key: '/appointments', 
+          icon: <CalendarOutlined />, 
+          label: isPatient ? 'My Appointments' : 'Appointments' 
+        });
+      }
 
-    if (isDoctorOrNurse) {
-      baseItems.push({ key: '/patients', icon: <TeamOutlined />, label: 'Patients' });
-    }
-    if (isPharmacistOrDoctor) {
-      baseItems.push({ key: '/prescriptions', icon: <FileTextOutlined />, label: 'Prescriptions' });
-    }
-    if (rawRole === 'RECEPTIONIST') {
-      baseItems.push({ key: '/billing', icon: <DollarOutlined />, label: 'Billing' });
-    }
-    if (rawRole === 'ADMIN') {
-      baseItems.push({ key: '/staff', icon: <IdcardOutlined />, label: 'Staff Management' });
-    }
+      if (isDoctorOrNurse) {
+        baseItems.push({ key: '/patients', icon: <TeamOutlined />, label: 'Patients' });
+      }
+      
+      if (isPharmacistOrDoctor || isPatient) {
+        baseItems.push({ 
+          key: '/prescriptions', 
+          icon: <FileTextOutlined />, 
+          label: isPatient ? 'My Medications' : 'Prescriptions' 
+        });
+      }
+      
+      if (rawRole === 'RECEPTIONIST' || isPatient) {
+        baseItems.push({ 
+          key: '/billing', 
+          icon: <DollarOutlined />, 
+          label: isPatient ? 'Bills & Invoices' : 'Billing' 
+        });
+      }
 
-    return baseItems;
-  }, [role]);
+      if (rawRole === 'ADMIN') {
+        baseItems.push({ key: '/staff', icon: <IdcardOutlined />, label: 'Staff Management' });
+      }
+
+      return baseItems;
+    }, [role]);
 
   const handleMenuClick = ({ key }) => {
     navigate(key);

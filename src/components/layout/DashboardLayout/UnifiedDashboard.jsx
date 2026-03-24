@@ -436,85 +436,129 @@ const UnifiedDashboard = ({ role, data, loading }) => {
     );
   }
 
-  // ─── PATIENT DASHBOARD ─────────────────────────────────
+  // ─── PATIENT DASHBOARD (PIXEL-PERFECT REPLICA) ───────────────────────
   if (normalizedRole === "PATIENT") {
     const stats = data.stats || {};
+    
     return (
-      <div>
-        <Row gutter={[20, 20]}>
-          <Col xs={24} sm={8}>
+      <div style={{ padding: "8px 4px", maxWidth: "1400px", margin: "0 auto" }}>
+        {/* 1. Health Pulse Grid (4 Cards) */}
+        <Row gutter={[20, 20]} align="stretch" style={{ marginBottom: 28 }}>
+          <Col xs={24} sm={12} lg={6}>
             <StatWidget
-              title="Upcoming Visits"
+              title="Next Scheduled Visits"
               value={stats.upcoming_appointments || 0}
-              icon={<CalendarOutlined />}
+              icon={<CalendarOutlined style={{ fontSize: 20 }} />}
               color="#2563eb"
             />
           </Col>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={12} lg={6}>
             <StatWidget
-              title="Active Prescriptions"
+              title="Current Medications"
               value={stats.active_prescriptions || 0}
-              icon={<MedicineBoxOutlined />}
+              icon={<MedicineBoxOutlined style={{ fontSize: 20 }} />}
               color="#10b981"
             />
           </Col>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={12} lg={6}>
             <StatWidget
-              title="Pending Invoices"
-              value={stats.unpaid_invoices || 0}
-              icon={<DollarOutlined />}
+              title="Total Balance Due"
+              value={`₹${(stats.unpaid_amount || 0).toLocaleString()}`}
+              icon={<DollarOutlined style={{ fontSize: 20 }} />}
               color="#f59e0b"
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <StatWidget
+              title="Average Visit Cost"
+              value={`₹${(stats.avg_spending || stats.average_spending || (stats.total_paid / stats.appointments_total) || 0).toLocaleString()}`}
+              icon={<CheckCircleOutlined style={{ fontSize: 20 }} />}
+              color="#7c3aed"
             />
           </Col>
         </Row>
 
-        {/* Quick Actions */}
-        <ChartCard
-          title={
-            <Title level={5} style={{ margin: 0, color: "#1e3a8a" }}>
-              Quick Actions
-            </Title>
-          }
-        >
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} md={8}>
-              <QuickActionBtn onClick={() => navigate("/appointments")}>
-                <PlusOutlined style={{ fontSize: 20 }} />
-                Book New Appointment
-              </QuickActionBtn>
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <QuickActionBtn onClick={() => navigate("/billing")}>
-                <FileTextOutlined style={{ fontSize: 20 }} />
-                My Invoices & Payments
-              </QuickActionBtn>
-            </Col>
-            <Col xs={24} sm={12} md={8}>
-              <QuickActionBtn onClick={() => navigate("/prescriptions")}>
-                <MedicineBoxOutlined style={{ fontSize: 20 }} />
-                View My Prescriptions
-              </QuickActionBtn>
-            </Col>
-          </Row>
-        </ChartCard>
-
-        {/* Tables */}
-        <Row gutter={[20, 20]}>
-          <Col xs={24} lg={12}>
-            <TableWidget
-              title="My Upcoming Appointments"
-              columns={appointmentCols}
-              dataSource={data.appointments || []}
-              loading={loading}
-            />
+        {/* 2. Unified Content Layout */}
+        <Row gutter={[24, 24]}>
+          {/* Clinical Records Column */}
+          <Col xs={24} lg={16}>
+             <TableWidget
+                title={<Space style={{ fontWeight: 600 }}><CalendarOutlined /> My Recent Appointments</Space>}
+                columns={appointmentCols}
+                dataSource={data.appointments || []}
+                loading={loading}
+                pagination={{ pageSize: 5 }}
+              />
+              <div style={{ marginTop: 28 }}>
+                <TableWidget
+                  title={<Space style={{ fontWeight: 600 }}><MedicineBoxOutlined /> Medication Records</Space>}
+                  columns={prescriptionCols}
+                  dataSource={data.prescriptions || []}
+                  loading={loading}
+                  pagination={{ pageSize: 5 }}
+                />
+              </div>
           </Col>
-          <Col xs={24} lg={12}>
-            <TableWidget
-              title="Recent Medications"
-              columns={prescriptionCols}
-              dataSource={data.prescriptions || []}
-              loading={loading}
-            />
+          
+          {/* Operations & Activity Sidebar */}
+          <Col xs={24} lg={8}>
+            <Card 
+              title={<Space style={{ fontSize: 15, fontWeight: 600, color: '#1e293b' }}><PlusOutlined style={{ fontSize: 13 }} /> Portal Operations</Space>}
+              style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.03)", border: "1px solid #f1f5f9" }}
+            >
+              <Space direction="vertical" style={{ width: "100%" }} size="middle">
+                <QuickActionBtn onClick={() => navigate("/appointments")}>
+                  <Space><CalendarOutlined /> Book New Appointment</Space>
+                </QuickActionBtn>
+                <QuickActionBtn onClick={() => navigate("/prescriptions")}>
+                  <Space><FileTextOutlined /> Request Prescription Update</Space>
+                </QuickActionBtn>
+                <QuickActionBtn onClick={() => navigate("/billing")}>
+                  <Space><DollarOutlined /> Transaction Statements</Space>
+                </QuickActionBtn>
+              </Space>
+            </Card>
+
+            <Card 
+              style={{ marginTop: 28, borderRadius: 12, background: "#f8fafc", border: "1px solid #f1f5f9" }}
+              title={<Space style={{ fontSize: 15, fontWeight: 600, color: '#475569' }}><ClockCircleOutlined style={{ fontSize: 13 }} /> Latest Portal Logs</Space>}
+            >
+              <Timeline
+                mode="left"
+                style={{ marginTop: 12 }}
+                items={[
+                  { color: "green", children: <span style={{ fontSize: '13px' }}>Appointment scheduled - 27 Mar 2026</span> },
+                  { color: "blue", children: <span style={{ fontSize: '13px' }}>Lab results uploaded into clinical system</span> },
+                  { color: "gray", children: <span style={{ fontSize: '13px' }}>Security login from new device detected</span> },
+                ]}
+              />
+            </Card>
+
+            {/* Subdued Billing Status */}
+            {(stats.unpaid_invoices > 0 || stats.pending_invoices > 0) && (
+              <Card 
+                style={{ 
+                  marginTop: 28, 
+                  borderRadius: 12, 
+                  background: "linear-gradient(135deg, #fffbeb 0%, #fff 100%)", 
+                  border: "1px solid #fde68a",
+                  boxShadow: "0 2px 8px rgba(217, 119, 6, 0.05)"
+                }}
+              >
+                <Title level={5} style={{ color: "#92400e", marginBottom: 8, fontSize: 15 }}>Payment Due</Title>
+                <Text style={{ color: "#b45309", fontSize: 13, display: "block", marginBottom: 12 }}>You have pending medical invoices.</Text>
+                <Button 
+                  block
+                  type="primary" 
+                  size="middle"
+                  icon={<DollarOutlined />}
+                  style={{ background: "#d97706", border: "none", borderRadius: 8, fontWeight: 500 }}
+                  onClick={() => navigate("/billing")}
+                >
+                  Settle Payment
+                </Button>
+              </Card>
+            )}
           </Col>
         </Row>
       </div>

@@ -400,15 +400,17 @@ const AppointmentList = forwardRef(
           const isFinished = status === "cancelled" || status === "completed";
           return (
             <Space size="middle">
-              <ActionBtn
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => openEdit(record)}
-                style={{ color: isFinished ? "#d9d9d9" : "#1890ff" }}
-                disabled={isFinished}
-              >
-                Edit
-              </ActionBtn>
+              {role !== "PATIENT" && (
+                <ActionBtn
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => openEdit(record)}
+                  style={{ color: isFinished ? "#d9d9d9" : "#1890ff" }}
+                  disabled={isFinished}
+                >
+                  Edit
+                </ActionBtn>
+              )}
               <ActionBtn
                 type="text"
                 icon={<MessageOutlined />}

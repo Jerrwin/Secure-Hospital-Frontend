@@ -6,6 +6,8 @@ import useBilling from "../../../modules/billing/hooks/useBilling";
 import InvoiceReceipt from "../components/InvoiceReceipt";
 import styled from "styled-components";
 
+import useAuth from "../../../modules/auth/hooks/useAuth";
+
 const DownloadBtn = styled(Button)`
   border-radius: 8px;
   @media (max-width: 576px) {
@@ -16,6 +18,8 @@ const DownloadBtn = styled(Button)`
 `;
 
 const CompletedPaymentsTab = () => {
+  const { user, userRole } = useAuth();
+  const isPatient = userRole === "PATIENT";
   const { fetchInvoices, invoices, loading } = useBilling();
 
   useEffect(() => {
@@ -25,9 +29,15 @@ const CompletedPaymentsTab = () => {
   const paidInvoices = useMemo(() => {
     return (invoices || []).filter(inv => {
       const status = (inv.STATUS || inv.status || '').toLowerCase();
-      return status === 'paid' || status === 'completed'; // Common paid statuses
+      const isPaid = status === 'paid' || status === 'completed';
+      
+      if (isPatient) {
+        const pid = inv.patient_id || inv.PATIENT_ID || inv.patientId;
+        return isPaid && (pid === user?.id || pid === user?.uhid);
+      }
+      return isPaid;
     });
-  }, [invoices]);
+  }, [invoices, isPatient, user]);
 
   const downloadReceipt = (record) => {
     const printContent = document.getElementById(`receipt-${record.id}`);

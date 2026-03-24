@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import useAuth from "../../modules/auth/hooks/useAuth";
 import { Tabs } from "antd";
 import { 
   FileTextOutlined, 
@@ -150,32 +151,34 @@ const StyledTabs = styled(Tabs)`
 `;
 
 const InvoicePage = () => {
-  const [activeKey, setActiveKey] = useState("1");
+  const { userRole } = useAuth();
+  const isPatient = userRole === "PATIENT";
+  const [activeKey, setActiveKey] = useState(isPatient ? "2" : "1");
 
   const tabItems = [
-    {
+    ...(isPatient ? [] : [{
       key: "1",
       label: (
         <span>
           <FileTextOutlined /> Payment Create
         </span>
       ),
-      children: <CreateInvoiceTab setActiveKey={setActiveKey} />,
-    },
+      children: <CreateInvoiceTab />,
+    }]),
     {
       key: "2",
       label: (
         <span>
-          <HourglassOutlined /> Pending Payments
+          <HourglassOutlined /> {isPatient ? "My Pending Bills" : "Pending Payments"}
         </span>
       ),
-      children: <PendingPaymentsTab setActiveKey={setActiveKey} />,
+      children: <PendingPaymentsTab />,
     },
     {
       key: "3",
       label: (
         <span>
-          <CheckCircleOutlined /> Completed Payments
+          <CheckCircleOutlined /> {isPatient ? "My Payment History" : "Completed Payments"}
         </span>
       ),
       children: <CompletedPaymentsTab />,

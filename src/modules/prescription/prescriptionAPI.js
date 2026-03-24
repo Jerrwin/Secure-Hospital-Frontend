@@ -3,8 +3,8 @@ import axiosClient from "../../services/axiosClient";
 const BASE = "/api/prescriptions";
 
 export const prescriptionAPI = {
-  // Fetch all prescriptions (backend filters by role automatically)
-  fetchAll: () => axiosClient.get(BASE),
+  // Fetch all prescriptions (optional filters: patient_id, provider_id)
+  fetchAll: (params) => axiosClient.get(BASE, { params }),
 
   // Fetch completed appointments for doctor create modal dropdown
   fetchCompletedAppointments: () =>
