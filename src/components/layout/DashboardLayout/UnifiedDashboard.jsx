@@ -127,6 +127,12 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
   // ─── Shared Appointment Columns ──────────────────────
   const appointmentCols = useMemo(() => [
     {
+      title: "Date",
+      dataIndex: "appointment_date",
+      key: "date",
+      render: (v) => v || "—",
+    },
+    {
       title: "Patient",
       key: "patient_name",
       render: (_, r) => {
@@ -530,6 +536,14 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
               value={`₹${(stats.avg_spending || stats.average_spending || (stats.total_paid / stats.appointments_total) || 0).toLocaleString()}`}
               icon={<CheckCircleOutlined style={{ fontSize: 20 }} />}
               color={theme.primaryHover}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <StatWidget
+              title="Average Visit Cost"
+              value={`₹${(stats.avg_spending || stats.average_spending || (stats.total_paid / stats.appointments_total) || 0).toLocaleString()}`}
+              icon={<CheckCircleOutlined style={{ fontSize: 20 }} />}
+              color="#7c3aed"
             />
           </Col>
         </Row>

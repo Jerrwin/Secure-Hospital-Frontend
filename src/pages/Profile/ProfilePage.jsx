@@ -35,8 +35,13 @@ import styled, { keyframes } from "styled-components";
 import { useTheme } from "../../context/ThemeContext";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useUsers from "../../modules/users/hooks/useUsers";
+import { updateUser } from "../../modules/auth/authSlice";
 import dayjs from "dayjs";
 import axiosClient from "../../services/axiosClient";
+import { updateStaffAPI } from "../../modules/users/userAPI";
+import { updatePatientAPI } from "../../modules/patients/patientAPI";
+import { useDispatch } from "react-redux";
+
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -447,6 +452,8 @@ const ProfilePage = () => {
   const { staffList, fetchStaff, loading: staffLoading } = useUsers();
   const [form] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
+  const dispatch = useDispatch();
+
 
   const { theme } = useTheme();
   const passwordValue = Form.useWatch("new_password", form);
@@ -460,9 +467,10 @@ const ProfilePage = () => {
   }, [fetchStaff]);
 
   const staffProfile = useMemo(
-    () => (staffList || []).find((s) => s.id === (user?.id || 0)) || {},
+    () => (staffList || []).find((s) => s.user_id === (user?.id || 0)) || {},
     [staffList, user?.id],
   );
+
 
   const activeProfile = useMemo(
     () => ({ ...user, ...staffProfile }),
@@ -546,7 +554,45 @@ const ProfilePage = () => {
   const onFinish = async (values) => {
     try {
       console.log("Update main profile:", values);
+      const isPatient = userRole === "PATIENT";
+      
+      // 1. Update Basic Profile Info
+      const updateData = {
+        name: values.name,
+        email: values.email,
+        phone_number: values.phone_number,
+        gender: values.gender,
+        address: values.address,
+        dob: values.dob ? values.dob.format("YYYY-MM-DD") : null,
+      };
 
+      if (isPatient) {
+        // For patients, assume user.id matches patient.id or they have a similar link
+        await updatePatientAPI({ id: user.id, data: updateData });
+      } else {
+        // CRITICAL: use staffProfile.id (Staff Table) not user.id (User Table)
+        if (!staffProfile.id) {
+          throw new Error("Staff profile not found. Unable to update.");
+        }
+        
+        // Handle names for staff table
+        const nameParts = values.name.split(" ");
+        const staffUpdateData = {
+          ...updateData,
+          name: values.name, // Ensure full name is sent
+          first_name: nameParts[0],
+          last_name: nameParts.slice(1).join(" "),
+          user_id: user.id, 
+        };
+
+        await updateStaffAPI({ id: staffProfile.id, data: staffUpdateData });
+      }
+
+
+      // Update local Redux state so header/sidebar refresh immediately
+      dispatch(updateUser(updateData));
+
+      // 2. Handle Password Change (Optional)
       if (values.new_password) {
         if (!values.current_password) {
           return message.error(
@@ -572,6 +618,10 @@ const ProfilePage = () => {
         new_password: "",
         confirm_password: "",
       });
+      
+      // Re-fetch staff list to ensure consistency
+      if (!isPatient) fetchStaff(true);
+      
     } catch (error) {
       console.error("Update failed:", error);
       message.error(
@@ -579,6 +629,7 @@ const ProfilePage = () => {
       );
     }
   };
+
 
   const joinedDate = activeProfile.created_at
     ? new Date(activeProfile.created_at).toLocaleDateString("en-US", {
@@ -800,7 +851,7 @@ const ProfilePage = () => {
             </FormGrid>
 
             <Divider
-              titlePlacement="left"
+              orientation="left"
               style={{ color: theme.primary, fontWeight: 600 }}
             >
               <SafetyOutlined /> Security & Password

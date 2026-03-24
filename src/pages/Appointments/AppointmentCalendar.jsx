@@ -27,7 +27,6 @@ import { useTheme } from "../../context/ThemeContext";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useCalendar from "../../modules/calendar/hooks/useCalendar";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
-import usePatients from "../../modules/patients/hooks/usePatients";
 import AppointmentList from "./AppointmentList";
 import AppButton from "../../components/common/Button/AppButton";
 
@@ -41,14 +40,7 @@ const StyledSpin = styled(Spin)`
   }
 `;
 
-// ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
-const bp = {
-  xs: (props) => props.theme.breakpoints.xs,
-  sm: (props) => props.theme.breakpoints.sm,
-  md: (props) => props.theme.breakpoints.md,
-  lg: (props) => props.theme.breakpoints.lg,
-  xl: (props) => props.theme.breakpoints.xl,
-};
+// ─── Styled Components ──────────────────────────────────────────────────────
 
 const PageWrapper = styled.div`
   display: flex;
@@ -715,6 +707,25 @@ const AppointmentCalendar = () => {
     return dict;
   }, [rangeData, searchText, statusFilter]);
 
+  const filteredTooltipData = useMemo(() => {
+    if (!Array.isArray(tooltipData)) return [];
+
+    const q = (searchText || "").toLowerCase();
+    const sFilter = (statusFilter || "all").toLowerCase();
+
+    return tooltipData.filter((appt) => {
+      // 1. Status Filter
+      const statusMatch =
+        sFilter === "all" || (appt.status || "").toLowerCase() === sFilter;
+
+      // 2. Search Filter (Patient Name)
+      const patient = appt.patient?.full_name || appt.patient_name || appt.patient || "";
+      const nameMatch = !q || String(patient).toLowerCase().includes(q);
+
+      return statusMatch && nameMatch;
+    });
+  }, [tooltipData, searchText, statusFilter]);
+
   const dateCellRender = (value) => {
     const dateStr = value.format("YYYY-MM-DD");
     const dayAppointments = rangeDict[dateStr] || [];
@@ -742,12 +753,12 @@ const AppointmentCalendar = () => {
         }}
         content={
           <StyledSpin spinning={tooltipLoading}>
-            {tooltipData && tooltipData.length > 0 ? (
+            {filteredTooltipData && filteredTooltipData.length > 0 ? (
               <TooltipContent>
-                {tooltipData.map((appt, idx) => (
+                {filteredTooltipData.map((appt, idx) => (
                   <TooltipApptBlock
                     key={idx}
-                    $last={idx === tooltipData.length - 1}
+                    $last={idx === filteredTooltipData.length - 1}
                   >
                     <TooltipRow>
                       <TimeLabel>{appt.time}</TimeLabel>
