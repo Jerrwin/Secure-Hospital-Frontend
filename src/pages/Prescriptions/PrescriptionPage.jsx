@@ -412,11 +412,24 @@ const PrescriptionPage = () => {
   );
 
   const apptOptions = useMemo(() => {
-    const filtered = appointments.filter(
-      (a) =>
+    const userId = user?.id || user?.user_id;
+
+    const filtered = appointments.filter((a) => {
+      // 1. Basic eligibility: No existing prescription OR it's the one we're editing
+      const isEligible =
         !list.some((p) => p.appointment_id === a.id) ||
-        (editTarget && editTarget.appointment_id === a.id),
-    );
+        (editTarget && editTarget.appointment_id === a.id);
+
+      if (!isEligible) return false;
+
+      // 2. Role-based filtering: If Doctor/Provider, only show their own appointments
+      if (userRole === "DOCTOR" || userRole === "PROVIDER") {
+        return String(a.provider_id) === String(userId);
+      }
+
+      return true; // Admin/Pharmacist etc. see all
+    });
+
     return filtered.map((a) => {
       // Name resolution logic
       let name = a.patient_name || a.patientName;

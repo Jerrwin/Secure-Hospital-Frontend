@@ -58,7 +58,9 @@ const dashboardSlice = createSlice({
             type.includes("update") ||
             type.includes("delete") ||
             type.includes("cancel") ||
-            type.includes("complete"))
+            type.includes("complete") ||
+            type.includes("payment") ||
+            type.includes("statusChange"))
         );
       },
       (state) => {

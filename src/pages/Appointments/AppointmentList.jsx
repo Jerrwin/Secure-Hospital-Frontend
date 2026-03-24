@@ -251,11 +251,16 @@ const AppointmentList = forwardRef(
       const map = new Map();
       // 1. Add real staff if we have them
       staff.forEach((s) => {
+        const isActive = s.status
+          ? s.status === "active"
+          : s.is_active === true || s.is_active === 1 || s.is_active === "1";
+
         if (
-          s.role_name?.toLowerCase() === "provider" ||
-          s.role_name?.toLowerCase() === "doctor" ||
-          s.role?.toLowerCase() === "doctor" ||
-          s.role?.toLowerCase() === "provider"
+          isActive &&
+          (s.role_name?.toLowerCase() === "provider" ||
+            s.role_name?.toLowerCase() === "doctor" ||
+            s.role?.toLowerCase() === "doctor" ||
+            s.role?.toLowerCase() === "provider")
         ) {
           map.set(String(s.id), {
             id: s.id,
@@ -264,16 +269,18 @@ const AppointmentList = forwardRef(
         }
       });
 
-      // 2. Extract from appointments if staff list was forbidden (403)
-      list.forEach((a) => {
-        const pId = a.provider_id;
-        if (pId && !map.has(String(pId))) {
-          map.set(String(pId), {
-            id: pId,
-            name: a.provider_name || a.providerName || `Doctor #${pId}`,
-          });
-        }
-      });
+      // 2. Extract from appointments only if we failed to get a staff list (fallback for 403s)
+      if (staff.length === 0) {
+        list.forEach((a) => {
+          const pId = a.provider_id;
+          if (pId && !map.has(String(pId))) {
+            map.set(String(pId), {
+              id: pId,
+              name: a.provider_name || a.providerName || `Doctor #${pId}`,
+            });
+          }
+        });
+      }
 
       return Array.from(map.values());
     }, [staff, list]);
@@ -406,6 +413,7 @@ const AppointmentList = forwardRef(
               : "—");
           return highlightText(name, debouncedSearch);
         },
+        hidden: role === "DOCTOR" || role === "PROVIDER",
       },
       {
         title: "Status",

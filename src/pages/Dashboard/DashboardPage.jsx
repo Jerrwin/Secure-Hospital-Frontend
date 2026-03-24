@@ -8,10 +8,11 @@ import ErrorBoundary from "../../components/common/ErrorBoundary";
 import { useTheme } from "../../context/ThemeContext";
 import styled from "styled-components";
 
-import LoadingScreen from "../../components/common/LoadingScreen";
+import { useEffect } from "react";
+import useUsers from "../../modules/users/hooks/useUsers";
 import usePatients from "../../modules/patients/hooks/usePatients";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
-import { useEffect } from "react";
+import LoadingScreen from "../../components/common/LoadingScreen";
 
 const DashboardHeader = styled.div`
   margin-bottom: 24px;
@@ -35,6 +36,7 @@ const DashboardPage = () => {
   const { patients, fetchPatients } = usePatients();
   const { list: allAppointments, fetchAll: fetchAppointments } =
     useAppointments();
+  const { staffList, fetchStaff } = useUsers();
 
   const isStaff = [
     "ADMIN",
@@ -49,6 +51,7 @@ const DashboardPage = () => {
     if (isStaff) {
       fetchPatients();
       fetchAppointments();
+      fetchStaff();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStaff]);
@@ -108,6 +111,7 @@ const DashboardPage = () => {
             data={dashboardData}
             patients={patients}
             allAppointments={allAppointments}
+            staffList={staffList}
             loading={dashboardData.loading}
           />
         </ErrorBoundary>

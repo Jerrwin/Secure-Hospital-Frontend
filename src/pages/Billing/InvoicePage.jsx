@@ -157,34 +157,34 @@ const InvoicePage = () => {
   const { theme } = useTheme();
   const { userRole } = useAuth();
   const isPatient = userRole === "PATIENT";
-  const [activeKey, setActiveKey] = useState(isPatient ? "2" : "1");
+  const [activeKey, setActiveKey] = useState(isPatient ? "pending" : "create");
 
   const tabItems = [
     ...(isPatient
       ? []
       : [
           {
-            key: "1",
+            key: "create",
             label: (
               <span>
                 <FileTextOutlined /> Payment Create
               </span>
             ),
-            children: <CreateInvoiceTab />,
+            children: <CreateInvoiceTab setActiveKey={setActiveKey} />,
           },
         ]),
     {
-      key: "2",
+      key: "pending",
       label: (
         <span>
           <HourglassOutlined />{" "}
           {isPatient ? "My Pending Bills" : "Pending Payments"}
         </span>
       ),
-      children: <PendingPaymentsTab />,
+      children: <PendingPaymentsTab setActiveKey={setActiveKey} />,
     },
     {
-      key: "3",
+      key: "completed",
       label: (
         <span>
           <CheckCircleOutlined />{" "}

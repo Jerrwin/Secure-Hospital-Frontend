@@ -1,5 +1,8 @@
 export const blueTheme = {
   name: "blue",
+  headingFont: "'Plus Jakarta Sans', sans-serif",
+  bodyFont: "'Outfit', sans-serif",
+  fontFamily: "'Outfit', sans-serif",
   primary: "#2563eb",
   primaryHover: "#1d4ed8",
   primaryLight: "#eff6ff",
