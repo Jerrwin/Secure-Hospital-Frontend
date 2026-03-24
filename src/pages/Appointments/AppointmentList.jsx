@@ -4,7 +4,6 @@ import React, {
   useMemo,
   forwardRef,
   useImperativeHandle,
-  useRef,
 } from "react";
 import styled from "styled-components";
 import {
@@ -19,22 +18,16 @@ import {
   Space,
   message,
   Empty,
-  Input,
   Drawer,
 } from "antd";
-import {
-  EditOutlined,
-  CalendarOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  FilterOutlined,
-  MessageOutlined,
-} from "@ant-design/icons";
+import { MessageOutlined, EditOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
+import usePatients from "../../modules/patients/hooks/usePatients";
 import ChatPanel from "../../pages/Chat/ChatPanel";
+import { useTheme } from "../../context/ThemeContext";
 
 const { Option } = Select;
 
@@ -46,19 +39,19 @@ const PageWrapper = styled.div`
   gap: 16px;
 `;
 
-const PageTitle = styled.h1``;
-
 const CardWrapper = styled.div`
-  background: #ffffff;
+  background: ${props => props.theme.background.card};
   padding: clamp(16px, 4vw, 32px);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.05);
+  border: 1px solid ${props => props.theme.border};
+  box-shadow: ${props => props.theme.shadow};
   overflow: hidden;
 `;
 
 const Highlight = styled.span`
-  background-color: #ffec3d;
+  background-color: ${props => props.theme.status.warning}44;
   font-weight: bold;
+  border-bottom: 2px solid ${props => props.theme.status.warning};
 `;
 
 const ActionBtn = styled(Button)`
@@ -71,10 +64,11 @@ const ActionBtn = styled(Button)`
 `;
 
 const StatusTag = ({ status }) => {
+  const { theme } = useTheme();
   const map = {
-    scheduled: { color: "blue", label: "Scheduled" },
-    completed: { color: "green", label: "Completed" },
-    cancelled: { color: "red", label: "Cancelled" },
+    scheduled: { color: theme.primary, label: "Scheduled" },
+    completed: { color: theme.status.success, label: "Completed" },
+    cancelled: { color: theme.status.error, label: "Cancelled" },
   };
   const s = map[status?.toLowerCase()] || { color: "default", label: status };
   return <Tag color={s.color}>{s.label}</Tag>;
@@ -105,25 +99,25 @@ const highlightText = (text, query) => {
 
 const AppointmentList = forwardRef(
   ({ searchText: propSearchText, statusFilter: propStatusFilter }, ref) => {
+    const { theme } = useTheme();
     const { user } = useAuth();
     const role = normalizeRole(user?.role);
     const userId = user?.user_id || user?.id; // Try both user_id and id
 
     const {
       list,
-      patients,
       staff,
       loading,
       submitting,
       dropdownLoading,
       fetched,
-      submitError,
       fetchAll,
-      fetchDropdowns,
+      fetchDropdowns: fetchAppointmentDropdowns,
       create,
       update,
-      clearError,
     } = useAppointments();
+
+    const { patients, fetchPatients } = usePatients();
 
     // Debugging
     useEffect(() => {
@@ -136,7 +130,7 @@ const AppointmentList = forwardRef(
         staffCount: staff.length,
         dropdownLoading,
       });
-    }, []);
+    }, [role, userId, user, patients, staff, dropdownLoading]);
 
     const [form] = Form.useForm();
     const statusValue = Form.useWatch("STATUS", form);
@@ -153,7 +147,7 @@ const AppointmentList = forwardRef(
     const openCreate = () => {
       // Only fetch dropdown data if not already present
       if (patients.length === 0 || staff.length === 0) {
-        fetchDropdowns();
+        fetchAppointmentDropdowns();
       }
       form.resetFields();
       if (role === "DOCTOR" || role === "PROVIDER") {
@@ -166,7 +160,7 @@ const AppointmentList = forwardRef(
     const openEdit = (record) => {
       // Only fetch dropdown data if not already present
       if (patients.length === 0 || staff.length === 0) {
-        fetchDropdowns();
+        fetchAppointmentDropdowns();
       }
       setEditingId(record.id);
       form.setFieldsValue({
@@ -181,10 +175,21 @@ const AppointmentList = forwardRef(
     };
 
     const openChat = (record) => {
-      setActiveChatId(record.patient_id);
-      setActiveChatPatient(
-        record.patient_name || `Patient #${record.patient_id}`,
-      );
+      setActiveChatId(record.id);
+      
+      // Resolve patient name for the Drawer title
+      let pName = record.patient_name || record.patientName;
+      if (!pName && record.patient) {
+        pName = `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim();
+      }
+      if (!pName && record.patient_id && patients.length > 0) {
+        const found = patients.find(p => String(p.id) === String(record.patient_id));
+        if (found) {
+          pName = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+        }
+      }
+
+      setActiveChatPatient(pName || `Patient #${record.patient_id || "?"}`);
       setChatDrawerOpen(true);
     };
 
@@ -203,8 +208,12 @@ const AppointmentList = forwardRef(
 
     // ── Initial load ────────────────────────────────────────────────────────
     useEffect(() => {
-      if (!fetched) fetchAll();
-    }, [fetched, fetchAll]);
+      fetchPatients();
+      if (!fetched) {
+        fetchAll();
+        fetchAppointmentDropdowns();
+      }
+    }, [fetched, fetchAll, fetchAppointmentDropdowns, fetchPatients]);
 
     // ── Computed: Filtered List ──────────────────────────────────────────────
     const filteredData = useMemo(() => {
@@ -360,13 +369,25 @@ const AppointmentList = forwardRef(
         dataIndex: "patient_name",
         key: "patient",
         render: (text, record) => {
-          const name =
+          // 1. Direct field or nested object
+          let name =
             text ||
             record.patientName ||
             (record.patient
               ? `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim()
-              : null) ||
-            `Patient #${record.patient_id || "?"}`;
+              : null);
+
+          // 2. Fallback: Lookup in patients list (fetched for dropdowns)
+          if (!name && record.patient_id && patients.length > 0) {
+            const found = patients.find(p => String(p.id) === String(record.patient_id));
+            if (found) {
+              name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+            }
+          }
+
+          // 3. Final fallback: ID string
+          name = name || `Patient #${record.patient_id || "?"}`;
+          
           return highlightText(name, debouncedSearch);
         },
         hidden: role === "PATIENT",
@@ -400,23 +421,27 @@ const AppointmentList = forwardRef(
           const isFinished = status === "cancelled" || status === "completed";
           return (
             <Space size="middle">
-              <ActionBtn
-                type="text"
-                icon={<EditOutlined />}
-                onClick={() => openEdit(record)}
-                style={{ color: isFinished ? "#d9d9d9" : "#1890ff" }}
-                disabled={isFinished}
-              >
-                Edit
-              </ActionBtn>
-              <ActionBtn
-                type="text"
-                icon={<MessageOutlined />}
-                onClick={() => openChat(record)}
-                style={{ color: "#722ed1" }}
-              >
-                Chat
-              </ActionBtn>
+              {role !== "PATIENT" && (
+                <ActionBtn
+                  type="text"
+                  icon={<EditOutlined />}
+                  onClick={() => openEdit(record)}
+                  style={{ color: isFinished ? theme.text.light : theme.primary }}
+                  disabled={isFinished}
+                >
+                  Edit
+                </ActionBtn>
+              )}
+              {role !== "RECEPTIONIST" && (
+                <ActionBtn
+                  type="text"
+                  icon={<MessageOutlined />}
+                  onClick={() => openChat(record)}
+                  style={{ color: theme.accent }}
+                >
+                  Chat
+                </ActionBtn>
+              )}
             </Space>
           );
         },
@@ -441,7 +466,10 @@ const AppointmentList = forwardRef(
               }}
               locale={{
                 emptyText: (
-                  <Empty description="No appointments matching your criteria" />
+                  <Empty 
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={<span style={{ color: theme.text.light }}>No appointments matching your criteria</span>} 
+                  />
                 ),
               }}
             />
@@ -616,7 +644,7 @@ const AppointmentList = forwardRef(
         <Drawer
           title={
             <div
-              style={{ color: "#1e3a5f", fontSize: "16px", fontWeight: "600" }}
+              style={{ color: theme.secondary, fontSize: "16px", fontWeight: "600" }}
             >
               Chat & Notes — {activeChatPatient}
             </div>
@@ -628,7 +656,7 @@ const AppointmentList = forwardRef(
           }}
           open={chatDrawerOpen}
           styles={{
-            body: { padding: "20px", backgroundColor: "#f9fafb" },
+            body: { padding: "20px", backgroundColor: theme.background.main },
             wrapper: { width: 700 },
           }}
         >

@@ -3,13 +3,13 @@ import { Timeline, Typography, Tag, Empty, Card, Spin } from "antd";
 import {
   CalendarOutlined,
   MedicineBoxOutlined,
-  FileTextOutlined,
   UserOutlined,
   DollarOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
 import dayjs from "dayjs";
+import { useTheme } from "../../../context/ThemeContext";
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -40,6 +40,7 @@ const EventHeader = styled.div`
 `;
 
 const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoices = [], loading = false }) => {
+  const { theme } = useTheme();
   const timelineData = useMemo(() => {
     if (!patient) return [];
 
@@ -67,8 +68,8 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
           title: app.reason || app.REASON || "Medical Visit",
           details: `Status: ${app.status || app.STATUS}. ${app.notes || app.NOTES || ""}`,
           doctor: app.doctor_name || app.DOCTOR_NAME || app.staff_name || app.STAFF_NAME,
-          icon: <CalendarOutlined style={{ color: "#2563eb" }} />,
-          color: "blue",
+          icon: <CalendarOutlined style={{ color: theme.primary }} />,
+          color: theme.primary,
         });
       });
 
@@ -88,8 +89,8 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
           title: "Prescription Issued",
           details: `Medicines: ${medNames}. Instructions: ${rx.notes || "Follow dosage instructions."}`,
           doctor: rx.provider_name || rx.DOCTOR_NAME,
-          icon: <MedicineBoxOutlined style={{ color: "#10b981" }} />,
-          color: "green",
+          icon: <MedicineBoxOutlined style={{ color: theme.status.success }} />,
+          color: theme.status.success,
         });
       });
 
@@ -103,14 +104,14 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
           type: "Billing",
           title: `Invoice #${inv.invoice_number || inv.ID}`,
           details: `Amount: $${inv.total_amount || inv.TOTAL_AMOUNT || 0}. Status: ${inv.status || inv.STATUS}.`,
-          icon: <DollarOutlined style={{ color: "#f59e0b" }} />,
-          color: "orange",
+          icon: <DollarOutlined style={{ color: theme.status.warning }} />,
+          color: theme.status.warning,
         });
       });
 
     // Sort by date descending
     return events.sort((a, b) => dayjs(b.date).unix() - dayjs(a.date).unix());
-  }, [patient, appointments, prescriptions, invoices]);
+  }, [patient, appointments, prescriptions, invoices, theme]);
 
   if (!patient) return <Empty description="No patient selected" />;
 
@@ -128,7 +129,7 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
   return (
     <TimelineContainer>
       <div style={{ marginBottom: "24px" }}>
-        <Title level={4} style={{ margin: 0, color: "#1e3a8a" }}>
+        <Title level={4} style={{ margin: 0, color: theme.secondary }}>
           Timeline
         </Title>
         <Text type="secondary">Historical activity for {patient.display_name || `${patient.first_name} ${patient.last_name}`}</Text>
@@ -139,17 +140,24 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
           mode="start"
           items={timelineData.map((event) => ({
             key: event.id,
-            label: dayjs(event.date).format("MMM DD, YYYY"),
-            dot: event.icon,
+            title: dayjs(event.date).format("MMM DD, YYYY"),
+            icon: event.icon,
             color: event.color,
-            children: (
+            content: (
               <EventCard size="small">
                 <EventHeader>
                   <div style={{ display: "flex", flexDirection: "column" }}>
-                    <Tag color={event.color} style={{ width: "fit-content", marginBottom: "4px", fontSize: "10px" }}>
+                    <Tag
+                      color={event.color}
+                      style={{
+                        width: "fit-content",
+                        marginBottom: "4px",
+                        fontSize: "10px",
+                      }}
+                    >
                       {event.type.toUpperCase()}
                     </Tag>
-                    <Text strong style={{ fontSize: "14px", color: "#1e3a5f" }}>
+                    <Text strong style={{ fontSize: "14px", color: theme.text.primary }}>
                       {event.title}
                     </Text>
                   </div>
@@ -157,13 +165,22 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
                     {dayjs(event.date).format("h:mm A")}
                   </Text>
                 </EventHeader>
-                <Paragraph style={{ margin: "8px 0", fontSize: "13px", color: "#475569" }}>
+                <Paragraph
+                  style={{ margin: "8px 0", fontSize: "13px", color: "#475569" }}
+                >
                   {event.details}
                 </Paragraph>
                 {event.doctor && (
-                  <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: "8px", marginTop: "4px" }}>
+                  <div
+                    style={{
+                      borderTop: "1px solid #f1f5f9",
+                      paddingTop: "8px",
+                      marginTop: "4px",
+                    }}
+                  >
                     <Text type="secondary" style={{ fontSize: "12px" }}>
-                      Provider: <Text style={{ color: "#2563eb" }}>{event.doctor}</Text>
+                      Provider:{" "}
+                      <Text style={{ color: theme.primary }}>{event.doctor}</Text>
                     </Text>
                   </div>
                 )}

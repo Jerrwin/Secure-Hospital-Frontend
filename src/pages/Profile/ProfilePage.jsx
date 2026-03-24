@@ -12,6 +12,7 @@ import {
   Divider,
   message,
   Tooltip,
+  Space,
 } from "antd";
 import {
   UserOutlined,
@@ -28,8 +29,10 @@ import {
   ManOutlined,
   CrownOutlined,
   CheckCircleOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import styled, { keyframes } from "styled-components";
+import { useTheme } from "../../context/ThemeContext";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useUsers from "../../modules/users/hooks/useUsers";
 import dayjs from "dayjs";
@@ -46,8 +49,8 @@ const fadeInUp = keyframes`
 `;
 
 const pulse = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
-  50%      { box-shadow: 0 0 0 12px rgba(37, 99, 235, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 ${(props) => props.theme.primary}66; }
+  50%      { box-shadow: 0 0 0 12px ${(props) => props.theme.primary}00; }
 `;
 
 const shimmer = keyframes`
@@ -56,28 +59,37 @@ const shimmer = keyframes`
 `;
 
 // ─── Helpers ─────────────────────────────────────────────
-const getPasswordStrength = (pass) => {
-  if (!pass) return { score: 0, label: "None", color: "#e5e7eb" };
-  if (pass.length < 6) return { score: 1, label: "Weak", color: "#ef4444" };
-  if (pass.length < 10) return { score: 2, label: "Average", color: "#f59e0b" };
-  return { score: 3, label: "Strong", color: "#10b981" };
+const getPasswordStrength = (pass, theme) => {
+  if (!pass) return { score: 0, label: "None", color: theme.border };
+  if (pass.length < 6)
+    return { score: 1, label: "Weak", color: theme.status.error };
+  if (pass.length < 10)
+    return { score: 2, label: "Average", color: theme.status.warning };
+  return { score: 3, label: "Strong", color: theme.status.success };
 };
 
 // ─── Styled Components ───────────────────────────────────
 const ProfileWrapper = styled.div`
+  width: 100%;
   max-width: 960px;
   margin: 0 auto;
   animation: ${fadeInUp} 0.5s ease-out;
 `;
 
 const HeroBanner = styled.div`
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #6366f1 100%);
+  background: ${props => props.theme.primary};
+  background: linear-gradient(
+    135deg,
+    ${(props) => props.theme.secondary} 0%,
+    ${(props) => props.theme.primary} 50%,
+    ${(props) => props.theme.accent} 100%
+  );
   border-radius: 20px;
   padding: 48px 40px 40px;
   position: relative;
   overflow: hidden;
   margin-bottom: 32px;
-  box-shadow: 0 20px 60px rgba(30, 58, 138, 0.25);
+  box-shadow: ${(props) => props.theme.shadow};
 
   &::before {
     content: "";
@@ -86,7 +98,11 @@ const HeroBanner = styled.div`
     right: -20%;
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 70%
+    );
     border-radius: 50%;
   }
 
@@ -97,7 +113,11 @@ const HeroBanner = styled.div`
     left: -10%;
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 70%
+    );
     border-radius: 50%;
   }
 
@@ -151,8 +171,8 @@ const OnlineBadge = styled.div`
   right: 6px;
   width: 18px;
   height: 18px;
-  background: #22c55e;
-  border: 3px solid #1e3a8a;
+  background: ${(props) => props.theme.status.success};
+  border: 3px solid ${(props) => props.theme.primary};
   border-radius: 50%;
   z-index: 2;
 `;
@@ -207,31 +227,35 @@ const MetaPill = styled.div`
 
 const QuickStatsRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 28px;
   animation: ${fadeInUp} 0.6s ease-out 0.1s both;
 
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   @media (max-width: 576px) {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 12px;
   }
 `;
 
 const StatCard = styled.div`
-  background: #fff;
+  background: ${(props) => props.theme.background.card};
   border-radius: 14px;
   padding: 20px;
   text-align: center;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-  border: 1px solid #f1f5f9;
+  box-shadow: ${(props) => props.theme.shadow};
+  border: 1px solid ${(props) => props.theme.border};
   transition: all 0.25s ease;
   cursor: default;
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
-    border-color: #dbeafe;
+    box-shadow: ${(props) => props.theme.glow};
+    border-color: ${(props) => props.theme.primary};
   }
 
   .stat-icon {
@@ -248,7 +272,7 @@ const StatCard = styled.div`
   .stat-value {
     font-size: 15px;
     font-weight: 700;
-    color: #1e293b;
+    color: ${(props) => props.theme.text.primary};
     display: block;
     margin-bottom: 2px;
   }
@@ -264,21 +288,22 @@ const StatCard = styled.div`
 
 const DetailCard = styled(Card)`
   border-radius: 16px;
-  border: 1px solid #f1f5f9;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  border: 1px solid ${(props) => props.theme.border};
+  box-shadow: ${(props) => props.theme.shadow};
+  background: ${(props) => props.theme.background.card};
   overflow: hidden;
   animation: ${fadeInUp} 0.6s ease-out 0.2s both;
 
   .ant-card-head {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-bottom: 1px solid #e2e8f0;
+    background: ${(props) => props.theme.background.header};
+    border-bottom: 1px solid ${(props) => props.theme.border};
     padding: 0 28px;
     min-height: 54px;
   }
 
   .ant-card-head-title {
     font-weight: 700;
-    color: #1e3a8a;
+    color: ${(props) => props.theme.primary};
     font-size: 15px;
   }
 
@@ -303,15 +328,15 @@ const InfoGrid = styled.div`
 
 const InfoItem = styled.div`
   padding: 18px 20px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid ${(props) => props.theme.border};
   transition: background 0.2s;
 
   &:hover {
-    background: #fafbfe;
+    background: ${(props) => props.theme.background.main};
   }
 
   &:nth-child(odd) {
-    border-right: 1px solid #f1f5f9;
+    border-right: 1px solid ${(props) => props.theme.border};
 
     @media (max-width: 768px) {
       border-right: none;
@@ -337,13 +362,13 @@ const InfoLabel = styled.div`
 
   .anticon {
     font-size: 13px;
-    color: #3b82f6;
+    color: ${(props) => props.theme.primary};
   }
 `;
 
 const InfoValue = styled.div`
   font-size: 15px;
-  color: #1e293b;
+  color: ${(props) => props.theme.text.primary};
   font-weight: 500;
   padding-left: 21px;
 `;
@@ -368,7 +393,7 @@ const ActionBar = styled.div`
   gap: 12px;
   margin-top: 28px;
   padding-top: 24px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid ${(props) => props.theme.border};
 
   @media (max-width: 576px) {
     flex-direction: column-reverse;
@@ -385,26 +410,35 @@ const EditBtn = styled(Button)`
   border-radius: 12px;
   font-weight: 600;
   font-size: 14px;
-  background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+  background: linear-gradient(
+    135deg,
+    ${(props) => props.theme.primary} 0%,
+    ${(props) => props.theme.secondary} 100%
+  );
   border: none;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+  box-shadow: ${(props) => props.theme.shadow};
   transition: all 0.3s ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
-    background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%) !important;
+    box-shadow: ${(props) => props.theme.glow} !important;
+    background: linear-gradient(
+      135deg,
+      ${(props) => props.theme.primaryHover} 0%,
+      ${(props) => props.theme.secondary} 100%
+    ) !important;
   }
 `;
 
 const ShimmerTag = styled(Tag)`
-  background: linear-gradient(90deg, #eff6ff 25%, #dbeafe 50%, #eff6ff 75%);
+  background: linear-gradient(90deg, ${props => props.theme.background.main} 25%, ${props => props.theme.primaryLight} 50%, ${props => props.theme.background.main} 75%);
   background-size: 200% auto;
   animation: ${shimmer} 3s linear infinite;
   border: none;
   border-radius: 20px;
   padding: 2px 14px;
   font-weight: 600;
+  color: ${props => props.theme.primary};
 `;
 
 // ─── Component ───────────────────────────────────────────
@@ -414,10 +448,11 @@ const ProfilePage = () => {
   const [form] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
 
+  const { theme } = useTheme();
   const passwordValue = Form.useWatch("new_password", form);
   const strength = useMemo(
-    () => getPasswordStrength(passwordValue),
-    [passwordValue],
+    () => getPasswordStrength(passwordValue, theme),
+    [passwordValue, theme],
   );
 
   useEffect(() => {
@@ -573,6 +608,7 @@ const ProfilePage = () => {
                 color: "#fff",
                 fontSize: "32px",
                 fontWeight: 700,
+                border: "4px solid rgba(255, 255, 255, 0.3)",
               }}
             >
               {initials}
@@ -631,7 +667,7 @@ const ProfilePage = () => {
         <StatCard>
           <div
             className="stat-icon"
-            style={{ background: "#eff6ff", color: "#2563eb" }}
+            style={{ background: theme.primaryLight, color: theme.primary }}
           >
             <MailOutlined />
           </div>
@@ -643,7 +679,11 @@ const ProfilePage = () => {
         <StatCard>
           <div
             className="stat-icon"
-            style={{ background: "#f0fdf4", color: "#16a34a" }}
+            style={{
+              background:
+                theme.name === "dark" ? "rgba(16, 185, 129, 0.1)" : "#f0fdf4",
+              color: theme.status.success,
+            }}
           >
             <PhoneOutlined />
           </div>
@@ -653,7 +693,11 @@ const ProfilePage = () => {
         <StatCard>
           <div
             className="stat-icon"
-            style={{ background: "#faf5ff", color: "#7c3aed" }}
+            style={{
+              background:
+                theme.name === "dark" ? "rgba(124, 58, 237, 0.1)" : "#faf5ff",
+              color: theme.status.info,
+            }}
           >
             <SafetyOutlined />
           </div>
@@ -665,7 +709,11 @@ const ProfilePage = () => {
         <StatCard>
           <div
             className="stat-icon"
-            style={{ background: "#fff7ed", color: "#ea580c" }}
+            style={{
+              background:
+                theme.name === "dark" ? "rgba(234, 88, 12, 0.1)" : "#fff7ed",
+              color: theme.accent,
+            }}
           >
             <CrownOutlined />
           </div>
@@ -676,7 +724,12 @@ const ProfilePage = () => {
 
       {/* ─── Details / Edit Card ─── */}
       <DetailCard
-        title={isEditing ? "✏️ Edit Profile" : "📋 Profile Details"}
+        title={
+          <Space>
+            {isEditing ? <EditOutlined /> : <FileTextOutlined />}
+            {isEditing ? "Edit Profile" : "Profile Details"}
+          </Space>
+        }
       >
         {isEditing ? (
           <Form
@@ -748,7 +801,7 @@ const ProfilePage = () => {
 
             <Divider
               titlePlacement="left"
-              style={{ color: "#1e3a8a", fontWeight: 600 }}
+              style={{ color: theme.primary, fontWeight: 600 }}
             >
               <SafetyOutlined /> Security & Password
             </Divider>
@@ -760,7 +813,7 @@ const ProfilePage = () => {
                 tooltip="Required to confirm identity"
               >
                 <Input.Password
-                  prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
+                  prefix={<LockOutlined style={{ color: theme.text.light }} />}
                   size="large"
                   placeholder="Enter current password"
                   style={{ borderRadius: 10 }}
@@ -779,7 +832,7 @@ const ProfilePage = () => {
                   ]}
                 >
                   <Input.Password
-                    prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
+                    prefix={<LockOutlined style={{ color: theme.text.light }} />}
                     size="large"
                     style={{ borderRadius: 10 }}
                   />
@@ -793,7 +846,11 @@ const ProfilePage = () => {
                       size="small"
                     />
                     <Text
-                      style={{ fontSize: "12px", color: strength.color, fontWeight: 600 }}
+                      style={{
+                        fontSize: "12px",
+                        color: strength.color,
+                        fontWeight: 600,
+                      }}
                     >
                       Strength: {strength.label}
                     </Text>
@@ -817,7 +874,7 @@ const ProfilePage = () => {
                 ]}
               >
                 <Input.Password
-                  prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
+                  prefix={<LockOutlined style={{ color: theme.text.light }} />}
                   size="large"
                   style={{ borderRadius: 10 }}
                 />
@@ -843,8 +900,7 @@ const ProfilePage = () => {
                   borderRadius: 10,
                   height: 46,
                   padding: "0 32px",
-                  background:
-                    "linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)",
+                  background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.secondary} 100%)`,
                   border: "none",
                   fontWeight: 600,
                 }}
@@ -878,9 +934,7 @@ const ProfilePage = () => {
                 <InfoLabel>
                   <ManOutlined /> Gender
                 </InfoLabel>
-                <InfoValue
-                  style={{ textTransform: "capitalize" }}
-                >
+                <InfoValue style={{ textTransform: "capitalize" }}>
                   {activeProfile.gender || "N/A"}
                 </InfoValue>
               </InfoItem>
@@ -895,7 +949,7 @@ const ProfilePage = () => {
                   <CalendarOutlined /> Member Since
                 </InfoLabel>
                 <InfoValue>
-                  <ShimmerTag color="blue">{joinedDate}</ShimmerTag>
+                  <ShimmerTag color={theme.primary}>{joinedDate}</ShimmerTag>
                 </InfoValue>
               </InfoItem>
               <InfoItem>
@@ -904,7 +958,7 @@ const ProfilePage = () => {
                 </InfoLabel>
                 <InfoValue>
                   <Tag
-                    color="geekblue"
+                    color={theme.primary}
                     style={{
                       borderRadius: 20,
                       padding: "2px 14px",

@@ -1,8 +1,8 @@
 import React, { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Spin } from "antd";
 import { useSelector } from "react-redux";
 import HospitalNotFound from "../pages/Auth/HospitalNotFound";
+import LoadingScreen from "../components/common/LoadingScreen";
 
 // ─── Normal Imports (Instant Loading) ───────────────────────────────────
 import LoginPage from "../pages/Auth/LoginPage";
@@ -25,22 +25,12 @@ const InvoicePage = lazy(() => import("../pages/Billing/InvoicePage"));
 const ProfilePage = lazy(() => import("../pages/Profile/ProfilePage"));
 const SettingsPage = lazy(() => import("../pages/Settings/SecuritySettings")); // Using SecuritySettings as placeholder for now
 
+
+
 /**
  * Global Loading Fallback for Lazy Components
  */
-const LoadingFallback = () => (
-  <div
-    style={{
-      height: "100vh",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      background: "#eff6ff",
-    }}
-  >
-    <Spin size="large" description="Loading Module..." />
-  </div>
-);
+const LoadingFallback = () => <LoadingScreen fullPage label="Loading Module..." />;
 
 const AppRouter = ({ isSubdomain }) => {
   const { config, loading, error, fetched } = useSelector(
@@ -88,7 +78,7 @@ const AppRouter = ({ isSubdomain }) => {
           <Route
             path="/appointments"
             element={
-              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PROVIDER", "DOCTOR", "NURSE"]}>
+              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PROVIDER", "DOCTOR", "NURSE", "PATIENT"]}>
                 <AppointmentCalendar />
               </RoleBasedRoute>
             }
@@ -108,7 +98,7 @@ const AppRouter = ({ isSubdomain }) => {
             path="/prescriptions"
             element={
               <RoleBasedRoute
-                allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER"]}
+                allowedRoles={["PHARMACIST", "DOCTOR", "PROVIDER", "PATIENT"]}
               >
                 <PrescriptionPage />
               </RoleBasedRoute>
@@ -127,7 +117,7 @@ const AppRouter = ({ isSubdomain }) => {
             path="/billing"
             element={
               <RoleBasedRoute
-                allowedRoles={["RECEPTIONIST"]}
+                allowedRoles={["RECEPTIONIST", "PATIENT"]}
               >
                 <InvoicePage />
               </RoleBasedRoute>

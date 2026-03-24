@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import { Layout, Spin, Drawer } from "antd";
+import { MedicineBoxOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import { useSelector, useDispatch } from "react-redux";
 import { Outlet, useLocation } from "react-router-dom";
@@ -10,14 +11,16 @@ import Footer from "../Footer/Footer";
 import ErrorBoundary from "../../common/ErrorBoundary";
 import useAuth from "../../../modules/auth/hooks/useAuth";
 import useIdleLogout from "../../../hooks/useIdleLogout";
+import LoadingScreen from "../../common/LoadingScreen";
+import { useTheme } from "../../../context/ThemeContext";
 
 const { Content } = Layout;
 
-// The main background is set to your specified #eff6ff token
+// The main background is set to your specified theme token
 const MainLayout = styled(Layout)`
   height: 100vh;
   overflow: hidden;
-  background: #eff6ff;
+  background: ${props => props.theme.background.main};
 `;
 
 const StyledContent = styled(Content)`
@@ -40,6 +43,7 @@ const StyledContent = styled(Content)`
 const DashboardLayout = () => {
   const dispatch = useDispatch();
   const location = useLocation();
+  const { theme } = useTheme();
   const { user, userRole } = useAuth();
   
   // Start inactivity timer (5 minutes auto-logout)
@@ -65,7 +69,7 @@ const DashboardLayout = () => {
         <Header user={safeUser} />
       </ErrorBoundary>
       
-      <Layout style={{ background: "#eff6ff" }}>
+      <Layout style={{ background: "transparent" }}>
         {/* Persistent Sidebar for Desktop */}
         <Sidebar
           role={currentUserRole}
@@ -77,17 +81,27 @@ const DashboardLayout = () => {
 
         {/* Slide-out Drawer for Mobile */}
         <Drawer
-          title={<span style={{ color: '#1e3a8a', fontWeight: 700 }}>Navigation</span>}
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: theme.primary }}>
+              <MedicineBoxOutlined style={{ fontSize: '1.4rem' }} />
+              <span style={{ fontWeight: 700 }}>MedPortal</span>
+            </div>
+          }
           placement="left"
           onClose={closeMobileDrawer}
           open={mobileDrawerOpen}
+          closeIcon={<span style={{ color: theme.primary }}>×</span>}
           styles={{
-            body: { padding: 0, background: '#1e3a8a' },
-            header: { borderBottom: '1px solid rgba(255,255,255,0.1)' },
+            body: { padding: 0, background: theme.secondary },
+            header: { 
+              background: theme.background.card, 
+              borderBottom: `1px solid ${theme.border}`,
+              padding: '16px 20px'
+            },
             wrapper: { width: 280 }
           }}
         >
-          <div style={{ background: '#1e3a8a', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ background: theme.secondary, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <SidebarContent 
               role={currentUserRole}
               user={safeUser}
@@ -100,28 +114,24 @@ const DashboardLayout = () => {
 
         <Layout
           style={{
-            background: "#eff6ff",
+            background: "transparent",
             display: "flex",
             flexDirection: "column",
           }}
         >
-            <StyledContent>
-              <ErrorBoundary key={location.key}>
-                <Suspense
-                  fallback={
-                    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "100px 0" }}>
-                      <Spin size="large" description="Loading Page..." />
-                    </div>
-                  }
-                >
-                  <Outlet />
-                </Suspense>
-              </ErrorBoundary>
-              <div style={{ marginTop: 'auto' }}>
-                <Footer />
-              </div>
-            </StyledContent>
-          </Layout>
+          <StyledContent>
+            <ErrorBoundary key={location.key}>
+              <Suspense
+                fallback={<LoadingScreen label="Loading Page..." />}
+              >
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
+            <div style={{ marginTop: 'auto' }}>
+              <Footer />
+            </div>
+          </StyledContent>
+        </Layout>
       </Layout>
     </MainLayout>
   );

@@ -11,53 +11,64 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { 
-  Calendar, 
-  Spin, 
-  Tag, 
-  Popover, 
-  Badge, 
-  Input, 
-  Select, 
-  Button, 
-  Space 
+import {
+  Calendar,
+  Spin,
+  Tag,
+  Popover,
+  Badge,
+  Input,
+  Select,
+  Button,
+  Space,
 } from "antd";
 
+import { useTheme } from "../../context/ThemeContext";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useCalendar from "../../modules/calendar/hooks/useCalendar";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
+import usePatients from "../../modules/patients/hooks/usePatients";
 import AppointmentList from "./AppointmentList";
+import AppButton from "../../components/common/Button/AppButton";
 
-const { Option } = Select;
+const StyledSpin = styled(Spin)`
+  .ant-spin-dot-item {
+    background-color: ${props => props.theme.primary} !important;
+  }
+  .ant-spin-text {
+    color: ${props => props.theme.primary} !important;
+    font-weight: 500;
+  }
+`;
 
-// ─── Breakpoints ──────────────────────────────────────────────────────────────
+// ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
 const bp = {
-  xs: "480px",
-  sm: "576px",
-  md: "768px",
-  lg: "992px",
-  xl: "1200px",
+  xs: (props) => props.theme.breakpoints.xs,
+  sm: (props) => props.theme.breakpoints.sm,
+  md: (props) => props.theme.breakpoints.md,
+  lg: (props) => props.theme.breakpoints.lg,
+  xl: (props) => props.theme.breakpoints.xl,
 };
-
-// ─── Styled Components ────────────────────────────────────────────────────────
 
 const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  @media (min-width: ${bp.md}) { gap: 20px; }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    gap: 20px;
+  }
 `;
 
 const PageHeader = styled.div`
   display: flex;
   flex-direction: column;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e2e8f0;
+  background: ${(props) => props.theme.background.card};
+  border-radius: ${(props) => props.theme.borderRadius.lg};
+  box-shadow: ${(props) => props.theme.shadow};
+  border: 1px solid ${(props) => props.theme.border};
   overflow: hidden;
 
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     border-radius: 14px;
   }
 `;
@@ -66,26 +77,34 @@ const HeaderRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 12px 16px;
-  
-  @media (min-width: ${bp.lg}) {
+  gap: 10px;
+  flex-wrap: nowrap;
+  padding: 10px 12px;
+  width: 100%;
+
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     padding: 16px 22px;
-    flex-wrap: nowrap;
-    border-bottom: 1px solid #f1f5f9;
   }
 `;
 
 const MobileRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  padding: 8px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  
-  @media (min-width: ${bp.lg}) {
+  padding: 0 12px 10px 12px;
+  width: 100%;
+
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    padding: 0 16px 12px 16px;
+    gap: 12px;
+  }
+
+  @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     display: none; // Hidden on desktop, moved into HeaderRow
   }
 `;
@@ -93,20 +112,20 @@ const MobileRow = styled.div`
 const SearchWrapper = styled.div`
   flex: 1;
   min-width: 0;
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     max-width: 320px;
   }
 `;
 
 const SearchInput = styled(Input)`
-  border-radius: 8px;
+  border-radius: ${(props) => props.theme.borderRadius.md};
   width: 100%;
 `;
 
 const StatusSelect = styled(Select)`
   min-width: 140px;
   .ant-select-selector {
-    border-radius: 8px !important;
+    border-radius: ${(props) => props.theme.borderRadius.md} !important;
   }
 `;
 
@@ -122,12 +141,12 @@ const TitleIcon = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #e8f0fe;
+  background: ${(props) => props.theme.primaryLight};
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     width: 40px;
     height: 40px;
     border-radius: 10px;
@@ -137,25 +156,30 @@ const TitleIcon = styled.div`
 const PageTitle = styled.h2`
   font-size: 15px;
   font-weight: 700;
-  color: #1e3a5f;
+  color: ${(props) => props.theme.text.primary};
   margin: 0;
   letter-spacing: -0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  @media (min-width: ${bp.sm}) { font-size: 17px; }
-  @media (min-width: ${bp.md}) { font-size: 18px; }
+  @media (min-width: ${(props) => props.theme.breakpoints.sm}) {
+    font-size: 17px;
+  }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    font-size: 18px;
+  }
 `;
 
 const ViewToggle = styled.div`
   display: flex;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  align-items: center;
+  background: ${(props) => props.theme.background.main};
+  border: 1px solid ${(props) => props.theme.border};
   border-radius: 9px;
   padding: 3px;
   gap: 2px;
   flex-shrink: 0;
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     border-radius: 10px;
     padding: 4px;
     gap: 3px;
@@ -175,37 +199,45 @@ const ToggleBtn = styled.button`
   transition: all 0.17s ease;
   font-family: inherit;
   white-space: nowrap;
-  background: ${({ $active }) => ($active ? "#1677ff" : "transparent")};
-  color: ${({ $active }) => ($active ? "#ffffff" : "#64748b")};
-  box-shadow: ${({ $active }) =>
-    $active ? "0 2px 8px rgba(22,119,255,0.25)" : "none"};
+  background: ${({ $active, theme }) =>
+    $active ? theme.primary : "transparent"};
+  color: ${({ $active, theme }) =>
+    $active ? "#ffffff" : theme.text.secondary};
+  box-shadow: ${({ $active, theme }) => ($active ? theme.shadow : "none")};
 
-  .btn-text { display: none; }
+  .btn-text {
+    display: none;
+  }
 
-  @media (min-width: ${bp.xs}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.xs}) {
     padding: 7px 14px;
     gap: 6px;
-    .btn-text { display: inline; }
+    .btn-text {
+      display: inline;
+    }
   }
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     padding: 8px 18px;
     font-size: 13px;
     gap: 7px;
     border-radius: 7px;
   }
   &:hover {
-    background: ${({ $active }) => ($active ? "#1677ff" : "#e2e8f0")};
-    color: ${({ $active }) => ($active ? "#ffffff" : "#1e3a5f")};
+    background: ${({ $active, theme }) =>
+      $active ? theme.primary : theme.primaryLight};
+    color: ${({ $active, theme }) => ($active ? "#ffffff" : theme.primary)};
   }
 `;
 
 const CalendarCard = styled.div`
-  background: #ffffff;
+  background: ${(props) => props.theme.background.card};
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(30, 58, 95, 0.07);
-  border: 1px solid #eef2f8;
+  box-shadow: ${(props) => props.theme.shadow};
+  border: 1px solid ${(props) => props.theme.border};
   overflow: hidden;
-  @media (min-width: ${bp.md}) { border-radius: 14px; }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    border-radius: 14px;
+  }
 
   .ant-picker-calendar {
     background: transparent;
@@ -215,14 +247,14 @@ const CalendarCard = styled.div`
   /* ── Style the built-in Ant header (month/year selects) ── */
   .ant-picker-calendar-header {
     padding: 10px 14px 10px;
-    border-bottom: 1px solid #eef2f8;
-    background: #fafbfe;
+    border-bottom: 1px solid ${(props) => props.theme.border};
+    background: ${(props) => props.theme.background.header};
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     flex-wrap: wrap;
-    @media (min-width: ${bp.md}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
       padding: 12px 20px;
     }
   }
@@ -230,13 +262,13 @@ const CalendarCard = styled.div`
   /* Month select */
   .ant-picker-calendar-header .ant-select:first-child .ant-select-selector {
     border-radius: 8px !important;
-    border-color: #e2e8f0 !important;
+    border-color: ${(props) => props.theme.border} !important;
     font-size: 12px !important;
     font-weight: 600 !important;
-    color: #1e3a5f !important;
-    background: #ffffff !important;
+    color: ${(props) => props.theme.text.primary} !important;
+    background: ${(props) => props.theme.background.card} !important;
     min-width: 110px;
-    @media (min-width: ${bp.md}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
       font-size: 13px !important;
       min-width: 120px;
     }
@@ -245,25 +277,25 @@ const CalendarCard = styled.div`
   /* Year select */
   .ant-picker-calendar-header .ant-select:last-child .ant-select-selector {
     border-radius: 8px !important;
-    border-color: #e2e8f0 !important;
+    border-color: ${(props) => props.theme.border} !important;
     font-size: 12px !important;
     font-weight: 600 !important;
-    color: #1e3a5f !important;
-    background: #ffffff !important;
+    color: ${(props) => props.theme.text.primary} !important;
+    background: ${(props) => props.theme.background.card} !important;
     min-width: 80px;
-    @media (min-width: ${bp.md}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
       font-size: 13px !important;
       min-width: 90px;
     }
   }
 
   .ant-picker-calendar-header .ant-select-selector:hover {
-    border-color: #1677ff !important;
+    border-color: ${(props) => props.theme.primary} !important;
   }
 
   .ant-picker-calendar-header .ant-select-focused .ant-select-selector {
-    border-color: #1677ff !important;
-    box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1) !important;
+    border-color: ${props => props.theme.primary} !important;
+    box-shadow: 0 0 0 2px ${props => props.theme.primary}22 !important;
   }
 
   /* Hide the default Ant Design header completely — we have a custom one */
@@ -276,20 +308,24 @@ const CalendarCard = styled.div`
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: ${(props) => props.theme.text.light};
     padding: 8px 0 6px;
-    background: #fafbfe;
-    border-bottom: 1px solid #eef2f8;
+    background: ${(props) => props.theme.background.header};
+    border-bottom: 1px solid ${(props) => props.theme.border};
     text-align: center;
-    @media (min-width: ${bp.md}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
       font-size: 11px;
       padding: 10px 0 8px;
     }
   }
 
-  .ant-picker-cell { padding: 1px; }
-  @media (min-width: ${bp.md}) {
-    .ant-picker-cell { padding: 2px; }
+  .ant-picker-cell {
+    padding: 1px;
+  }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    .ant-picker-cell {
+      padding: 2px;
+    }
   }
 
   .ant-picker-cell-inner.ant-picker-calendar-date {
@@ -298,11 +334,11 @@ const CalendarCard = styled.div`
     transition: background 0.14s;
     border: 1px solid transparent;
     min-height: 42px; /* Reduced for XS */
-    @media (min-width: ${bp.sm}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.sm}) {
       min-height: 64px;
       border-radius: 7px;
     }
-    @media (min-width: ${bp.md}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
       min-height: 80px;
       border-radius: 8px;
       margin: 2px;
@@ -310,24 +346,24 @@ const CalendarCard = styled.div`
   }
 
   .ant-picker-cell:hover .ant-picker-cell-inner.ant-picker-calendar-date {
-    background: #f0f5ff !important;
-    border-color: #c7d9f7;
+    background: ${(props) => props.theme.primaryLight} !important;
+    border-color: ${(props) => props.theme.primary};
   }
   .ant-picker-cell-today .ant-picker-calendar-date-value {
-    color: #1677ff !important;
+    color: ${(props) => props.theme.primary} !important;
     font-weight: 700;
   }
   .ant-picker-cell-today .ant-picker-cell-inner.ant-picker-calendar-date {
-    border-color: #1677ff !important;
-    background: #f0f5ff;
+    border-color: ${(props) => props.theme.primary} !important;
+    background: ${(props) => props.theme.primaryLight};
   }
   .ant-picker-calendar-date-value {
     font-size: 10px; /* Scaled down for mobile */
     font-weight: 500;
-    color: #374151;
+    color: ${(props) => props.theme.text.primary};
     line-height: 1.4;
     padding: 2px 4px;
-    @media (min-width: ${bp.md}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
       font-size: 13px;
       padding: 4px 6px;
     }
@@ -336,15 +372,17 @@ const CalendarCard = styled.div`
     height: auto !important;
     min-height: 20px; /* Reduced for XS */
     overflow: visible;
-    @media (min-width: ${bp.md}) { min-height: 44px; }
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+      min-height: 44px;
+    }
   }
   .ant-picker-cell-selected .ant-picker-cell-inner.ant-picker-calendar-date {
-    background: #e8f0fe !important;
-    border-color: #1677ff !important;
+    background: ${(props) => props.theme.primaryLight} !important;
+    border-color: ${(props) => props.theme.primary} !important;
   }
   .ant-picker-cell:first-child .ant-picker-calendar-date-value,
   .ant-picker-cell:last-child .ant-picker-calendar-date-value {
-    color: #94a3b8;
+    color: ${props => props.theme.text.light};
   }
 `;
 
@@ -356,9 +394,9 @@ const CalTopBar = styled.div`
   flex-wrap: wrap;
   gap: 8px; /* Slightly reduced gap */
   padding: 10px 12px; /* Slightly more compact padding for mobile */
-  border-bottom: 1px solid #eef2f8;
-  background: #fafbfe;
-  @media (min-width: ${bp.md}) { 
+  border-bottom: 1px solid ${(props) => props.theme.border};
+  background: ${(props) => props.theme.background.header};
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     padding: 14px 20px 12px;
     gap: 10px;
   }
@@ -377,8 +415,8 @@ const LegendItem = styled.div`
   gap: 5px;
   font-size: 10px; /* Reduced for XS */
   font-weight: 500;
-  color: #555;
-  @media (min-width: ${bp.md}) {
+  color: ${(props) => props.theme.text.secondary};
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     font-size: 12px;
     gap: 6px;
   }
@@ -389,16 +427,18 @@ const MonthNav = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  @media (min-width: ${bp.md}) { gap: 8px; }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    gap: 8px;
+  }
 `;
 
 const NavArrowBtn = styled.button`
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #374151;
+  border: 1px solid ${(props) => props.theme.border};
+  background: ${(props) => props.theme.background.card};
+  color: ${(props) => props.theme.text.primary};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -407,12 +447,14 @@ const NavArrowBtn = styled.button`
   transition: all 0.14s;
   flex-shrink: 0;
   &:hover {
-    background: #e8f0fe;
-    border-color: #b3ccf8;
-    color: #1677ff;
+    background: ${(props) => props.theme.primaryLight};
+    border-color: ${(props) => props.theme.primary};
+    color: ${(props) => props.theme.primary};
   }
-  &:active { transform: scale(0.95); }
-  @media (min-width: ${bp.md}) {
+  &:active {
+    transform: scale(0.95);
+  }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     width: 34px;
     height: 34px;
   }
@@ -421,11 +463,11 @@ const NavArrowBtn = styled.button`
 const MonthLabel = styled.div`
   font-size: 12px; /* Scaled down for XS */
   font-weight: 700;
-  color: #1e3a5f;
+  color: ${(props) => props.theme.text.primary};
   min-width: 90px;
   text-align: center;
   letter-spacing: -0.2px;
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     font-size: 15px;
     min-width: 120px;
   }
@@ -434,9 +476,9 @@ const MonthLabel = styled.div`
 const TodayButton = styled.button`
   padding: 5px 14px;
   border-radius: 8px;
-  border: 1.5px solid #1677ff;
-  background: #ffffff;
-  color: #1677ff;
+  border: 1.5px solid ${(props) => props.theme.primary};
+  background: ${(props) => props.theme.background.card};
+  color: ${(props) => props.theme.primary};
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -444,11 +486,13 @@ const TodayButton = styled.button`
   transition: all 0.14s;
   white-space: nowrap;
   &:hover {
-    background: #1677ff;
+    background: ${(props) => props.theme.primary};
     color: #ffffff;
   }
-  &:active { transform: scale(0.97); }
-  @media (min-width: ${bp.md}) {
+  &:active {
+    transform: scale(0.97);
+  }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     font-size: 13px;
     padding: 6px 16px;
   }
@@ -456,7 +500,9 @@ const TodayButton = styled.button`
 
 const CalendarBody = styled.div`
   padding: 4px 6px 8px;
-  @media (min-width: ${bp.md}) { padding: 8px 12px 12px; }
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+    padding: 8px 12px 12px;
+  }
 `;
 
 const EventBadgeWrapper = styled.div`
@@ -466,7 +512,10 @@ const EventBadgeWrapper = styled.div`
     width: 6px;
     height: 6px;
     flex-shrink: 0;
-    @media (min-width: ${bp.md}) { width: 6px; height: 6px; }
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
+      width: 6px;
+      height: 6px;
+    }
   }
   .ant-badge-status-text {
     display: none; /* Hidden on XS by default */
@@ -479,10 +528,10 @@ const EventBadgeWrapper = styled.div`
     white-space: nowrap;
     max-width: 80%;
     vertical-align: middle;
-    @media (min-width: ${bp.sm}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.sm}) {
       display: inline-block;
     }
-    @media (min-width: ${bp.md}) {
+    @media (min-width: ${(props) => props.theme.breakpoints.md}) {
       font-size: 10.5px;
       max-width: 88%;
       margin-left: 5px;
@@ -493,10 +542,10 @@ const EventBadgeWrapper = styled.div`
 const MoreCount = styled.div`
   font-size: 9px;
   font-weight: 600;
-  color: #1677ff;
+  color: ${(props) => props.theme.primary};
   padding-left: 10px;
   margin-top: 1px;
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     font-size: 10px;
     padding-left: 12px;
   }
@@ -505,7 +554,7 @@ const MoreCount = styled.div`
 const TooltipContent = styled.div`
   min-width: 200px;
   max-width: 280px;
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     min-width: 230px;
     max-width: 300px;
   }
@@ -529,13 +578,13 @@ const TooltipRow = styled.div`
 const TimeLabel = styled.span`
   font-size: 12px;
   font-weight: 700;
-  color: #1677ff;
+  color: ${(props) => props.theme.primary};
 `;
 
 const PatientName = styled.span`
   font-size: 12px;
   font-weight: 600;
-  color: #1e3a5f;
+  color: ${(props) => props.theme.text.primary};
   display: block;
 `;
 
@@ -562,19 +611,25 @@ const DoctorBlock = styled.div`
 
 const getStatusColor = (status) => {
   switch (status?.toLowerCase()) {
-    case "completed": return "success";
-    case "cancelled": return "error";
+    case "completed":
+      return "success";
+    case "cancelled":
+      return "error";
     case "scheduled":
-    default: return "processing";
+    default:
+      return "processing";
   }
 };
 
-const getStatusTagColor = (status) => {
+const getStatusTagColor = (status, theme) => {
   switch (status?.toLowerCase()) {
-    case "completed": return "green";
-    case "cancelled": return "red";
+    case "completed":
+      return "green";
+    case "cancelled":
+      return "red";
     case "scheduled":
-    default: return "blue";
+    default:
+      return theme.primary;
   }
 };
 
@@ -582,6 +637,8 @@ const getStatusTagColor = (status) => {
 
 const AppointmentCalendar = () => {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const { patients } = useAppointments();
   const role = user?.role?.toUpperCase();
   const isDoctor = role === "DOCTOR" || role === "PROVIDER";
 
@@ -596,7 +653,7 @@ const AppointmentCalendar = () => {
 
   const [viewMode, setViewMode] = useState("list");
   const [currentMonth, setCurrentMonth] = useState(dayjs());
-  
+
   // Unified Control State
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -617,14 +674,14 @@ const AppointmentCalendar = () => {
   useEffect(() => {
     if (viewMode === "calendar") {
       const start = currentMonth.startOf("month").format("YYYY-MM-DD");
-      const end   = currentMonth.endOf("month").format("YYYY-MM-DD");
+      const end = currentMonth.endOf("month").format("YYYY-MM-DD");
       fetchRange(start, end);
     }
   }, [currentMonth, viewMode, fetchRange]);
 
   // ── Nav handlers ─────────────────────────────────────────────────────────
-  const goPrev  = () => setCurrentMonth((m) => m.subtract(1, "month"));
-  const goNext  = () => setCurrentMonth((m) => m.add(1, "month"));
+  const goPrev = () => setCurrentMonth((m) => m.subtract(1, "month"));
+  const goNext = () => setCurrentMonth((m) => m.add(1, "month"));
   const goToday = () => setCurrentMonth(dayjs());
 
   const isCurrentMonth = currentMonth.isSame(dayjs(), "month");
@@ -636,16 +693,17 @@ const AppointmentCalendar = () => {
   const rangeDict = useMemo(() => {
     const dict = {};
     if (!Array.isArray(rangeData)) return dict;
-    
+
     const q = (searchText || "").toLowerCase();
     const sFilter = (statusFilter || "all").toLowerCase();
 
     rangeData.forEach((dayGroup) => {
       // Apply Search and Status filters to each day's appointments
-      const filtered = (dayGroup.appointments || []).filter(appt => {
+      const filtered = (dayGroup.appointments || []).filter((appt) => {
         // 1. Status Filter
-        const statusMatch = sFilter === "all" || (appt.status || "").toLowerCase() === sFilter;
-        
+        const statusMatch =
+          sFilter === "all" || (appt.status || "").toLowerCase() === sFilter;
+
         // 2. Search Filter (Patient Name)
         const nameMatch = !q || (appt.patient || "").toLowerCase().includes(q);
 
@@ -658,28 +716,32 @@ const AppointmentCalendar = () => {
   }, [rangeData, searchText, statusFilter]);
 
   const dateCellRender = (value) => {
-    const dateStr         = value.format("YYYY-MM-DD");
+    const dateStr = value.format("YYYY-MM-DD");
     const dayAppointments = rangeDict[dateStr] || [];
     if (dayAppointments.length === 0) return null;
 
     const displayList = dayAppointments.slice(0, 2);
-    const moreCount   = dayAppointments.length - 2;
+    const moreCount = dayAppointments.length - 2;
 
     return (
       <Popover
         trigger="click"
-        onOpenChange={(visible) => { if (visible) handleDateClick(value); }}
+        onOpenChange={(visible) => {
+          if (visible) handleDateClick(value);
+        }}
         title={
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#1e3a5f" }}>
+          <span
+            style={{ fontSize: 13, fontWeight: 700, color: theme.text.primary }}
+          >
             {value.format("ddd, D MMM YYYY")}
           </span>
         }
         overlayStyle={{ borderRadius: 12, maxWidth: "90vw" }}
         styles={{
-          body: { borderRadius: 12, padding: "10px 12px" }
+          body: { borderRadius: 12, padding: "10px 12px" },
         }}
         content={
-          <Spin spinning={tooltipLoading}>
+          <StyledSpin spinning={tooltipLoading}>
             {tooltipData && tooltipData.length > 0 ? (
               <TooltipContent>
                 {tooltipData.map((appt, idx) => (
@@ -690,7 +752,7 @@ const AppointmentCalendar = () => {
                     <TooltipRow>
                       <TimeLabel>{appt.time}</TimeLabel>
                       <Tag
-                        color={getStatusTagColor(appt.status)}
+                        color={getStatusTagColor(appt.status, theme)}
                         style={{
                           margin: 0,
                           fontSize: 10,
@@ -704,7 +766,15 @@ const AppointmentCalendar = () => {
                     </TooltipRow>
 
                     <PatientName>
-                      {appt.patient?.full_name || "Unknown Patient"}
+                      {(() => {
+                        const directName = appt.patient?.full_name || appt.patient_name || appt.patient;
+                        if (directName && directName !== "Unknown Patient") return directName;
+                        if (appt.patient_id && patients.length > 0) {
+                          const found = patients.find(p => String(p.id) === String(appt.patient_id));
+                          if (found) return `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+                        }
+                        return directName || `Patient #${appt.patient_id || "?"}`;
+                      })()}
                     </PatientName>
 
                     {appt.patient?.medical_history && (
@@ -726,11 +796,13 @@ const AppointmentCalendar = () => {
                 ))}
               </TooltipContent>
             ) : (
-              <div style={{ padding: "12px 4px", color: "#94a3b8", fontSize: 13 }}>
+              <div
+                style={{ padding: "12px 4px", color: theme.text.light, fontSize: 13 }}
+              >
                 No details available.
               </div>
             )}
-          </Spin>
+          </StyledSpin>
         }
       >
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -739,14 +811,20 @@ const AppointmentCalendar = () => {
               <EventBadgeWrapper>
                 <Badge
                   status={getStatusColor(appt.status)}
-                  text={`${appt.patient} · ${appt.time.split(" ")[0]}`}
+                  text={(() => {
+                    const time = appt.time ? appt.time.split(" ")[0] : "";
+                    let name = appt.patient || appt.patient_name;
+                    if ((!name || name === "Unknown Patient") && appt.patient_id && patients.length > 0) {
+                       const found = patients.find(p => String(p.id) === String(appt.patient_id));
+                       if (found) name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+                    }
+                    return `${name || `Patient #${appt.patient_id || "?"}`} · ${time}`;
+                  })()}
                 />
               </EventBadgeWrapper>
             </li>
           ))}
-          {moreCount > 0 && (
-            <MoreCount>+{moreCount} more</MoreCount>
-          )}
+          {moreCount > 0 && <MoreCount>+{moreCount} more</MoreCount>}
         </ul>
       </Popover>
     );
@@ -756,34 +834,34 @@ const AppointmentCalendar = () => {
     <PageWrapper>
       {/* ── Page Header (Unified Controls) ── */}
       <PageHeader>
-           <HeaderRow>
+        <HeaderRow>
           <HeaderLeft>
             <TitleIcon>
               {viewMode === "list" ? (
                 <UnorderedListOutlined
-                  style={{ fontSize: 16, color: "#1677ff" }}
+                  style={{ fontSize: 16, color: theme.primary }}
                 />
               ) : (
-                <CalendarOutlined style={{ fontSize: 16, color: "#1677ff" }} />
+                <CalendarOutlined style={{ fontSize: 16, color: theme.primary }} />
               )}
             </TitleIcon>
             <PageTitle>Appointment Management</PageTitle>
           </HeaderLeft>
 
           {/* Desktop Only: Inline Controls */}
-          <Space size="middle" className="desktop-only" style={{ display: "none" }}>
+          <Space size="middle" className="desktop-only">
             <SearchWrapper>
               <SearchInput
                 placeholder="Search..."
-                prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+                prefix={<SearchOutlined style={{ color: theme.text.light }} />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 allowClear
               />
             </SearchWrapper>
-            
+
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <FilterOutlined style={{ color: "#1677ff" }} />
+              <FilterOutlined style={{ color: theme.primary }} />
               <StatusSelect
                 value={statusFilter}
                 onChange={setStatusFilter}
@@ -820,25 +898,25 @@ const AppointmentCalendar = () => {
             </ViewToggle>
 
             {role !== "PATIENT" && (
-              <Button
-                type="primary"
+              <AppButton
+                variant="header"
                 icon={<PlusOutlined />}
                 onClick={handleNewAppointment}
-                style={{ borderRadius: "8px", height: "38px", fontWeight: 600 }}
               >
                 New Appointment
-              </Button>
+              </AppButton>
             )}
           </Space>
-          
+
           <style>{`
-            @media (min-width: ${bp.lg}) {
+            .desktop-only { display: none !important; }
+            @media (min-width: ${theme.breakpoints.lg}) {
               .desktop-only { display: flex !important; }
             }
           `}</style>
         </HeaderRow>
 
-        {/* Mobile View: Row 2 (Actions) */}
+        {/* Mobile View: Row 2 (Toggle + Search) */}
         <MobileRow>
           <ViewToggle>
             <ToggleBtn
@@ -857,35 +935,39 @@ const AppointmentCalendar = () => {
             </ToggleBtn>
           </ViewToggle>
 
-          {role !== "PATIENT" && (
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleNewAppointment}
-              style={{ borderRadius: "8px", height: "36px", fontWeight: 600 }}
-            >
-              New Appt
-            </Button>
-          )}
-        </MobileRow>
-
-        {/* Mobile View: Row 3 (Search) */}
-        <MobileRow>
-          <SearchWrapper>
+          <SearchWrapper style={{ flex: 1, minWidth: 0, maxWidth: "160px" }}>
             <SearchInput
-              placeholder="Search by Doctor or Patient..."
-              prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+              placeholder="Search..."
+              prefix={<SearchOutlined style={{ color: theme.text.light }} />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               allowClear
             />
           </SearchWrapper>
+
+          {role !== "PATIENT" && (
+            <AppButton
+              variant="header"
+              icon={<PlusOutlined />}
+              onClick={handleNewAppointment}
+              style={{ padding: "8px 12px", borderRadius: "8px" }}
+            >
+              Add
+            </AppButton>
+          )}
         </MobileRow>
 
-        {/* Mobile View: Row 4 (Filter + Refresh) */}
+        {/* Mobile View: Row 3 (Filter + Refresh) */}
         <MobileRow style={{ backgroundColor: "#fbfcfe" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
-            <FilterOutlined style={{ color: "#1677ff" }} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flex: 1,
+            }}
+          >
+            <FilterOutlined style={{ color: theme.primary }} />
             <StatusSelect
               value={statusFilter}
               onChange={setStatusFilter}
@@ -910,7 +992,7 @@ const AppointmentCalendar = () => {
 
       {/* ── Content ── */}
       <div style={{ display: viewMode === "list" ? "block" : "none" }}>
-        <AppointmentList 
+        <AppointmentList
           ref={listRef}
           searchText={searchText}
           statusFilter={statusFilter}
@@ -922,9 +1004,18 @@ const AppointmentCalendar = () => {
           {/* Row 1 — Legend + ‹ Month Year › + Today */}
           <CalTopBar>
             <LegendRow>
-              <LegendItem><Badge status="processing" /><span>Scheduled</span></LegendItem>
-              <LegendItem><Badge status="success"    /><span>Completed</span></LegendItem>
-              <LegendItem><Badge status="error"      /><span>Cancelled</span></LegendItem>
+              <LegendItem>
+                <Badge status="processing" />
+                <span>Scheduled</span>
+              </LegendItem>
+              <LegendItem>
+                <Badge status="success" />
+                <span>Completed</span>
+              </LegendItem>
+              <LegendItem>
+                <Badge status="error" />
+                <span>Cancelled</span>
+              </LegendItem>
             </LegendRow>
 
             <MonthNav>
@@ -932,9 +1023,7 @@ const AppointmentCalendar = () => {
                 <LeftOutlined style={{ fontSize: 11 }} />
               </NavArrowBtn>
 
-              <MonthLabel>
-                {currentMonth.format("MMMM YYYY")}
-              </MonthLabel>
+              <MonthLabel>{currentMonth.format("MMMM YYYY")}</MonthLabel>
 
               <NavArrowBtn onClick={goNext} title="Next month">
                 <RightOutlined style={{ fontSize: 11 }} />
@@ -957,7 +1046,6 @@ const AppointmentCalendar = () => {
               />
             </Spin>
           </CalendarBody>
-
         </CalendarCard>
       )}
     </PageWrapper>

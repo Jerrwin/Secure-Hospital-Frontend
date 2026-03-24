@@ -3,6 +3,7 @@ import { Badge, Popover, Typography, Button, Empty, Tag } from "antd";
 import { BellOutlined, CheckOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import useNotification from "../../hooks/useNotification";
+import { useTheme } from "../../context/ThemeContext";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import styled from "styled-components";
@@ -20,7 +21,7 @@ const BellButton = styled.div`
   border-radius: 8px;
   transition: background 0.2s;
   &:hover {
-    background: rgba(37, 99, 235, 0.1);
+    background: ${props => props.theme.primaryLight};
   }
 `;
 
@@ -38,19 +39,12 @@ const NotifItem = styled.div`
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s;
-  background: ${(props) => (props.$unread ? "rgba(37, 99, 235, 0.06)" : "transparent")};
-  border-left: 3px solid ${(props) => (props.$unread ? "#2563eb" : "transparent")};
+  background: ${(props) => (props.$unread ? props.theme.primaryLight : "transparent")};
+  border-left: 3px solid ${(props) => (props.$unread ? props.theme.primary : "transparent")};
   &:hover {
-    background: rgba(37, 99, 235, 0.1);
+    background: ${props => props.theme.primaryLight};
   }
 `;
-
-const typeColors = {
-  appointment: "blue",
-  payment: "green",
-  prescription: "purple",
-  system: "orange",
-};
 
 const typeRoutes = {
   appointment: "/appointments",
@@ -68,6 +62,14 @@ const NotificationBell = () => {
     markAsRead,
     markAllAsRead,
   } = useNotification();
+  const { theme } = useTheme();
+
+  const typeColors = {
+    appointment: theme.primary,
+    payment: theme.status.success,
+    prescription: theme.secondary,
+    system: theme.status.warning,
+  };
   const [open, setOpen] = useState(false);
 
   // Fetch notifications on mount and every 30 seconds
@@ -87,7 +89,7 @@ const NotificationBell = () => {
   };
 
   const content = (
-    <div style={{ width: "100%", maxWidth: 340, minWidth: 280, maxHeight: 420, overflowY: "auto" }}>
+    <div style={{ width: "100%", maxWidth: 340, minWidth: 280 }}>
       <NotifHeader>
         <Text strong style={{ fontSize: 15 }}>Notifications</Text>
         {unreadCount > 0 && (
@@ -102,34 +104,46 @@ const NotificationBell = () => {
         )}
       </NotifHeader>
 
-      {notifications.length === 0 ? (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="No notifications"
-          style={{ padding: "24px 0" }}
-        />
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {notifications.map((notif) => (
-            <NotifItem
-              key={notif.id}
-              $unread={!notif.is_read}
-              onClick={() => handleClickNotif(notif)}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <Tag color={typeColors[notif.type] || "default"} style={{ textTransform: "capitalize", fontSize: 11 }}>
-                  {notif.type}
-                </Tag>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  {dayjs(notif.created_at).fromNow()}
-                </Text>
-              </div>
-              <Text strong style={{ fontSize: 13, display: "block" }}>{notif.title}</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>{notif.message}</Text>
-            </NotifItem>
-          ))}
-        </div>
-      )}
+      <div style={{ maxHeight: 320, overflowY: "auto", paddingRight: "4px" }}>
+        {notifications.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="No notifications"
+            style={{ padding: "24px 0" }}
+          />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {notifications.map((notif) => (
+              <NotifItem
+                key={notif.id}
+                $unread={!notif.is_read}
+                onClick={() => handleClickNotif(notif)}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <Tag 
+                    color={typeColors[notif.type] || "default"} 
+                    style={{ 
+                      textTransform: "capitalize", 
+                      fontSize: 10, 
+                      borderRadius: "12px",
+                      padding: "0 10px",
+                      fontWeight: 600,
+                      border: 'none'
+                    }}
+                  >
+                    {notif.type}
+                  </Tag>
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    {dayjs(notif.created_at).fromNow()}
+                  </Text>
+                </div>
+                <Text strong style={{ fontSize: 13, display: "block" }}>{notif.title}</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>{notif.message}</Text>
+              </NotifItem>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -144,7 +158,7 @@ const NotificationBell = () => {
     >
       <BellButton>
         <Badge count={unreadCount} size="small" offset={[2, -2]}>
-          <BellOutlined style={{ fontSize: 20, color: "#1e3a8a" }} />
+          <BellOutlined style={{ fontSize: 20, color: theme.secondary }} />
         </Badge>
       </BellButton>
     </Popover>

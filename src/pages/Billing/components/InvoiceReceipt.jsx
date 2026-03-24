@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { DollarOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { useTheme } from "../../../context/ThemeContext";
 
 const ReceiptContainer = styled.div`
   padding: 40px;
@@ -22,7 +23,7 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  border-bottom: 2px solid #1e3a8a;
+  border-bottom: 2px solid ${props => props.theme.primary};
   padding-bottom: 20px;
   margin-bottom: 30px;
 `;
@@ -31,7 +32,7 @@ const Logo = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #1e3a8a;
+  color: ${props => props.theme.primary};
   font-size: 28px;
   font-weight: 800;
   text-transform: uppercase;
@@ -40,7 +41,7 @@ const Logo = styled.div`
 
 const Title = styled.h2`
   margin: 0;
-  color: #1e3a8a;
+  color: ${props => props.theme.primary};
   font-size: 24px;
 `;
 
@@ -54,7 +55,7 @@ const InfoGrid = styled.div`
 const InfoBox = styled.div`
   h4 {
     margin: 0 0 10px 0;
-    color: #64748b;
+    color: ${props => props.theme.text.secondary};
     text-transform: uppercase;
     font-size: 12px;
     letter-spacing: 1px;
@@ -73,17 +74,17 @@ const Table = styled.table`
 
   th {
     text-align: left;
-    background: #f8fafc;
+    background: ${props => props.theme.background.header};
     padding: 12px;
-    border-bottom: 2px solid #e2e8f0;
-    color: #475569;
+    border-bottom: 2px solid ${props => props.theme.border};
+    color: ${props => props.theme.text.secondary};
     font-size: 12px;
     text-transform: uppercase;
   }
 
   td {
     padding: 16px 12px;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid ${props => props.theme.border};
     font-size: 14px;
   }
 `;
@@ -99,21 +100,22 @@ const TotalRow = styled.div`
   gap: 20px;
   font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: ${props => props.theme.text.primary};
   padding-top: 20px;
-  border-top: 2px solid #1e3a8a;
+  border-top: 2px solid ${props => props.theme.primary};
 `;
 
 const ReceiptFooter = styled.div`
   margin-top: 60px;
   text-align: center;
-  color: #94a3b8;
+  color: ${props => props.theme.text.light};
   font-size: 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid ${props => props.theme.border};
   padding-top: 20px;
 `;
 
 const InvoiceReceipt = ({ data }) => {
+  const { theme } = useTheme();
   if (!data) return null;
 
   return (
@@ -123,14 +125,14 @@ const InvoiceReceipt = ({ data }) => {
           <Logo>
              <DollarOutlined /> Apollo Hospital
           </Logo>
-          <p style={{ margin: '8px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+          <p style={{ margin: '8px 0 0 0', color: theme.text.secondary, fontSize: '13px' }}>
             Quality Healthcare, Anywhere
           </p>
         </div>
         <div style={{ textAlign: 'right' }}>
           <Title>PAYMENT RECEIPT</Title>
           <p style={{ margin: '4px 0', fontWeight: 600 }}>Receipt #{data.transaction_id || data.id}</p>
-          <p style={{ margin: '0', color: '#64748b' }}>Date: {dayjs(data.payment_date || data.created_at).format("DD MMM YYYY, hh:mm A")}</p>
+          <p style={{ margin: '0', color: theme.text.secondary }}>Date: {dayjs(data.payment_date || data.created_at).format("DD MMM YYYY, hh:mm A")}</p>
         </div>
       </Header>
 
@@ -166,7 +168,7 @@ const InvoiceReceipt = ({ data }) => {
       <Footer>
         <TotalRow>
           <span>TOTAL PAID:</span>
-          <span style={{ color: '#10b981' }}>₹{data.amount}</span>
+          <span style={{ color: theme.status.success }}>₹{data.amount}</span>
         </TotalRow>
       </Footer>
 

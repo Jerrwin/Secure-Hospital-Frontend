@@ -20,22 +20,21 @@ import {
 } from "@ant-design/icons";
 import styled from "styled-components";
 
-// ─── Design Tokens ────────────────────────────────────────────────
-const C = {
-  primary: "#2563eb",
-  secondary: "#1e3a8a",
-  bg: "#eff6ff",
-  white: "#ffffff",
-  text: "#334155",
-  textLight: "#64748b",
-  border: "#e2e8f0",
-};
+// Colors C removed to use useTheme() hook
+import { useTheme } from "../../context/ThemeContext";
+import LoadingScreen from "../../components/common/LoadingScreen";
 
 // ─── Status Config ────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  created: { color: "blue", label: "Created" },
-  verified: { color: "gold", label: "Verified" },
-  dispensed: { color: "green", label: "Dispensed" },
+const STATUS_CONFIG = (theme) => ({
+  created: { color: theme.primary, label: "Created" },
+  verified: { color: theme.accent, label: "Verified" },
+  dispensed: { color: theme.status.success, label: "Dispensed" },
+});
+
+const getStatusColor = (s, theme) => {
+  const config = STATUS_CONFIG(theme);
+  const rawStatus = (s || "").toLowerCase();
+  return config[rawStatus]?.color || 'default';
 };
 
 const FREQUENCY_OPTIONS = [
@@ -49,24 +48,24 @@ const FREQUENCY_OPTIONS = [
 
 // ─── Styled ───────────────────────────────────────────────────────
 const StyledCard = styled.div`
-  background: ${C.white};
+  background: ${props => props.theme.background.card};
   border-radius: 12px;
-  border: 1px solid ${C.border};
-  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.05);
+  border: 1px solid ${props => props.theme.border};
+  box-shadow: ${props => props.theme.shadow};
   overflow: hidden;
 `;
 
 const PatientCard = styled.div`
-  background: ${C.white};
+  background: ${props => props.theme.background.card};
   border-radius: 12px;
-  border: 1px solid ${C.border};
+  border: 1px solid ${props => props.theme.border};
   padding: 16px;
   margin-bottom: 12px;
-  box-shadow: 0 1px 6px rgba(37, 99, 235, 0.04);
-  transition: box-shadow 0.2s;
+  box-shadow: ${props => props.theme.shadow};
+  transition: all 0.2s;
 
   &:hover {
-    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.1);
+    box-shadow: ${props => props.theme.glow};
   }
 
   .p-header {
@@ -78,13 +77,13 @@ const PatientCard = styled.div`
 
   .p-name {
     font-weight: 600;
-    color: ${C.secondary};
+    color: ${props => props.theme.primary};
     font-size: 0.95rem;
   }
 
   .p-date {
     font-size: 0.82rem;
-    color: ${C.textLight};
+    color: ${props => props.theme.text.secondary};
   }
 `;
 
@@ -122,6 +121,8 @@ const highlightText = (text, query) => {
 // ─── Main Component ─────────────────────────────────────────────
 const PrescriptionList = ({
   prescriptions,
+  patients = [],
+  appointments = [],
   loading,
   userRole,
   searchQuery,
@@ -129,6 +130,7 @@ const PrescriptionList = ({
   onDelete,
   onStatusChange,
 }) => {
+  const { theme } = useTheme();
   const [expandedId, setExpandedId] = useState(null);
 
   const role = userRole?.toUpperCase();
@@ -146,12 +148,36 @@ const PrescriptionList = ({
         title: "Patient",
         key: "patient",
         render: (_, r) => {
-          const name =
+          // 1. Direct field or nested object
+          let name =
             r.patient_name ||
             (r.patient
-              ? `${r.patient.first_name} ${r.patient.last_name}`
-              : "N/A");
-          return highlightText(name, searchQuery);
+              ? `${r.patient.first_name || ""} ${r.patient.last_name || ""}`.trim()
+              : null);
+
+          // 2. Fallback: Lookup in patients list
+          const pId = r.patient_id || r.patientId;
+          if (!name && pId && patients.length > 0) {
+            const found = patients.find(p => String(p.id) === String(pId));
+            if (found) {
+              name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+            }
+          }
+
+          // 3. Fallback: Lookup in appointments list (prescriptions are tied to appts)
+          const apptId = r.appointment_id || r.appointmentId;
+          if (!name && apptId && appointments && appointments.length > 0) {
+            const appt = appointments.find(a => String(a.id) === String(apptId));
+            if (appt) {
+              name = appt.patient_name || appt.patientName;
+              if (!name && appt.patient_id && patients.length > 0) {
+                 const p = patients.find(p => String(p.id) === String(appt.patient_id));
+                 if (p) name = `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name;
+              }
+            }
+          }
+
+          return highlightText(name || "N/A", searchQuery);
         },
       });
     }
@@ -194,9 +220,9 @@ const PrescriptionList = ({
             size="small"
             icon={
               expandedId === r.id ? (
-                <CloseOutlined style={{ color: C.textLight }} />
+                <CloseOutlined style={{ color: theme.text.secondary }} />
               ) : (
-                <EyeOutlined style={{ color: C.primary }} />
+                <EyeOutlined style={{ color: theme.primary }} />
               )
             }
             onClick={() =>
@@ -214,10 +240,9 @@ const PrescriptionList = ({
       key: "status",
       render: (s, r) => {
         const rawStatus = (s || r.STATUS || r.status_name || "").toLowerCase();
-        const config = STATUS_CONFIG[rawStatus];
         return (
-          <Tag color={config?.color || "default"}>
-            {config?.label || rawStatus || "Pending"}
+          <Tag color={getStatusColor(rawStatus, theme)}>
+            {STATUS_CONFIG(theme)[rawStatus]?.label || rawStatus || "Pending"}
           </Tag>
         );
       },
@@ -245,7 +270,7 @@ const PrescriptionList = ({
                   disabled={!isEditable}
                   icon={
                     <EditOutlined
-                      style={{ color: isEditable ? C.primary : "#d9d9d9" }}
+                      style={{ color: isEditable ? theme.primary : "#d9d9d9" }}
                     />
                   }
                   onClick={() => onEdit?.(r)}
@@ -291,9 +316,9 @@ const PrescriptionList = ({
                   <Button
                     size="small"
                     style={{
-                      background: "#fef3c7",
-                      borderColor: "#fcd34d",
-                      color: "#92400e",
+                      background: theme.primaryLight,
+                      borderColor: theme.border,
+                      color: theme.primary,
                     }}
                   >
                     Verify
@@ -308,9 +333,9 @@ const PrescriptionList = ({
                   <Button
                     size="small"
                     style={{
-                      background: "#d1fae5",
-                      borderColor: "#6ee7b7",
-                      color: "#065f46",
+                      background: theme.status.success + '22',
+                      borderColor: theme.status.success,
+                      color: theme.status.success,
                     }}
                   >
                     Dispense
@@ -340,14 +365,14 @@ const PrescriptionList = ({
   const expandedRowRender = useCallback(
     (r) => (
       <div
-        style={{ padding: "12px 20px", background: "#fcfcfc", borderRadius: 8 }}
+        style={{ padding: "12px 20px", background: theme.background.main, borderRadius: 8 }}
       >
         {(isMedicalStaff || isPatientView || isPharmacist) && r.notes && (
           <div style={{ marginBottom: 16 }}>
             <div
               style={{
                 fontWeight: 600,
-                color: C.secondary,
+                color: theme.primary,
                 fontSize: "0.85rem",
                 marginBottom: 4,
               }}
@@ -356,7 +381,7 @@ const PrescriptionList = ({
             </div>
             <div
               style={{
-                color: C.textLight,
+                color: theme.text.secondary,
                 fontStyle: "italic",
                 fontSize: "0.9rem",
               }}
@@ -368,7 +393,7 @@ const PrescriptionList = ({
         <div
           style={{
             fontWeight: 600,
-            color: C.secondary,
+            color: theme.primary,
             marginBottom: 8,
             fontSize: "0.85rem",
           }}
@@ -379,12 +404,12 @@ const PrescriptionList = ({
           <div
             key={i}
             style={{
-              background: C.bg,
+              background: theme.primaryLight,
               borderRadius: 8,
               padding: "8px 12px",
               marginBottom: 6,
               fontSize: "0.85rem",
-              color: C.text,
+              color: theme.text.primary,
               display: "flex",
               gap: 16,
               flexWrap: "wrap",
@@ -412,11 +437,7 @@ const PrescriptionList = ({
 
   // ─── Rendering ────────────────────────────────────────────────
   if (loading)
-    return (
-      <div style={{ textAlign: "center", padding: "4rem" }}>
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingScreen label="Loading Prescriptions..." />;
 
   if (isPatientView) {
     if (!prescriptions.length)
@@ -443,12 +464,9 @@ const PrescriptionList = ({
                 </div>
               </div>
               <Tag
-                color={
-                  STATUS_CONFIG[(p.status || p.STATUS || "").toLowerCase()]
-                    ?.color || "default"
-                }
+                color={getStatusColor((p.status || p.STATUS || "").toLowerCase(), theme)}
               >
-                {STATUS_CONFIG[(p.status || p.STATUS || "").toLowerCase()]
+                {STATUS_CONFIG(theme)[(p.status || p.STATUS || "").toLowerCase()]
                   ?.label || p.status}
               </Tag>
             </div>
@@ -456,7 +474,7 @@ const PrescriptionList = ({
               <div
                 style={{
                   fontSize: "0.82rem",
-                  color: C.textLight,
+                  color: theme.text.secondary,
                   marginBottom: 8,
                   fontStyle: "italic",
                 }}
@@ -472,7 +490,7 @@ const PrescriptionList = ({
                 >
                   <Tag
                     icon={<MedicineBoxOutlined />}
-                    color="blue"
+                    color={theme.primary}
                     style={{ cursor: "default" }}
                   >
                     {highlightText(
@@ -489,9 +507,11 @@ const PrescriptionList = ({
     );
   }
 
-  const renderTable = (data) => (
+  const renderTable = (data, hideActions = false) => (
     <Table
-      columns={columns}
+      columns={
+        hideActions ? columns.filter((col) => col.key !== "actions") : columns
+      }
       dataSource={data.map((p) => ({ ...p, key: p.id }))}
       loading={loading}
       pagination={{ pageSize: 10 }}
@@ -530,7 +550,7 @@ const PrescriptionList = ({
                   Pending{" "}
                   <Badge
                     count={pending.length}
-                    style={{ background: C.primary, marginLeft: 4 }}
+                    style={{ background: theme.primary, marginLeft: 4 }}
                   />
                 </span>
               ),
@@ -539,7 +559,7 @@ const PrescriptionList = ({
             {
               key: "processed",
               label: `Processed (${processed.length})`,
-              children: renderTable(processed),
+              children: renderTable(processed, true),
             },
           ]}
         />
@@ -547,7 +567,21 @@ const PrescriptionList = ({
     );
   }
 
-  return <StyledCard>{renderTable(prescriptions)}</StyledCard>;
+  return (
+    <StyledCard>
+      {renderTable(prescriptions)}
+      <style>{`
+        .theme-table .ant-table-thead > tr > th {
+          background: ${theme.background.main} !important;
+          color: ${theme.text.secondary} !important;
+        }
+        .theme-table .ant-table-tbody > tr > td {
+          background: ${theme.background.card} !important;
+          color: ${theme.text.primary} !important;
+        }
+      `}</style>
+    </StyledCard>
+  );
 };
 
 export default memo(PrescriptionList);

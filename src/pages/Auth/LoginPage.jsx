@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import useAuth from "../../modules/auth/hooks/useAuth";
+import { useTheme } from "../../context/ThemeContext";
 
 // ─── Animations ──────────────────────────────────────────
 const fadeIn = keyframes`
@@ -27,12 +28,17 @@ const float = keyframes`
 const PageWrapper = styled.div`
   min-height: 100vh;
   display: flex;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: ${(props) => props.theme.fontFamily || "'DM Sans', sans-serif"};
 `;
 
 const LeftPanel = styled.div`
   flex: 1;
-  background: linear-gradient(160deg, #0f172a 0%, #1e3a8a 50%, #1d4ed8 100%);
+  background: linear-gradient(
+    160deg,
+    ${(props) => props.theme.background.main} 0%,
+    ${(props) => props.theme.secondary} 50%,
+    ${(props) => props.theme.primary} 100%
+  );
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -46,7 +52,10 @@ const LeftPanel = styled.div`
     content: "";
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-image: radial-gradient(
+      rgba(255, 255, 255, 0.03) 1px,
+      transparent 1px
+    );
     background-size: 24px 24px;
     pointer-events: none;
   }
@@ -59,7 +68,11 @@ const LeftPanel = styled.div`
     right: -5%;
     width: 350px;
     height: 350px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      ${(props) => props.theme.primary}26 0%,
+      transparent 70%
+    );
     border-radius: 50%;
     pointer-events: none;
   }
@@ -76,13 +89,13 @@ const LeftContent = styled.div`
 `;
 
 const RightPanel = styled.div`
-  width: 520px;
+  width: 580px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   padding: 3rem 4rem;
-  background: #ffffff;
+  background: ${(props) => props.theme.background.card};
 
   @media (max-width: 900px) {
     width: 100%;
@@ -92,7 +105,7 @@ const RightPanel = styled.div`
 
 const FormCard = styled.div`
   animation: ${fadeIn} 0.5s ease-out;
-  max-width: 380px;
+  max-width: 440px;
   width: 100%;
 `;
 
@@ -120,7 +133,7 @@ const HeroTitle = styled.h1`
 `;
 
 const HeroSubtitle = styled.p`
-  color: #94a3b8;
+  color: ${(props) => props.theme.text.light};
   font-size: 1rem;
   line-height: 1.7;
   margin: 0 0 2.5rem;
@@ -138,11 +151,11 @@ const FeatureItem = styled.div`
   align-items: center;
   gap: 12px;
   font-size: 0.9rem;
-  color: #cbd5e1;
+  color: ${(props) => props.theme.text.secondary};
   font-weight: 400;
 
   .anticon {
-    color: #60a5fa;
+    color: ${(props) => props.theme.primary};
     font-size: 14px;
   }
 `;
@@ -167,33 +180,37 @@ const BrandRow = styled.div`
 const BrandIcon = styled.div`
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #2563eb, #4f46e5);
-  border-radius: 10px;
+  background: linear-gradient(
+    135deg,
+    ${(props) => props.theme.primary},
+    ${(props) => props.theme.secondary}
+  );
+  border-radius: ${(props) => props.theme.borderRadius.md};
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   font-size: 18px;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  box-shadow: ${(props) => props.theme.glow};
 `;
 
 const BrandName = styled.span`
   font-size: 1.2rem;
   font-weight: 700;
-  color: #1e293b;
+  color: ${(props) => props.theme.text.primary};
   letter-spacing: -0.01em;
 `;
 
 const Heading = styled.h2`
   font-size: 1.6rem;
   font-weight: 700;
-  color: #0f172a;
+  color: ${(props) => props.theme.text.primary};
   margin: 0 0 6px;
   letter-spacing: -0.02em;
 `;
 
 const SubHeading = styled.p`
-  color: #64748b;
+  color: ${(props) => props.theme.text.secondary};
   font-size: 0.9rem;
   margin: 0 0 1.75rem;
   line-height: 1.5;
@@ -203,11 +220,11 @@ const TenantBadge = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  color: #0369a1;
+  background: ${(props) => props.theme.background.main};
+  border: 1px solid ${(props) => props.theme.primaryLight};
+  color: ${(props) => props.theme.primary};
   padding: 6px 14px;
-  border-radius: 8px;
+  border-radius: ${(props) => props.theme.borderRadius.md};
   font-size: 0.78rem;
   font-weight: 600;
   margin-bottom: 1.75rem;
@@ -218,31 +235,31 @@ const TenantBadge = styled.div`
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #0ea5e9;
+    background: ${(props) => props.theme.accent};
   }
 `;
 
 const StyledLabel = styled.span`
-  color: #334155;
+  color: ${(props) => props.theme.text.primary};
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 `;
 
 const StyledInput = styled(Input)`
-  border-radius: 10px !important;
+  border-radius: ${(props) => props.theme.borderRadius.md} !important;
   padding: 10px 14px !important;
-  border: 1.5px solid #e2e8f0 !important;
+  border: 1.5px solid ${(props) => props.theme.border} !important;
   transition: all 0.25s ease !important;
 
   &:hover {
-    border-color: #93c5fd !important;
+    border-color: ${(props) => props.theme.primary} !important;
   }
 
   &:focus,
   &.ant-input-affix-wrapper-focused {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08) !important;
+    border-color: ${(props) => props.theme.primary} !important;
+    box-shadow: ${(props) => props.theme.glow} !important;
   }
 
   .ant-input-prefix {
@@ -251,19 +268,19 @@ const StyledInput = styled(Input)`
 `;
 
 const StyledPasswordInput = styled(Input.Password)`
-  border-radius: 10px !important;
+  border-radius: ${(props) => props.theme.borderRadius.md} !important;
   padding: 10px 14px !important;
-  border: 1.5px solid #e2e8f0 !important;
+  border: 1.5px solid ${(props) => props.theme.border} !important;
   transition: all 0.25s ease !important;
 
   &:hover {
-    border-color: #93c5fd !important;
+    border-color: ${(props) => props.theme.primary} !important;
   }
 
   &:focus,
   &.ant-input-affix-wrapper-focused {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08) !important;
+    border-color: ${(props) => props.theme.primary} !important;
+    box-shadow: ${(props) => props.theme.glow} !important;
   }
 
   .ant-input-prefix {
@@ -273,17 +290,21 @@ const StyledPasswordInput = styled(Input.Password)`
 
 const SignInButton = styled(Button)`
   height: 46px !important;
-  border-radius: 10px !important;
+  border-radius: ${(props) => props.theme.borderRadius.md} !important;
   font-weight: 600 !important;
   font-size: 0.95rem !important;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  background: linear-gradient(
+    135deg,
+    ${(props) => props.theme.primary} 0%,
+    ${(props) => props.theme.primaryHover} 100%
+  ) !important;
   border: none !important;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+  box-shadow: ${(props) => props.theme.shadow} !important;
   transition: all 0.3s ease !important;
 
   &:hover {
     transform: translateY(-1px) !important;
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35) !important;
+    box-shadow: ${(props) => props.theme.glow} !important;
   }
 
   &:active {
@@ -308,6 +329,7 @@ const SecurityNote = styled.div`
 
 // ─── Component ───────────────────────────────────────────
 const LoginPage = () => {
+  const { theme } = useTheme();
   const navigate = useNavigate();
   const { login, isLoading, isAuthenticated, error, clearAuthError } =
     useAuth();
@@ -339,7 +361,9 @@ const LoginPage = () => {
       <LeftPanel>
         <LeftContent>
           <IconBox>
-            <MedicineBoxOutlined style={{ fontSize: "24px", color: "#60a5fa" }} />
+            <MedicineBoxOutlined
+              style={{ fontSize: "24px", color: "inherit" }}
+            />
           </IconBox>
           <HeroTitle>
             Smarter care,
@@ -384,9 +408,7 @@ const LoginPage = () => {
           </BrandRow>
 
           {isSubdomain && (
-            <TenantBadge>
-              {hospitalName} Healthcare Workspace
-            </TenantBadge>
+            <TenantBadge>{hospitalName} Healthcare Workspace</TenantBadge>
           )}
 
           <Heading>Welcome back</Heading>
@@ -404,8 +426,8 @@ const LoginPage = () => {
               style={{
                 marginBottom: "1.25rem",
                 borderRadius: "10px",
-                border: "1px solid #fecaca",
-                background: "#fef2f2",
+                border: `1px solid ${theme.border}`,
+                background: `${theme.background.main}`,
               }}
             />
           )}
@@ -426,7 +448,7 @@ const LoginPage = () => {
               ]}
             >
               <StyledInput
-                prefix={<UserOutlined style={{ color: "#94a3b8" }} />}
+                prefix={<UserOutlined style={{ color: theme.text.light }} />}
                 placeholder="you@hospital.com"
                 size="large"
               />
@@ -438,7 +460,7 @@ const LoginPage = () => {
               rules={[{ required: true, message: "Password is required" }]}
             >
               <StyledPasswordInput
-                prefix={<LockOutlined style={{ color: "#94a3b8" }} />}
+                prefix={<LockOutlined style={{ color: theme.text.light }} />}
                 placeholder="Enter your password"
                 size="large"
               />

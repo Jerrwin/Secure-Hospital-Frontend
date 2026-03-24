@@ -4,7 +4,7 @@ const BASE = "/api/prescriptions";
 
 export const prescriptionAPI = {
   // Fetch all prescriptions (backend filters by role automatically)
-  fetchAll: () => axiosClient.get(BASE),
+  fetchAll: (params) => axiosClient.get(BASE, { params }),
 
   // Fetch completed appointments for doctor create modal dropdown
   fetchCompletedAppointments: () =>
@@ -18,11 +18,11 @@ export const prescriptionAPI = {
 
   // Pharmacist verifies prescription
   verify: (id) =>
-    axiosClient.patch(`${BASE}/${id}/status`, { status: "verified" }),
+    axiosClient.put(`${BASE}/${id}/status`, { status: "verified" }),
 
   // Pharmacist dispenses prescription
   dispense: (id) =>
-    axiosClient.patch(`${BASE}/${id}/status`, { status: "dispensed" }),
+    axiosClient.put(`${BASE}/${id}/status`, { status: "dispensed" }),
 
   // Delete prescription (only if status = created)
   delete: (id) => axiosClient.delete(`${BASE}/${id}`),
