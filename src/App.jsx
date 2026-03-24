@@ -6,6 +6,8 @@ import { checkAuth } from "./modules/auth/authSaga";
 import { fetchTenantInfoRequest } from "./modules/tenant/tenantSlice";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { CustomThemeProvider } from "./context/ThemeContext";
+import { initOfflineManager } from "./services/offlineManager";
+
 
 const App = () => {
   const dispatch = useDispatch();
@@ -29,7 +31,10 @@ const App = () => {
     if (user && user !== "undefined") {
       checkAuth(dispatch);
     }
+    // 3. Initialize Offline Manager
+    initOfflineManager();
   }, [dispatch, isSubdomain]);
+
 
   return (
     <ErrorBoundary>

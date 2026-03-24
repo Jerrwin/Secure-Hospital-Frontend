@@ -1,4 +1,9 @@
 import axios from "axios";
+import { notification } from "antd";
+import { addOfflineRequest } from "./dbService";
+import { refreshQueueCount } from "./offlineManager";
+
+
 
 // Helper to inject Redux store to avoid circular dependencies
 let store;
@@ -36,10 +41,41 @@ const processQueue = (error, token = null) => {
 
 // ─── Request Interceptor ─────────────────────────────────────────
 axiosClient.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    // 1. Check if we are offline and it's a mutation request
+    const isMutation = ["post", "put", "delete", "patch"].includes(
+      config.method?.toLowerCase(),
+    );
+
+    // Skip offline logic if we are explicitly syncing or if it's a GET request
+    if (!navigator.onLine && isMutation && !config._isSyncing) {
+      try {
+        await addOfflineRequest(config);
+        refreshQueueCount(); // Sync Redux state
+        notification.info({
+
+          message: "Request Queued",
+          description: "System is offline. Your changes have been saved locally and will sync once back online.",
+          placement: "topRight",
+          duration: 3,
+        });
+
+        // Return a cancelled-like promise to stop the request from going to the network
+        // We'll return a resolved promise with a special flag so the UI can handle it if needed.
+        return Promise.reject({
+          message: "Offline: Request Queued",
+          isOfflineQueued: true,
+          config,
+        });
+      } catch (error) {
+        console.error("Failed to queue offline request:", error);
+      }
+    }
+
     // Read tokens SECURELY from Redux memory, never from localStorage.
     if (store) {
       const state = store.getState();
+
       const token = state.auth.accessToken;
       const isRefreshRequest = config.url?.includes("/api/auth/refresh");
 

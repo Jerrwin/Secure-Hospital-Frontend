@@ -127,6 +127,12 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
   // ─── Shared Appointment Columns ──────────────────────
   const appointmentCols = useMemo(() => [
     {
+      title: "Date",
+      dataIndex: "appointment_date",
+      key: "date",
+      render: (v) => v || "—",
+    },
+    {
       title: "Patient",
       key: "patient_name",
       render: (_, r) => {

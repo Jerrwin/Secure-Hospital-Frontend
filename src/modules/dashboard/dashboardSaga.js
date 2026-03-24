@@ -1,4 +1,4 @@
-import { call, put, takeLatest, all } from "redux-saga/effects";
+import { call, put, takeLatest } from "redux-saga/effects";
 import dashboardAPI from "./dashboardAPI";
 import {
   fetchDashboardDataRequest,
@@ -25,19 +25,14 @@ function* fetchDashboardDataSaga(action) {
       } catch (e) {
         console.error("Could not fetch patient appointments:", e);
       }
-      // Prescriptions for patients come embedded in the stats endpoint response.
-      // No additional call needed — payload.prescriptions is already populated above.
     } else {
-      // Standard parallel fetch for all medical staff and admin roles.
+      // For staff/admin, we rely on the stats endpoint for strictly "Today's" appointment data.
+      // We only fetch prescriptions separately.
       try {
-        const [aptRes, presRes] = yield all([
-          call(dashboardAPI.getUpcomingAppointments),
-          call(dashboardAPI.getPrescriptions),
-        ]);
-        if (aptRes.data?.success) payload.appointments = aptRes.data.data;
+        const presRes = yield call(dashboardAPI.getPrescriptions);
         if (presRes.data?.success) payload.prescriptions = presRes.data.data;
       } catch (e) {
-        console.error("Error fetching staff dashboard lists:", e);
+        console.error("Error fetching staff dashboard prescriptions:", e);
       }
     }
 

@@ -33,9 +33,9 @@ const rootReducer = (state, action) => {
     // Purge all persistent client-side storage
     localStorage.clear();
     sessionStorage.clear();
-    
+
     // Purge cookies
-    document.cookie.split(";").forEach(function(c) {
+    document.cookie.split(";").forEach(function (c) {
       document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
@@ -43,7 +43,7 @@ const rootReducer = (state, action) => {
     const { tenant } = state;
     state = { tenant };
   }
-  
+
   return appReducer(state, action);
 };
 
