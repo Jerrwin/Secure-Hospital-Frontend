@@ -7,10 +7,8 @@ import {
   Typography,
   Button,
   Timeline,
-  Empty,
   Progress,
   Space,
-  Badge,
   Avatar,
 } from "antd";
 import {
@@ -23,7 +21,6 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   PlusOutlined,
-  UserAddOutlined,
   ArrowRightOutlined,
   HeartOutlined,
   RiseOutlined,
@@ -33,7 +30,7 @@ import {
   ExperimentOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import styled, { keyframes, css } from "styled-components";
+import styled, { keyframes } from "styled-components";
 import { useTheme } from "../../../context/ThemeContext";
 import StatWidget from "./StatWidget";
 import TableWidget from "./TableWidget";
@@ -229,18 +226,7 @@ const AlertCard = styled.div`
   gap: 16px;
 `;
 
-// ─── Lazy Recharts ─────────────────────────────────────────
-let AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar;
+let AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer;
 try {
   const r = require("recharts");
   AreaChart = r.AreaChart;
@@ -249,11 +235,6 @@ try {
   YAxis = r.YAxis;
   Tooltip = r.Tooltip;
   ResponsiveContainer = r.ResponsiveContainer;
-  PieChart = r.PieChart;
-  Pie = r.Pie;
-  Cell = r.Cell;
-  BarChart = r.BarChart;
-  Bar = r.Bar;
 } catch (_) {}
 
 // ─── Helpers ───────────────────────────────────────────────
@@ -343,8 +324,8 @@ const UnifiedDashboard = ({
 
       return isActive;
     }).length;
-  }, [data.staff, stats.staff_total]);
- 
+  }, [staffList, stats.staff_total]);
+
   // ─── Today's Filtering ────────────────────────────────────
   const todayStr = useMemo(() => {
     const now = new Date();
@@ -1263,7 +1244,7 @@ const UnifiedDashboard = ({
           </SectionWrap>
         )}
 
-        {/* Health Pulse — 4 stat cards */}
+        {/* Health Pulse Grid (4 Cards) */}
         <Row gutter={[20, 20]}>
           {[
             {

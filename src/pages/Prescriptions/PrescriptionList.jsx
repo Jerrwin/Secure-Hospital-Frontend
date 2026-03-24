@@ -8,7 +8,6 @@ import {
   Popconfirm,
   Empty,
   Tabs,
-  Spin,
   Space,
 } from "antd";
 import {
@@ -359,6 +358,9 @@ const PrescriptionList = ({
     onEdit,
     onDelete,
     onStatusChange,
+    patients,
+    appointments,
+    theme,
   ]);
 
   // ─── Expanded Row Render ──────────────────────────────────────
@@ -432,7 +434,7 @@ const PrescriptionList = ({
         ))}
       </div>
     ),
-    [isMedicalStaff, isPatientView, searchQuery, isPharmacist],
+    [isMedicalStaff, isPatientView, searchQuery, isPharmacist, theme],
   );
 
   // ─── Rendering ────────────────────────────────────────────────

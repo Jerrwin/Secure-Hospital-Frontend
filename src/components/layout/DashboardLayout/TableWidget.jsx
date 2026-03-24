@@ -1,5 +1,5 @@
 import React from "react";
-import { Table, Typography, Empty } from "antd";
+import { Table, Typography } from "antd";
 import styled, { keyframes } from "styled-components";
 import { useTheme } from "../../../context/ThemeContext";
 import { InboxOutlined } from "@ant-design/icons";

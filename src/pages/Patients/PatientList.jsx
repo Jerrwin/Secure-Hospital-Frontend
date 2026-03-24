@@ -6,6 +6,7 @@ import {
   Input,
   Select,
   Space,
+  Switch,
   Tag,
   message,
   Popconfirm,
@@ -25,7 +26,6 @@ import {
   UserOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { useRef } from "react";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import AppButton from "../../components/common/Button/AppButton";
 import { useTheme } from "../../context/ThemeContext";
@@ -39,14 +39,6 @@ import PatientTimeline from "./components/PatientTimeline";
 
 const { Text } = Typography;
 
-// ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
-const bp = {
-  xs: (props) => props.theme.breakpoints.xs,
-  sm: (props) => props.theme.breakpoints.sm,
-  md: (props) => props.theme.breakpoints.md,
-  lg: (props) => props.theme.breakpoints.lg,
-  xl: (props) => props.theme.breakpoints.xl,
-};
 const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -226,8 +218,71 @@ const PatientList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form] = Form.useForm();
-  const passwordValue = Form.useWatch("password", form);
-  const formRef = useRef(null);
+  const formValues = Form.useWatch([], form);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (error) {
+      message.error(error);
+      clearError();
+      setIsSubmitting(false);
+    }
+  }, [error, clearError]);
+
+  useEffect(() => {
+    if (isSubmitting && !loading && !error) {
+      message.success(
+        editingPatient
+          ? "Patient updated successfully"
+          : "Patient registered successfully",
+      );
+      setIsSubmitting(false);
+      setIsFormVisible(false);
+      setEditingPatient(null);
+      form.resetFields();
+      fetchPatients(true);
+    }
+  }, [isSubmitting, loading, error, editingPatient, fetchPatients, form]);
+  const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+
+  useEffect(() => {
+    const checkValidity = () => {
+      const values = form.getFieldsValue();
+      const {
+        first_name,
+        email,
+        phone_number,
+        dob,
+        gender,
+        blood_group,
+        status,
+        medical_history,
+        address,
+        password,
+      } = values;
+
+      const requiredFilled = 
+        first_name && 
+        email && 
+        phone_number && 
+        phone_number.length === 10 &&
+        dob && 
+        gender && 
+        blood_group && 
+        status && 
+        medical_history && 
+        address;
+
+      // Password Complexity: At least 8 chars, 1 Uppercase, 1 Special
+      const passRegex = /^(?=.*[A-Z])(?=.*[\W_]).{8,}$/;
+      const isPassValid = editingPatient || (password && passRegex.test(password));
+
+      setIsSubmitDisabled(!(requiredFilled && isPassValid));
+    };
+
+    checkValidity();
+  }, [formValues, editingPatient, form]);
 
   useEffect(() => {
     fetchPatients();
@@ -238,12 +293,6 @@ const PatientList = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  useEffect(() => {
-    if (error) {
-      message.error(error);
-      clearError();
-    }
-  }, [error, clearError]);
 
   const showForm = (patient = null) => {
     setEditingPatient(patient);
@@ -283,19 +332,24 @@ const PatientList = () => {
       ...values,
       name: `${values.first_name} ${values.last_name || ""}`.trim(),
       dob: values.dob ? values.dob.format("YYYY-MM-DD") : null,
-      status: values.status || "Regular",
+      status: editingPatient ? values.status : "active", // Default to active for new
     };
 
+    setIsSubmitting(true);
     if (editingPatient) {
       updatePatient(editingPatient.id, payload);
-      message.success("Patient record updated");
     } else {
       addPatient(payload);
-      message.success("New patient registered successfully");
     }
-    setIsFormVisible(false);
-    setEditingPatient(null);
-    form.resetFields();
+  };
+
+  const handleToggleStatus = (checked, record) => {
+    const payload = {
+      ...record,
+      status: checked ? "active" : "inactive",
+    };
+    updatePatient(record.id, payload);
+    message.success(`Patient ${checked ? "activated" : "deactivated"}`);
   };
 
   const getPasswordStrength = (pass) => {
@@ -413,18 +467,15 @@ const PatientList = () => {
     {
       title: "Status",
       key: "status",
-      render: (_, record) => {
-        const status = record.status || record.Status || "Regular";
-        const isEmergency = status.toLowerCase() === "emergency";
-        return (
-          <Tag
-            color={isEmergency ? theme.status.error : theme.status.success}
-            style={{ borderRadius: "12px", padding: "0 10px" }}
-          >
-            {status}
-          </Tag>
-        );
-      },
+      render: (_, record) => (
+        <Switch
+          checked={record.status === "active"}
+          onChange={(checked) => handleToggleStatus(checked, record)}
+          checkedChildren="Active"
+          unCheckedChildren="Inactive"
+          size="small"
+        />
+      ),
     },
     {
       title: "Actions",
@@ -504,6 +555,10 @@ const PatientList = () => {
             @media (min-width: ${theme.breakpoints.lg}) {
               .desktop-only { display: flex !important; }
             }
+            .inactive-row {
+              opacity: 0.6;
+              filter: grayscale(50%);
+            }
           `}</style>
           </HeaderRow>
 
@@ -547,6 +602,7 @@ const PatientList = () => {
           rowKey="id"
           loading={loading && (patients || []).length === 0}
           pagination={{ pageSize: 8, placement: "bottomCenter" }}
+          rowClassName={(record) => record.status === "inactive" ? "inactive-row" : ""}
           scroll={{ x: 800 }}
         />
       </div>
@@ -694,29 +750,34 @@ const PatientList = () => {
                             flex: 1,
                             borderRadius: "2px",
                             background:
-                              passwordValue?.length > 0
-                                ? getPasswordStrength(passwordValue).score >= i
-                                  ? getPasswordStrength(passwordValue).color
+                              formValues?.password?.length > 0
+                                ? getPasswordStrength(formValues.password).score >= i
+                                  ? getPasswordStrength(formValues.password).color
                                   : "#e5e7eb"
                                 : "#e5e7eb",
                           }}
                         />
                       ))}
                     </div>
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: passwordValue
-                          ? getPasswordStrength(passwordValue).color
-                          : "#94a3b8",
-                      }}
-                    >
-                      {passwordValue
-                        ? `Strength: ${
-                            getPasswordStrength(passwordValue).label
-                          }`
-                        : "Enter password"}
-                    </span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span
+                        style={{
+                          fontSize: "12px",
+                          color: formValues?.password
+                            ? getPasswordStrength(formValues.password).color
+                            : "#94a3b8",
+                        }}
+                      >
+                        {formValues?.password
+                          ? `Strength: ${
+                              getPasswordStrength(formValues.password).label
+                            }`
+                          : "Enter password"}
+                      </span>
+                      <span style={{ fontSize: '11px', color: theme.text.light }}>
+                        Min 8 chars, 1 Uppercase, 1 Special
+                      </span>
+                    </div>
                   </div>
                 }
               >
@@ -781,21 +842,7 @@ const PatientList = () => {
                   />
                 </Form.Item>
               </Col>
-              <Col xs={12}>
-                <Form.Item
-                  name="status"
-                  label="Status"
-                  rules={[{ required: true, message: "Required" }]}
-                >
-                  <Select
-                    size="large"
-                    options={[
-                      { value: "Regular", label: "Regular" },
-                      { value: "Emergency", label: "Emergency" },
-                    ]}
-                  />
-                </Form.Item>
-              </Col>
+              {/* Status hidden during registration, defaults to active */}
             </Row>
 
             <Form.Item
@@ -848,11 +895,14 @@ const PatientList = () => {
                 type="primary"
                 size="large"
                 htmlType="submit"
+                disabled={isSubmitDisabled}
                 style={{
                   borderRadius: "6px",
                   minWidth: "150px",
-                  background: theme.primary,
+                  background: isSubmitDisabled ? theme.border : theme.primary,
                   border: "none",
+                  opacity: isSubmitDisabled ? 0.7 : 1,
+                  cursor: isSubmitDisabled ? 'not-allowed' : 'pointer'
                 }}
               >
                 {editingPatient ? "Save Changes" : "Register Patient"}

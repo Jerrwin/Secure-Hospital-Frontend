@@ -32,7 +32,7 @@ const StyledSpin = styled(Spin)`
 const LoadingScreen = ({ label = "Loading...", fullPage = false }) => {
   return (
     <LoaderWrapper $fullPage={fullPage}>
-      <StyledSpin size="large" tip={label} />
+      <StyledSpin size="large" description={label} />
     </LoaderWrapper>
   );
 };

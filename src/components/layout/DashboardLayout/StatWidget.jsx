@@ -15,10 +15,7 @@ const floatUp = keyframes`
   to   { opacity: 1; transform: translateY(0); }
 `;
 
-const pulse = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 transparent; }
-  50%       { box-shadow: 0 0 0 6px ${(p) => p}22; }
-`;
+
 
 const CardWrap = styled.div`
   position: relative;

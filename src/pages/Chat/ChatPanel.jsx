@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import { useTheme } from "../../context/ThemeContext";
 import useChat from "../../modules/chat/hooks/useChat";
 
 // --- Styled Components --- //
@@ -222,7 +221,6 @@ const TimelineMeta = styled.div`
 
 // --- Main Component --- //
 const ChatPanel = ({ appointmentId }) => {
-  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("chat");
   const [inputText, setInputText] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);

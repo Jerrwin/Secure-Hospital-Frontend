@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { Layout, Spin, Drawer } from "antd";
+import { Layout, Drawer } from "antd";
 import { MedicineBoxOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import { useSelector, useDispatch } from "react-redux";

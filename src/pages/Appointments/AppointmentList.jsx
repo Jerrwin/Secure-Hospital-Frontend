@@ -83,7 +83,7 @@ const highlightText = (text, query) => {
   if (!query || !text) return text;
   const parts = text.split(new RegExp(`(${query})`, "gi"));
   return (
-    <Space orientation="vertical" size={0}>
+    <Space direction="vertical" size={0}>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
           <Highlight key={i}>{part}</Highlight>
@@ -134,6 +134,9 @@ const AppointmentList = forwardRef(
 
     const [form] = Form.useForm();
     const statusValue = Form.useWatch("STATUS", form);
+    const appointmentDate = Form.useWatch("appointment_date", form);
+    const isFutureDate = appointmentDate ? appointmentDate.isAfter(dayjs(), "day") : false;
+
     const [modalOpen, setModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
 
@@ -629,7 +632,13 @@ const AppointmentList = forwardRef(
                   }
                 >
                   <Option value="scheduled">Scheduled</Option>
-                  <Option value="completed">Completed</Option>
+                  <Option 
+                    value="completed" 
+                    disabled={isFutureDate}
+                    title={isFutureDate ? "Cannot complete future appointments" : ""}
+                  >
+                    Completed {isFutureDate && "(Disabled for future dates)"}
+                  </Option>
                   <Option value="cancelled">Cancelled</Option>
                 </Select>
               </Form.Item>
