@@ -137,12 +137,8 @@ export const SidebarContent = ({
       });
     }
 
-      if (rawRole === 'ADMIN') {
-        baseItems.push({ key: '/staff', icon: <IdcardOutlined />, label: 'Staff Management' });
-      }
-
-      return baseItems;
-    }, [role]);
+    return baseItems;
+  }, [role]);
 
   const handleMenuClick = ({ key }) => {
     navigate(key);

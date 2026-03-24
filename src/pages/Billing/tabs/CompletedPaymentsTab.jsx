@@ -9,7 +9,6 @@ import styled from "styled-components";
 import { useTheme } from "../../../context/ThemeContext";
 import useAuth from "../../../modules/auth/hooks/useAuth";
 
-import useAuth from "../../../modules/auth/hooks/useAuth";
 
 const DownloadBtn = styled(Button)`
   border-radius: 8px;
