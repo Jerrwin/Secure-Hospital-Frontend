@@ -49,20 +49,10 @@ const PendingPaymentsTab = ({ setActiveKey }) => {
   }, [fetchInvoices, fetchPatients]);
 
   const pendingInvoices = useMemo(() => {
-    console.log("PendingPaymentsTab - INVOICES DATA:", invoices);
-    if (invoices && invoices.length > 0) {
-      console.log("ALL FIELDS IN FIRST INVOICE:", Object.keys(invoices[0]));
-      console.log("FIRST INVOICE FULL OBJECT:", invoices[0]);
-    }
     const filtered = (invoices || []).filter(invoice => {
       const status = invoice.STATUS || invoice.status || invoice.Status || 'pending';
       return status.toLowerCase() === 'pending';
     });
-    console.log("PENDING INVOICES AFTER FILTERING:", filtered);
-    if (filtered.length > 0) {
-      console.log("PENDING INVOICE FIELDS:", Object.keys(filtered[0]));
-      console.log("PENDING INVOICE FULL OBJECT:", filtered[0]);
-    }
     return filtered;
   }, [invoices]);
 

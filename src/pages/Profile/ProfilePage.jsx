@@ -553,7 +553,6 @@ const ProfilePage = () => {
 
   const onFinish = async (values) => {
     try {
-      console.log("Update main profile:", values);
       const isPatient = userRole === "PATIENT";
       
       // 1. Update Basic Profile Info

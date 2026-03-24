@@ -20,7 +20,6 @@ import {
 function* fetchInvoicesSaga(action) {
   try {
     const res = yield call(billingAPI.getInvoices, action.payload);
-    console.log("fetchInvoicesSaga Response:", res.data);
     
     // Handle both wrapped {success, data} and raw [...] formats
     const data = res.data.success ? res.data.data : (Array.isArray(res.data) ? res.data : []);
@@ -30,19 +29,13 @@ function* fetchInvoicesSaga(action) {
       
       // If we only have invoice_id, fetch complete details for each invoice
       if (data.length > 0 && data[0].invoice_id && !data[0].amount) {
-        console.log("Only invoice_id found, fetching complete invoice details...");
         const completeInvoices = [];
         
         for (const invoice of data) {
           try {
-            console.log("Fetching details for invoice:", invoice.invoice_id);
             const detailRes = yield call(billingAPI.getInvoiceById, invoice.invoice_id);
-            console.log("Invoice detail response:", detailRes.data);
-            console.log("Invoice detail response status:", detailRes.status);
-            console.log("Invoice detail response headers:", detailRes.headers);
             
             const invoiceDetail = detailRes.data.success ? detailRes.data.data : detailRes.data;
-            console.log("Processed invoice detail:", invoiceDetail);
             completeInvoices.push(invoiceDetail);
           } catch (error) {
             console.error("Failed to fetch invoice details for", invoice.invoice_id, error);
@@ -51,7 +44,6 @@ function* fetchInvoicesSaga(action) {
           }
         }
         
-        console.log("Complete invoices array:", completeInvoices);
         finalData = completeInvoices;
         yield put(fetchInvoicesSuccess(finalData));
       } else {
@@ -75,7 +67,6 @@ function* fetchInvoicesSaga(action) {
 function* fetchCompletedAppointmentsSaga() {
   try {
     const res = yield call(billingAPI.getCompletedAppointments);
-    console.log("fetchCompletedAppointments Response:", res.data);
     const data = res.data.success ? res.data.data : (Array.isArray(res.data) ? res.data : []);
     
     if (res.data.success || Array.isArray(res.data)) {
@@ -91,7 +82,6 @@ function* fetchCompletedAppointmentsSaga() {
 function* createInvoiceSaga(action) {
   try {
     const res = yield call(billingAPI.createInvoice, action.payload);
-    console.log("createInvoice Response:", res.data);
     const data = res.data.success ? res.data.data : res.data;
     
     if (res.data.success || data) {
@@ -109,7 +99,6 @@ function* createInvoiceSaga(action) {
 function* processPaymentSaga(action) {
   try {
     const res = yield call(billingAPI.processPayment, action.payload);
-    console.log("processPayment Response:", res.data);
     const data = res.data.success ? res.data.data : res.data;
     
     if (res.data.success || data) {

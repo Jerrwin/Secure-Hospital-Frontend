@@ -119,18 +119,7 @@ const AppointmentList = forwardRef(
 
     const { patients, fetchPatients } = usePatients();
 
-    // Debugging
-    useEffect(() => {
-      console.log("CalendarPage rendered & Appointments Component State:", {
-        role,
-        userId,
-        fullUser: user, // Log full user object to see available fields
-        patientsCount: patients.length,
-        patientsData: patients.slice(0, 3), // Log first few patients to see structure
-        staffCount: staff.length,
-        dropdownLoading,
-      });
-    }, [role, userId, user, patients, staff, dropdownLoading]);
+
 
     const [form] = Form.useForm();
     const statusValue = Form.useWatch("STATUS", form);

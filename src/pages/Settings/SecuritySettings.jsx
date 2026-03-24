@@ -124,7 +124,6 @@ const SecuritySettings = () => {
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
-    console.log("Update settings:", values);
     message.success("Settings updated successfully");
   };
 
