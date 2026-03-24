@@ -221,7 +221,7 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
     return (
       <div>
         {/* Stat Cards */}
-        <Row gutter={[20, 20]}>
+        <Row gutter={[20, 20]} align="stretch">
           <Col xs={24} sm={12} lg={6}>
             <StatWidget title="Total Revenue" value={`$${(stats.total_revenue || 0).toLocaleString()}`} icon={<DollarOutlined />} />
           </Col>
@@ -308,7 +308,7 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
 
     return (
       <div>
-        <Row gutter={[20, 20]}>
+        <Row gutter={[20, 20]} align="stretch">
           <Col xs={24} sm={12} lg={6}>
             <StatWidget title="My Appointments Today" value={stats.my_appointments_today} icon={<CalendarOutlined />} />
           </Col>
@@ -373,7 +373,7 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
 
     return (
       <div>
-        <Row gutter={[20, 20]}>
+        <Row gutter={[20, 20]} align="stretch">
           <Col xs={24} sm={8}>
             <StatWidget title="Today's Appointments" value={stats.appointments_today} icon={<CalendarOutlined />} />
           </Col>
@@ -427,7 +427,7 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
 
     return (
       <div>
-        <Row gutter={[20, 20]}>
+        <Row gutter={[20, 20]} align="stretch">
           <Col xs={24} sm={8}>
             <StatWidget title="New (Needs Review)" value={stats.new_prescriptions} icon={<FileTextOutlined />} />
           </Col>
@@ -472,7 +472,7 @@ const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loa
 
     return (
       <div>
-        <Row gutter={[20, 20]}>
+        <Row gutter={[20, 20]} align="stretch">
           <Col xs={24} sm={12}>
             <StatWidget title="Today's Appointments" value={stats.appointments_today} icon={<CalendarOutlined />} />
           </Col>

@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 const { Text, Title } = Typography;
 
 const StyledCard = styled(Card)`
+  height: 100%;
   border-radius: ${props => props.theme.borderRadius.md};
   border: 1px solid ${props => props.theme.border};
   box-shadow: ${props => props.theme.shadow};
@@ -18,7 +19,11 @@ const StyledCard = styled(Card)`
   }
 
   .ant-card-body {
-    padding: 20px 24px;
+    padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
 `;
 

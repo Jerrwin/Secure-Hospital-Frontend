@@ -18,13 +18,13 @@ const DashboardHeader = styled.div`
 `;
 
 const WelcomeTitle = styled.h1`
-  color: ${props => props.theme.secondary};
+  color: ${(props) => props.theme.secondary};
   font-size: 1.75rem;
   margin: 0;
 `;
 
 const SubtitleText = styled.p`
-  color: ${props => props.theme.text.secondary};
+  color: ${(props) => props.theme.text.secondary};
   margin-top: 4px;
 `;
 
@@ -33,12 +33,25 @@ const DashboardPage = () => {
   const { user, userRole } = useAuth();
   const dashboardData = useDashboard(user);
   const { patients, fetchPatients } = usePatients();
-  const { list: allAppointments, fetchAll: fetchAppointments } = useAppointments();
+  const { list: allAppointments, fetchAll: fetchAppointments } =
+    useAppointments();
+
+  const isStaff = [
+    "ADMIN",
+    "PROVIDER",
+    "DOCTOR",
+    "NURSE",
+    "RECEPTIONIST",
+    "PHARMACIST",
+  ].includes(userRole);
 
   useEffect(() => {
-    fetchPatients();
-    fetchAppointments();
-  }, [fetchPatients, fetchAppointments]);
+    if (isStaff) {
+      fetchPatients();
+      fetchAppointments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStaff]);
 
   // Guard: If user is not yet loaded, show loading
   if (!user) {
@@ -89,13 +102,15 @@ const DashboardPage = () => {
           <Spin size="large" />
         </div>
       ) : (
-        <UnifiedDashboard
-          role={userRole}
-          data={dashboardData}
-          patients={patients}
-          allAppointments={allAppointments}
-          loading={dashboardData.loading}
-        />
+        <ErrorBoundary>
+          <UnifiedDashboard
+            role={userRole}
+            data={dashboardData}
+            patients={patients}
+            allAppointments={allAppointments}
+            loading={dashboardData.loading}
+          />
+        </ErrorBoundary>
       )}
     </>
   );
