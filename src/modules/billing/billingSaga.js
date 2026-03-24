@@ -96,7 +96,8 @@ function* createInvoiceSaga(action) {
     
     if (res.data.success || data) {
       yield put(createInvoiceSuccess(data));
-      // Removed automatic refreshes that were wiping local state with empty server responses
+      // Re-fetch to ensure all tabs are in sync with server data
+      yield put(fetchInvoicesRequest());
     } else {
       yield put(createInvoiceFailure("Failed to create invoice"));
     }
@@ -113,7 +114,8 @@ function* processPaymentSaga(action) {
     
     if (res.data.success || data) {
       yield put(processPaymentSuccess(data));
-      // Removed automatic refreshes that were wiping local state with empty server responses
+      // Re-fetch to ensure the "Completed Payments" tab is updated immediately
+      yield put(fetchInvoicesRequest());
     } else {
       yield put(processPaymentFailure("Failed to process payment"));
     }

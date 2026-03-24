@@ -9,45 +9,41 @@ import {
 function* fetchDashboardDataSaga(action) {
   try {
     const role = action.payload?.role?.toUpperCase();
-    
-    // 1. Fetch primary dashboard stats 
-    // This endpoint handles the main counts (stat cards) automatically by token.
+
+    // 1. Fetch primary dashboard stats.
+    // This endpoint handles the main stat counts automatically by token/role.
     const statsRes = yield call(dashboardAPI.getStats);
     let payload = statsRes.data.success ? statsRes.data.data : {};
 
-    // 2. Fetch Detailed Lists (Appointments & Prescriptions)
-    // We make these resilient so one restricted endpoint won't break the entire dashboard.
+    // 2. Fetch detailed lists (Appointments & Prescriptions).
+    // Split by role: patients use the 'upcoming' endpoint (standard list is 403 for them).
+    // Staff/admins use parallel fetching for speed.
     if (role === "PATIENT") {
-       try {
-         // Appointments always use the 'upcoming' endpoint for patients
-         const aptRes = yield call(dashboardAPI.getUpcomingAppointments);
-         if (aptRes.data?.success) payload.appointments = aptRes.data.data;
-       } catch (e) { console.error("Could not fetch patient appointments:", e); }
-
-       // IMPORTANT: patients use the combined stats endpoint for lists as standard fetch is 403
-       // If the stats endpoint already has them, we don't need a sequential call.
-       // Only fetch if stats didn't provide a list.
-       if (!payload.prescriptions || payload.prescriptions.length === 0) {
-         try {
-           // Fallback check to see if there's a specialized patient list
-           // If this still fails, we'll rely on the Stats provided data.
-         } catch (e) { }
-       }
+      try {
+        const aptRes = yield call(dashboardAPI.getUpcomingAppointments);
+        if (aptRes.data?.success) payload.appointments = aptRes.data.data;
+      } catch (e) {
+        console.error("Could not fetch patient appointments:", e);
+      }
+      // Prescriptions for patients come embedded in the stats endpoint response.
+      // No additional call needed — payload.prescriptions is already populated above.
     } else {
-      // Standard fetch logic for medical staff / admins
+      // Standard parallel fetch for all medical staff and admin roles.
       try {
         const [aptRes, presRes] = yield all([
           call(dashboardAPI.getUpcomingAppointments),
-          call(dashboardAPI.getPrescriptions)
+          call(dashboardAPI.getPrescriptions),
         ]);
         if (aptRes.data?.success) payload.appointments = aptRes.data.data;
         if (presRes.data?.success) payload.prescriptions = presRes.data.data;
-      } catch (e) { console.error("Error fetching staff dashboard lists:", e); }
+      } catch (e) {
+        console.error("Error fetching staff dashboard lists:", e);
+      }
     }
 
     yield put(
       fetchDashboardDataSuccess({
-        stats: payload.stats || payload,
+        stats: payload.stats || null,         // ✅ never pollute stats with list data
         appointments: payload.appointments || [],
         prescriptions: payload.prescriptions || [],
         weekly_trend: payload.weekly_trend || [],

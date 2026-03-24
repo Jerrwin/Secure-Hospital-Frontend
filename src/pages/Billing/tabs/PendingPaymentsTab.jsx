@@ -2,17 +2,21 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Table, Button, Modal, Form, Input, Select, Tag, message, Space, Empty } from "antd";
 import { CreditCardOutlined, DollarOutlined } from "@ant-design/icons";
 import useBilling from "../../../modules/billing/hooks/useBilling";
+import usePatients from "../../../modules/patients/hooks/usePatients";
 import styled from "styled-components";
+import { useTheme } from "../../../context/ThemeContext";
 
 const { Option } = Select;
 
 const ActionBtn = styled(Button)`
   border-radius: 8px;
-  background: #52c41a;
-  border-color: #52c41a;
+  background: ${props => props.theme.status.success} !important;
+  border-color: ${props => props.theme.status.success} !important;
+  color: #ffffff !important;
+
   &:hover {
-    background: #73d13d !important;
-    border-color: #73d13d !important;
+    background: ${props => props.theme.status.success}dd !important;
+    border-color: ${props => props.theme.status.success}dd !important;
   }
   @media (max-width: 576px) {
     padding: 4px 8px;
@@ -22,6 +26,7 @@ const ActionBtn = styled(Button)`
 `;
 
 const PendingPaymentsTab = ({ setActiveKey }) => {
+  const { theme } = useTheme();
   const { 
     fetchInvoices, 
     invoices, 
@@ -36,10 +41,12 @@ const PendingPaymentsTab = ({ setActiveKey }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [form] = Form.useForm();
+  const { patients, fetchPatients } = usePatients();
 
   useEffect(() => {
     fetchInvoices(); // Fetch all to ensure local filtering works
-  }, [fetchInvoices]);
+    fetchPatients();
+  }, [fetchInvoices, fetchPatients]);
 
   const pendingInvoices = useMemo(() => {
     console.log("PendingPaymentsTab - INVOICES DATA:", invoices);
@@ -69,7 +76,7 @@ const PendingPaymentsTab = ({ setActiveKey }) => {
       message.success("Payment recorded successfully!");
       // Switch to Completed Payments tab
       setTimeout(() => {
-        setActiveKey("3");
+        setActiveKey("completed");
         clearBillingError(); 
       }, 500);
     }
@@ -100,21 +107,16 @@ const PendingPaymentsTab = ({ setActiveKey }) => {
 
   const columns = [
     { 
-      title: "Invoice ID", 
-      dataIndex: "id", 
-      key: "id", 
-      render: (id, record) => {
-        const invoiceId = id || record.Id || record.INVOICE_ID || record.invoice_id || record.invoiceId || record.INV_ID;
-        return invoiceId ? `#${invoiceId}` : '#N/A';
-      }
-    },
-    { 
-      title: "Patient ID", 
-      dataIndex: "patient_id", 
-      key: "patient_id",
-      render: (patientId, record) => {
-        const pid = patientId || record.PATIENT_ID || record.patientId || record.patient_id || record.PATIENTID || record.patientID || record.patient || record.Patient;
-        return pid || 'N/A';
+      title: "Patient", 
+      key: "patient", 
+      render: (_, record) => {
+        let name = record.patient_name || record.patientName;
+        const pid = record.patient_id || record.PATIENT_ID || record.patientId || record.patientID || record.PatientId;
+        if (!name && pid && patients.length > 0) {
+          const found = patients.find(p => String(p.id) === String(pid));
+          if (found) name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+        }
+        return name ? <span style={{ fontWeight: 600, color: theme.primary }}>{name}</span> : 'Unknown Patient';
       }
     },
     { 
@@ -165,8 +167,8 @@ const PendingPaymentsTab = ({ setActiveKey }) => {
       <Modal
         title={
           <Space>
-            <CreditCardOutlined style={{ color: '#52c41a' }} />
-            <span>Process Payment</span>
+            <CreditCardOutlined style={{ color: theme.status.success }} />
+            <span style={{ color: theme.text.primary }}>Process Payment</span>
           </Space>
         }
         open={isModalOpen}
@@ -177,9 +179,9 @@ const PendingPaymentsTab = ({ setActiveKey }) => {
         destroyOnHidden
       >
         {selectedInvoice && (
-          <div style={{ marginBottom: 16, padding: 12, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8 }}>
-            <p><strong>Invoice ID:</strong> #{selectedInvoice.id || selectedInvoice.Id || selectedInvoice.INVOICE_ID || selectedInvoice.invoice_id || selectedInvoice.invoiceId || selectedInvoice.INV_ID || 'N/A'}</p>
-            <p><strong>Amount Due:</strong> ₹{selectedInvoice.amount || selectedInvoice.AMOUNT || selectedInvoice.Amount || selectedInvoice.total_amount || selectedInvoice.totalAmount || selectedInvoice.total || selectedInvoice.price || selectedInvoice.Price || selectedInvoice.cost || selectedInvoice.Cost || 0}</p>
+          <div style={{ marginBottom: 16, padding: 12, background: theme.primaryLight, border: `1px solid ${theme.border}`, borderRadius: 8 }}>
+            <p style={{ color: theme.text.primary }}><strong>Invoice ID:</strong> #{selectedInvoice.id || selectedInvoice.Id || selectedInvoice.INVOICE_ID || selectedInvoice.invoice_id || selectedInvoice.invoiceId || selectedInvoice.INV_ID || 'N/A'}</p>
+            <p style={{ color: theme.text.primary }}><strong>Amount Due:</strong> ₹{selectedInvoice.amount || selectedInvoice.AMOUNT || selectedInvoice.Amount || selectedInvoice.total_amount || selectedInvoice.totalAmount || selectedInvoice.total || selectedInvoice.price || selectedInvoice.Price || selectedInvoice.cost || selectedInvoice.Cost || 0}</p>
           </div>
         )}
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>

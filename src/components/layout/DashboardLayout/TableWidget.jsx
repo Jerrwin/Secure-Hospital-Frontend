@@ -1,18 +1,19 @@
 import React from 'react';
 import { Card, Table, Typography } from 'antd';
 import styled from 'styled-components';
+import { useTheme } from '../../../context/ThemeContext';
 
 const { Title } = Typography;
 
 const StyledCard = styled(Card)`
-  border-radius: 12px;
-  border: 1px solid #eff6ff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
-  background: #ffffff;
+  border-radius: ${props => props.theme.borderRadius.md};
+  border: 1px solid ${props => props.theme.border};
+  box-shadow: ${props => props.theme.shadow};
+  background: ${props => props.theme.background.card};
   margin-top: 24px;
 
   .ant-card-head {
-    border-bottom: 1px solid #eff6ff;
+    border-bottom: 1px solid ${props => props.theme.border};
     padding: 0 24px;
   }
 
@@ -21,17 +22,18 @@ const StyledCard = styled(Card)`
   }
 
   .ant-table-thead > tr > th {
-    background: #eff6ff;
-    color: #1e3a8a;
+    background: ${props => props.theme.primaryLight};
+    color: ${props => props.theme.secondary};
     font-weight: 600;
-    border-bottom: 1px solid #bfdbfe;
+    border-bottom: 1px solid ${props => props.theme.border};
   }
 `;
 
 const TableWidget = ({ title, columns, dataSource, loading, rowKey = 'id' }) => {
+  const { theme } = useTheme();
   return (
     <StyledCard 
-      title={<Title level={4} style={{ margin: 0, color: '#1e3a8a' }}>{title}</Title>}
+      title={<Title level={4} style={{ margin: 0, color: theme.secondary }}>{title}</Title>}
       variant="borderless"
     >
       <Table 

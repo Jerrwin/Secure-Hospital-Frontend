@@ -2,15 +2,16 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import { Tabs } from "antd";
-import { 
-  FileTextOutlined, 
-  HourglassOutlined, 
+import {
+  FileTextOutlined,
+  HourglassOutlined,
   CheckCircleOutlined,
-  DollarOutlined 
+  DollarOutlined,
 } from "@ant-design/icons";
 import CreateInvoiceTab from "./tabs/CreateInvoiceTab";
 import PendingPaymentsTab from "./tabs/PendingPaymentsTab";
 import CompletedPaymentsTab from "./tabs/CompletedPaymentsTab";
+import { useTheme } from "../../context/ThemeContext";
 
 const bp = {
   xs: "480px",
@@ -30,7 +31,9 @@ const HeaderCard = styled.div`
   background: #ffffff;
   border: 1px solid #eef2f6;
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    0 2px 4px -1px rgba(0, 0, 0, 0.03);
   margin-bottom: 24px;
   overflow: hidden;
 `;
@@ -151,25 +154,31 @@ const StyledTabs = styled(Tabs)`
 `;
 
 const InvoicePage = () => {
+  const { theme } = useTheme();
   const { userRole } = useAuth();
   const isPatient = userRole === "PATIENT";
   const [activeKey, setActiveKey] = useState(isPatient ? "2" : "1");
 
   const tabItems = [
-    ...(isPatient ? [] : [{
-      key: "1",
-      label: (
-        <span>
-          <FileTextOutlined /> Payment Create
-        </span>
-      ),
-      children: <CreateInvoiceTab />,
-    }]),
+    ...(isPatient
+      ? []
+      : [
+          {
+            key: "1",
+            label: (
+              <span>
+                <FileTextOutlined /> Payment Create
+              </span>
+            ),
+            children: <CreateInvoiceTab />,
+          },
+        ]),
     {
       key: "2",
       label: (
         <span>
-          <HourglassOutlined /> {isPatient ? "My Pending Bills" : "Pending Payments"}
+          <HourglassOutlined />{" "}
+          {isPatient ? "My Pending Bills" : "Pending Payments"}
         </span>
       ),
       children: <PendingPaymentsTab />,
@@ -178,7 +187,8 @@ const InvoicePage = () => {
       key: "3",
       label: (
         <span>
-          <CheckCircleOutlined /> {isPatient ? "My Payment History" : "Completed Payments"}
+          <CheckCircleOutlined />{" "}
+          {isPatient ? "My Payment History" : "Completed Payments"}
         </span>
       ),
       children: <CompletedPaymentsTab />,
@@ -191,21 +201,25 @@ const InvoicePage = () => {
         <HeaderRow>
           <HeaderLeft>
             <TitleIcon>
-              <DollarOutlined style={{ fontSize: 20, color: "#1677ff" }} />
+              <DollarOutlined style={{ fontSize: 22, color: theme.primary }} />
             </TitleIcon>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
               <PageTitle>Billing & Payments</PageTitle>
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 400 }}>Manage patient invoices and transactions</span>
+              <span
+                style={{ fontSize: "12px", color: "#64748b", fontWeight: 400 }}
+              >
+                Manage patient invoices and transactions
+              </span>
             </div>
           </HeaderLeft>
         </HeaderRow>
       </HeaderCard>
 
-      <div style={{ padding: '0 4px' }}>
-        <StyledTabs 
-          activeKey={activeKey} 
+      <div style={{ padding: "0 4px" }}>
+        <StyledTabs
+          activeKey={activeKey}
           onChange={setActiveKey}
-          items={tabItems} 
+          items={tabItems}
         />
       </div>
     </Container>

@@ -16,22 +16,27 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import StatWidget from "./StatWidget";
 import TableWidget from "./TableWidget";
+import { useTheme } from "../../../context/ThemeContext";
 
 const { Text, Title } = Typography;
 
 // ─── Styled Components ──────────────────────────────────
 const ChartCard = styled(Card)`
-  border-radius: 16px;
-  border: 1px solid #eff6ff;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  border-radius: ${props => props.theme.borderRadius.lg};
+  border: 1px solid ${props => props.theme.border};
+  box-shadow: ${props => props.theme.shadow};
   margin-top: 24px;
-  .ant-card-head { border-bottom: 1px solid #f0f5ff; padding: 16px 24px; }
+  .ant-card-head { 
+    background: ${props => props.theme.background.header};
+    border-bottom: 1px solid ${props => props.theme.border}; 
+    padding: 16px 24px; 
+  }
   .ant-card-body { padding: 24px; }
 `;
 
 const QuickActionBtn = styled(Button)`
   height: 64px;
-  border-radius: 14px;
+  border-radius: ${props => props.theme.borderRadius.md};
   font-weight: 600;
   font-size: 14px;
   display: flex;
@@ -39,41 +44,44 @@ const QuickActionBtn = styled(Button)`
   justify-content: center;
   flex-direction: column;
   gap: 6px;
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  border: 1px solid #bfdbfe;
-  color: #1e3a8a;
+  background: linear-gradient(135deg, ${props => props.theme.background.main}, ${props => props.theme.primaryLight});
+  border: 1px solid ${props => props.theme.primaryLight};
+  color: ${props => props.theme.secondary};
   transition: all 0.25s ease;
   width: 100%;
   &:hover {
-    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.15);
-    color: #1e3a8a !important;
-    border-color: #93c5fd !important;
+    box-shadow: ${props => props.theme.shadow};
+    color: ${props => props.theme.secondary} !important;
+    border-color: ${props => props.theme.primary} !important;
   }
 `;
 
 const TimelineCard = styled(Card)`
-  border-radius: 16px;
-  border: 1px solid #eff6ff;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.06);
+  border-radius: ${props => props.theme.borderRadius.lg};
+  border: 1px solid ${props => props.theme.border};
+  box-shadow: ${props => props.theme.shadow};
   margin-top: 24px;
-  .ant-card-head { border-bottom: 1px solid #f0f5ff; padding: 16px 24px; }
+  .ant-card-head { 
+    background: ${props => props.theme.background.header};
+    border-bottom: 1px solid ${props => props.theme.border}; 
+    padding: 16px 24px; 
+  }
   .ant-card-body { padding: 24px; }
 `;
 
 const TimelineSlot = styled.div`
   padding: 12px 16px;
   border-radius: 12px;
-  background: ${(p) => (p.$status === "completed" ? "#f0fdf4" : p.$status === "cancelled" ? "#fef2f2" : "#eff6ff")};
-  border-left: 4px solid ${(p) => (p.$status === "completed" ? "#22c55e" : p.$status === "cancelled" ? "#ef4444" : "#2563eb")};
+  background: ${(p) => (p.$status === "completed" ? p.theme.status.success + "11" : p.$status === "cancelled" ? p.theme.status.error + "11" : p.theme.primaryLight)};
+  border-left: 4px solid ${(p) => (p.$status === "completed" ? p.theme.status.success : p.$status === "cancelled" ? p.theme.status.error : p.theme.primary)};
   margin-bottom: 4px;
 `;
 
 const MiniBar = styled.div`
   height: 8px;
   border-radius: 4px;
-  background: #eff6ff;
+  background: ${props => props.theme.primaryLight};
   position: relative;
   overflow: hidden;
   &::after {
@@ -84,7 +92,7 @@ const MiniBar = styled.div`
     height: 100%;
     width: ${(p) => p.$pct || 0}%;
     border-radius: 4px;
-    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    background: linear-gradient(90deg, ${props => props.theme.primary}, ${props => props.theme.primaryHover});
     transition: width 0.6s ease;
   }
 `;
@@ -106,13 +114,14 @@ try {
   // recharts not installed yet, charts will render fallback
 }
 
-const COLORS = ["#22c55e", "#f97316"];
+const COLORS = (theme) => [theme.status.success, theme.status.warning, theme.primary];
 
 // ═══════════════════════════════════════════════════════════
 //  UNIFIED DASHBOARD
 // ═══════════════════════════════════════════════════════════
-const UnifiedDashboard = ({ role, data, loading }) => {
+const UnifiedDashboard = ({ role, data, patients = [], allAppointments = [], loading }) => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const normalizedRole = (role || "").toUpperCase();
 
   // ─── Shared Appointment Columns ──────────────────────
@@ -120,7 +129,15 @@ const UnifiedDashboard = ({ role, data, loading }) => {
     {
       title: "Patient",
       key: "patient_name",
-      render: (_, r) => r.patient_name || "—",
+      render: (_, r) => {
+        let name = r.patient_name || r.patientName || r.PATIENT_NAME || r.patient?.name || (r.patient?.first_name ? `${r.patient.first_name} ${r.patient.last_name || ""}`.trim() : null) || (r.first_name ? `${r.first_name} ${r.last_name || ""}`.trim() : null);
+        const pId = r.patient_id || r.patientId || r.PATIENT_ID || r.PatientId || r.patient?.id || r.patient?.ID;
+        if (!name && pId && patients.length > 0) {
+          const found = patients.find(p => String(p.id) === String(pId));
+          if (found) name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+        }
+        return name || "—";
+      },
     },
     {
       title: "Provider",
@@ -141,25 +158,53 @@ const UnifiedDashboard = ({ role, data, loading }) => {
       key: "status",
       render: (_, r) => {
         const s = (r.STATUS || r.status || "").toLowerCase();
-        const map = { scheduled: "blue", completed: "green", cancelled: "red" };
+        const map = {
+          scheduled: theme.primary,
+          completed: theme.status.success,
+          cancelled: theme.status.error,
+        };
         return <Tag color={map[s] || "default"} style={{ textTransform: "capitalize" }}>{s || "—"}</Tag>;
       },
     },
-  ], []);
+  ], [patients, theme]);
 
   const prescriptionCols = useMemo(() => [
-    { title: "Patient", dataIndex: "patient_name", key: "patient_name", render: (v) => v || "—" },
+    {
+      title: "Patient",
+      key: "patient_name",
+      render: (_, r) => {
+        let name = r.patient_name || r.patientName || r.PATIENT_NAME || r.patient?.name || (r.patient?.first_name ? `${r.patient.first_name} ${r.patient.last_name || ""}`.trim() : null) || (r.first_name ? `${r.first_name} ${r.last_name || ""}`.trim() : null);
+        let pId = r.patient_id || r.patientId || r.PATIENT_ID || r.PatientId || r.patient?.id || r.patient?.ID;
+
+        if (!pId && r.appointment_id && allAppointments.length > 0) {
+          const matchingApt = allAppointments.find(a => String(a.id) === String(r.appointment_id));
+          if (matchingApt) {
+            pId = matchingApt.patient_id || matchingApt.patientId || matchingApt.PATIENT_ID;
+          }
+        }
+
+        if (!name && pId && patients.length > 0) {
+          const found = patients.find(p => String(p.id) === String(pId));
+          if (found) name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+        }
+        return name || "—";
+      },
+    },
     { title: "Doctor", dataIndex: "provider_name", key: "provider_name", render: (v) => v || "—" },
     {
       title: "Status",
       key: "status",
       render: (_, r) => {
         const s = (r.STATUS || r.status || "").toLowerCase();
-        const map = { created: "orange", verified: "blue", dispensed: "green" };
+        const map = {
+          created: theme.status.warning,
+          verified: theme.primary,
+          dispensed: theme.status.success,
+        };
         return <Tag color={map[s] || "default"} style={{ textTransform: "capitalize" }}>{s || "—"}</Tag>;
       },
     },
-  ], []);
+  ], [patients, theme, allAppointments]);
 
   // ─── ADMIN DASHBOARD ──────────────────────────────────
   if (normalizedRole === "ADMIN") {
@@ -194,24 +239,24 @@ const UnifiedDashboard = ({ role, data, loading }) => {
         {/* Charts Row */}
         <Row gutter={[20, 20]}>
           <Col xs={24} lg={16}>
-            <ChartCard title={<Title level={5} style={{ margin: 0, color: "#1e3a8a" }}>Appointment Trend (Last 7 Days)</Title>}>
+            <ChartCard title={<Title level={5} style={{ margin: 0, color: theme.secondary }}>Appointment Trend (Last 7 Days)</Title>}>
               {ResponsiveContainer && trend.length > 0 ? (
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={trend}>
                     <defs>
                       <linearGradient id="colorAppointments" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#2563eb" stopOpacity={0} />
+                        <stop offset="5%" stopColor={theme.primary} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={theme.primary} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#64748b" }} />
-                    <YAxis tick={{ fontSize: 12, fill: "#64748b" }} allowDecimals={false} />
-                    <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0" }} />
-                    <Area type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={2.5} fill="url(#colorAppointments)" />
+                    <XAxis dataKey="day" tick={{ fontSize: 12, fill: theme.text.secondary }} stroke={theme.border} />
+                    <YAxis tick={{ fontSize: 12, fill: theme.text.secondary }} stroke={theme.border} allowDecimals={false} />
+                    <Tooltip contentStyle={{ borderRadius: theme.borderRadius.md, border: `1px solid ${theme.border}` }} />
+                    <Area type="monotone" dataKey="count" stroke={theme.primary} strokeWidth={2.5} fill="url(#colorAppointments)" />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ textAlign: "center", padding: "40px 0", color: "#94a3b8" }}>
+                <div style={{ textAlign: "center", padding: "40px 0", color: theme.text.light }}>
                   <CalendarOutlined style={{ fontSize: 40, marginBottom: 12 }} />
                   <p>No appointment data yet</p>
                 </div>
@@ -219,25 +264,25 @@ const UnifiedDashboard = ({ role, data, loading }) => {
             </ChartCard>
           </Col>
           <Col xs={24} lg={8}>
-            <ChartCard title={<Title level={5} style={{ margin: 0, color: "#1e3a8a" }}>Invoice Status</Title>}>
+            <ChartCard title={<Title level={5} style={{ margin: 0, color: theme.secondary }}>Invoice Status</Title>}>
               {PieChart ? (
                 <div style={{ textAlign: "center" }}>
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
                       <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={4}>
-                        {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
+                        {pieData.map((_, i) => <Cell key={i} fill={COLORS(theme)[i]} />)}
                       </Pie>
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
                   <Space size="large" style={{ marginTop: 8 }}>
-                    <Text><span style={{ color: "#22c55e", fontWeight: 700 }}>●</span> Paid ({stats.paid_invoices || 0})</Text>
-                    <Text><span style={{ color: "#f97316", fontWeight: 700 }}>●</span> Pending ({stats.pending_invoices || 0})</Text>
+                    <Text><span style={{ color: theme.status.success, fontWeight: 700 }}>●</span> Paid</Text>
+                    <Text><span style={{ color: theme.status.warning, fontWeight: 700 }}>●</span> Pending</Text>
                   </Space>
                 </div>
               ) : (
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <Progress type="circle" percent={paidPct} strokeColor="#22c55e" format={() => `${paidPct}%`} />
+                  <Progress type="circle" percent={paidPct} strokeColor={theme.status.success} format={() => `${paidPct}%`} />
                   <Text type="secondary" style={{ display: "block", marginTop: 12 }}>Invoices Paid Ratio</Text>
                 </div>
               )}
@@ -279,21 +324,31 @@ const UnifiedDashboard = ({ role, data, loading }) => {
         </Row>
 
         {/* Timeline - Today's Schedule */}
-        <TimelineCard title={<Title level={5} style={{ margin: 0, color: "#1e3a8a" }}>Today's Schedule</Title>}>
+        <TimelineCard title={<Title level={5} style={{ margin: 0, color: theme.secondary }}>Today's Schedule</Title>}>
           {appointments.length === 0 ? (
             <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No appointments today" />
           ) : (
             <Timeline
               items={appointments.map((apt) => {
                 const s = (apt.STATUS || apt.status || "").toLowerCase();
-                const color = s === "completed" ? "green" : s === "cancelled" ? "red" : "blue";
+                const color = s === "completed" ? theme.status.success : s === "cancelled" ? theme.status.error : theme.primary;
                 return {
                   color,
                   content: (
                     <TimelineSlot $status={s}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
-                          <Text strong style={{ fontSize: 14, color: "#1e293b" }}>{apt.patient_name || "—"}</Text>
+                          <Text strong style={{ fontSize: 14, color: theme.text.primary }}>
+                            {(() => {
+                              let name = apt.patient_name || apt.patientName || apt.PATIENT_NAME || apt.patient?.name || (apt.patient?.first_name ? `${apt.patient.first_name} ${apt.patient.last_name || ""}`.trim() : null) || (apt.first_name ? `${apt.first_name} ${apt.last_name || ""}`.trim() : null);
+                              const pId = apt.patient_id || apt.patientId || apt.PATIENT_ID || apt.PatientId || apt.patient?.id || apt.patient?.ID;
+                              if (!name && pId && patients.length > 0) {
+                                const found = patients.find(p => String(p.id) === String(pId));
+                                if (found) name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+                              }
+                              return name || "—";
+                            })()}
+                          </Text>
                           <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
                             <ClockCircleOutlined style={{ marginRight: 4 }} />
                             {apt.start_time || ""} – {apt.end_time || ""}
@@ -331,7 +386,7 @@ const UnifiedDashboard = ({ role, data, loading }) => {
         </Row>
 
         {/* Quick Action Bar */}
-        <ChartCard title={<Title level={5} style={{ margin: 0, color: "#1e3a8a" }}>Quick Actions</Title>}>
+        <ChartCard title={<Title level={5} style={{ margin: 0, color: theme.secondary }}>Quick Actions</Title>}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
               <QuickActionBtn onClick={() => navigate("/appointments")}>
@@ -385,7 +440,7 @@ const UnifiedDashboard = ({ role, data, loading }) => {
         </Row>
 
         {/* Pipeline visual */}
-        <ChartCard title={<Title level={5} style={{ margin: 0, color: "#1e3a8a" }}>Prescription Pipeline</Title>}>
+        <ChartCard title={<Title level={5} style={{ margin: 0, color: theme.secondary }}>Prescription Pipeline</Title>}>
           <Row gutter={[16, 16]} align="middle">
             <Col span={6}><Text type="secondary">New</Text><MiniBar $pct={total ? ((stats.new_prescriptions || 0) / total) * 100 : 0} /></Col>
             <Col span={2} style={{ textAlign: "center" }}>→</Col>
@@ -436,12 +491,13 @@ const UnifiedDashboard = ({ role, data, loading }) => {
     );
   }
 
-  // ─── PATIENT DASHBOARD (PIXEL-PERFECT REPLICA) ───────────────────────
+  // ─── PATIENT DASHBOARD ────────────────────────────────
   if (normalizedRole === "PATIENT") {
     const stats = data.stats || {};
-    
+
     return (
       <div style={{ padding: "8px 4px", maxWidth: "1400px", margin: "0 auto" }}>
+
         {/* 1. Health Pulse Grid (4 Cards) */}
         <Row gutter={[20, 20]} align="stretch" style={{ marginBottom: 28 }}>
           <Col xs={24} sm={12} lg={6}>
@@ -449,7 +505,7 @@ const UnifiedDashboard = ({ role, data, loading }) => {
               title="Next Scheduled Visits"
               value={stats.upcoming_appointments || 0}
               icon={<CalendarOutlined style={{ fontSize: 20 }} />}
-              color="#2563eb"
+              color={theme.primary}
             />
           </Col>
           <Col xs={24} sm={12} lg={6}>
@@ -457,7 +513,7 @@ const UnifiedDashboard = ({ role, data, loading }) => {
               title="Current Medications"
               value={stats.active_prescriptions || 0}
               icon={<MedicineBoxOutlined style={{ fontSize: 20 }} />}
-              color="#10b981"
+              color={theme.status.success}
             />
           </Col>
           <Col xs={24} sm={12} lg={6}>
@@ -465,7 +521,15 @@ const UnifiedDashboard = ({ role, data, loading }) => {
               title="Total Balance Due"
               value={`₹${(stats.unpaid_amount || 0).toLocaleString()}`}
               icon={<DollarOutlined style={{ fontSize: 20 }} />}
-              color="#f59e0b"
+              color={theme.status.warning}
+            />
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <StatWidget
+              title="Average Visit Cost"
+              value={`₹${(stats.avg_spending || stats.average_spending || (stats.total_paid / stats.appointments_total) || 0).toLocaleString()}`}
+              icon={<CheckCircleOutlined style={{ fontSize: 20 }} />}
+              color={theme.primaryHover}
             />
           </Col>
           <Col xs={24} sm={12} lg={6}>
@@ -480,31 +544,40 @@ const UnifiedDashboard = ({ role, data, loading }) => {
 
         {/* 2. Unified Content Layout */}
         <Row gutter={[24, 24]}>
+
           {/* Clinical Records Column */}
           <Col xs={24} lg={16}>
-             <TableWidget
-                title={<Space style={{ fontWeight: 600 }}><CalendarOutlined /> My Recent Appointments</Space>}
-                columns={appointmentCols}
-                dataSource={data.appointments || []}
+            <TableWidget
+              title={<Space style={{ fontWeight: 600 }}><CalendarOutlined /> My Recent Appointments</Space>}
+              columns={appointmentCols}
+              dataSource={data.appointments || []}
+              loading={loading}
+              pagination={{ pageSize: 5 }}
+            />
+            <div style={{ marginTop: 28 }}>
+              <TableWidget
+                title={<Space style={{ fontWeight: 600 }}><MedicineBoxOutlined /> Medication Records</Space>}
+                columns={prescriptionCols}
+                dataSource={data.prescriptions || []}
                 loading={loading}
                 pagination={{ pageSize: 5 }}
               />
-              <div style={{ marginTop: 28 }}>
-                <TableWidget
-                  title={<Space style={{ fontWeight: 600 }}><MedicineBoxOutlined /> Medication Records</Space>}
-                  columns={prescriptionCols}
-                  dataSource={data.prescriptions || []}
-                  loading={loading}
-                  pagination={{ pageSize: 5 }}
-                />
-              </div>
+            </div>
           </Col>
-          
+
           {/* Operations & Activity Sidebar */}
           <Col xs={24} lg={8}>
-            <Card 
-              title={<Space style={{ fontSize: 15, fontWeight: 600, color: '#1e293b' }}><PlusOutlined style={{ fontSize: 13 }} /> Portal Operations</Space>}
-              style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.03)", border: "1px solid #f1f5f9" }}
+            <Card
+              title={
+                <Space style={{ fontSize: 15, fontWeight: 600, color: theme.text.primary }}>
+                  <PlusOutlined style={{ fontSize: 13 }} /> Portal Operations
+                </Space>
+              }
+              style={{
+                borderRadius: theme.borderRadius.lg,
+                boxShadow: theme.shadow,
+                border: `1px solid ${theme.border}`,
+              }}
             >
               <Space direction="vertical" style={{ width: "100%" }} size="middle">
                 <QuickActionBtn onClick={() => navigate("/appointments")}>
@@ -519,40 +592,58 @@ const UnifiedDashboard = ({ role, data, loading }) => {
               </Space>
             </Card>
 
-            <Card 
-              style={{ marginTop: 28, borderRadius: 12, background: "#f8fafc", border: "1px solid #f1f5f9" }}
-              title={<Space style={{ fontSize: 15, fontWeight: 600, color: '#475569' }}><ClockCircleOutlined style={{ fontSize: 13 }} /> Latest Portal Logs</Space>}
+            <Card
+              style={{
+                marginTop: 28,
+                borderRadius: theme.borderRadius.lg,
+                background: theme.background.sidebar || theme.background.main,
+                border: `1px solid ${theme.border}`,
+              }}
+              title={
+                <Space style={{ fontSize: 15, fontWeight: 600, color: theme.text.secondary }}>
+                  <ClockCircleOutlined style={{ fontSize: 13 }} /> Latest Portal Logs
+                </Space>
+              }
             >
               <Timeline
                 mode="left"
                 style={{ marginTop: 12 }}
                 items={[
-                  { color: "green", children: <span style={{ fontSize: '13px' }}>Appointment scheduled - 27 Mar 2026</span> },
-                  { color: "blue", children: <span style={{ fontSize: '13px' }}>Lab results uploaded into clinical system</span> },
-                  { color: "gray", children: <span style={{ fontSize: '13px' }}>Security login from new device detected</span> },
+                  { color: theme.status.success, children: <span style={{ fontSize: "13px", color: theme.text.primary }}>Appointment scheduled - 27 Mar 2026</span> },
+                  { color: theme.primary, children: <span style={{ fontSize: "13px", color: theme.text.primary }}>Lab results uploaded into clinical system</span> },
+                  { color: theme.text.light, children: <span style={{ fontSize: "13px", color: theme.text.primary }}>Security login from new device detected</span> },
                 ]}
               />
             </Card>
 
-            {/* Subdued Billing Status */}
+            {/* Payment Due Alert */}
             {(stats.unpaid_invoices > 0 || stats.pending_invoices > 0) && (
-              <Card 
-                style={{ 
-                  marginTop: 28, 
-                  borderRadius: 12, 
-                  background: "linear-gradient(135deg, #fffbeb 0%, #fff 100%)", 
-                  border: "1px solid #fde68a",
-                  boxShadow: "0 2px 8px rgba(217, 119, 6, 0.05)"
+              <Card
+                style={{
+                  marginTop: 28,
+                  borderRadius: theme.borderRadius.lg,
+                  background: `linear-gradient(135deg, ${theme.status.warning}18 0%, ${theme.background.main} 100%)`,
+                  border: `1px solid ${theme.status.warning}55`,
+                  boxShadow: `0 2px 8px ${theme.status.warning}18`,
                 }}
               >
-                <Title level={5} style={{ color: "#92400e", marginBottom: 8, fontSize: 15 }}>Payment Due</Title>
-                <Text style={{ color: "#b45309", fontSize: 13, display: "block", marginBottom: 12 }}>You have pending medical invoices.</Text>
-                <Button 
+                <Title level={5} style={{ color: theme.status.warning, marginBottom: 8, fontSize: 15 }}>
+                  Payment Due
+                </Title>
+                <Text style={{ color: theme.status.warning, fontSize: 13, display: "block", marginBottom: 12, opacity: 0.85 }}>
+                  You have pending medical invoices.
+                </Text>
+                <Button
                   block
-                  type="primary" 
+                  type="primary"
                   size="middle"
                   icon={<DollarOutlined />}
-                  style={{ background: "#d97706", border: "none", borderRadius: 8, fontWeight: 500 }}
+                  style={{
+                    background: theme.status.warning,
+                    border: "none",
+                    borderRadius: theme.borderRadius.md,
+                    fontWeight: 500,
+                  }}
                   onClick={() => navigate("/billing")}
                 >
                   Settle Payment

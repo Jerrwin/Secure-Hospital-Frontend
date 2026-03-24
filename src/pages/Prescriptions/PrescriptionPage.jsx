@@ -8,20 +8,21 @@ import {
   Row,
   Col,
   Card,
-  Space,
   Button,
   message,
+  Drawer,
 } from "antd";
 import {
   PlusOutlined,
   CloseCircleOutlined,
   FileTextOutlined,
   SearchOutlined,
-  FilterOutlined,
   ReloadOutlined,
   CloseOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
+import AppButton from "../../components/common/Button/AppButton";
+import { useTheme } from "../../context/ThemeContext";
 import {
   fetchRequest,
   createRequest,
@@ -30,40 +31,29 @@ import {
   deleteRequest,
   clearError,
 } from "../../modules/prescription/prescriptionSlice";
+import useAppointments from "../../modules/appointments/hooks/useAppointments";
+import usePatients from "../../modules/patients/hooks/usePatients";
 
-// ─── Design Tokens ────────────────────────────────────────────────
-const C = {
-  primary: "#2563eb",
-  secondary: "#1e3a8a",
-  bg: "#eff6ff",
-  white: "#ffffff",
-  text: "#334155",
-  textLight: "#64748b",
-  border: "#e2e8f0",
+// ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
+const bp = {
+  xs: (props) => props.theme.breakpoints.xs,
+  sm: (props) => props.theme.breakpoints.sm,
+  md: (props) => props.theme.breakpoints.md,
+  lg: (props) => props.theme.breakpoints.lg,
+  xl: (props) => props.theme.breakpoints.xl,
 };
 
-// (STATUS moved to PrescriptionList.jsx)
-
-// ─── Styled ───────────────────────────────────────────────────────
 const PageWrap = styled.div`
   min-height: 100vh;
-  background: ${C.bg};
+  background: ${(props) => props.theme.background.main};
   font-family: "DM Sans", sans-serif;
 `;
 
-const bp = {
-  xs: "480px",
-  sm: "576px",
-  md: "768px",
-  lg: "992px",
-  xl: "1200px",
-};
-
 const HeaderCard = styled.div`
-  background: #ffffff;
-  border: 1px solid #eef2f6;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  background: ${(props) => props.theme.background.card};
+  border: 1px solid ${(props) => props.theme.border};
+  border-radius: ${(props) => props.theme.borderRadius.lg};
+  box-shadow: ${(props) => props.theme.shadow};
   margin-bottom: 20px;
   overflow: hidden;
 `;
@@ -79,7 +69,7 @@ const HeaderRow = styled.div`
   @media (min-width: ${bp.lg}) {
     padding: 16px 22px;
     flex-wrap: nowrap;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid ${props => props.theme.border};
   }
 `;
 
@@ -89,7 +79,7 @@ const MobileRow = styled.div`
   justify-content: space-between;
   gap: 10px;
   padding: 8px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid ${props => props.theme.border};
 
   @media (min-width: ${bp.lg}) {
     display: none; // Hidden on desktop, moved into HeaderRow
@@ -108,7 +98,7 @@ const TitleIcon = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #e8f0fe;
+  background: ${props => props.theme.primaryLight};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -123,16 +113,16 @@ const TitleIcon = styled.div`
 const PageTitle = styled.h2`
   font-size: 15px;
   font-weight: 700;
-  color: #1e3a5f;
+  color: ${(props) => props.theme.text.primary};
   margin: 0;
   letter-spacing: -0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  @media (min-width: ${bp.sm}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.sm}) {
     font-size: 17px;
   }
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     font-size: 18px;
   }
 `;
@@ -140,31 +130,31 @@ const PageTitle = styled.h2`
 const SearchWrapper = styled.div`
   flex: 1;
   min-width: 0;
-  @media (min-width: ${bp.lg}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     max-width: 320px;
   }
 `;
 
 const StyledCard = styled(Card)`
-  border-radius: 12px !important;
-  border: 1px solid ${C.border} !important;
-  box-shadow: 0 2px 12px rgba(37, 99, 235, 0.05) !important;
+  border-radius: ${(props) => props.theme.borderRadius.lg} !important;
+  border: 1px solid ${(props) => props.theme.border} !important;
+  box-shadow: ${(props) => props.theme.shadow} !important;
 
   .ant-card-head {
-    border-bottom: 1px solid ${C.border};
+    border-bottom: 1px solid ${(props) => props.theme.border};
     font-family: "Sora", sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
-    color: ${C.secondary};
+    color: ${(props) => props.theme.secondary};
   }
 `;
 
 const MedRow = styled.div`
-  background: ${C.bg};
-  border-radius: 8px;
+  background: ${(props) => props.theme.background.main};
+  border-radius: ${(props) => props.theme.borderRadius.md};
   padding: 12px;
   margin-bottom: 8px;
-  border: 1px solid ${C.border};
+  border: 1px solid ${(props) => props.theme.border};
 `;
 
 // (PatientCard moved to PrescriptionList.jsx)
@@ -176,30 +166,12 @@ const SearchInput = styled(Input)`
   width: 100%;
 `;
 
-const AddButtonMobile = styled(Button)`
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  background: ${C.primary} !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  padding: 0 12px !important;
-  height: 36px !important;
-  font-size: 13px !important;
-  color: #ffffff !important;
-  
-  @media (min-width: ${bp.lg}) {
-    display: none !important;
-  }
-`;
-
 const DesktopActions = styled.div`
   display: none;
   align-items: center;
   gap: 16px;
-  
-  @media (min-width: ${bp.lg}) {
+
+  @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     display: flex;
   }
 `;
@@ -220,99 +192,105 @@ const FREQUENCY_OPTIONS = [
 // (highlightText moved to PrescriptionList.jsx)
 
 // ─── Sub-Components ───────────────────────────────────────────────
-const MedicineFormList = memo(() => (
-  <Form.List name="items" initialValue={[{}]}>
-    {(fields, { add, remove }) => (
-      <>
-        {fields.map(({ key, name, ...rest }) => {
-          const hasDelete = fields.length > 1;
-          return (
-            <MedRow key={key}>
-              <Row gutter={[12, 12]} align="middle">
-                <Col xs={24} sm={hasDelete ? 7 : 8}>
-                  <Form.Item
-                    {...rest}
-                    name={[name, "medicine_name"]}
-                    rules={[{ required: true, message: "Required" }]}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Input placeholder="Medicine name" />
-                  </Form.Item>
-                </Col>
-                <Col xs={12} sm={hasDelete ? 5 : 6}>
-                  <Form.Item
-                    {...rest}
-                    name={[name, "dosage"]}
-                    rules={[{ required: true, message: "Required" }]}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Input placeholder="Dosage (e.g. 500mg)" />
-                  </Form.Item>
-                </Col>
-                <Col xs={12} sm={6}>
-                  <Form.Item
-                    {...rest}
-                    name={[name, "frequency"]}
-                    rules={[{ required: true, message: "Required" }]}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Select
-                      placeholder="Frequency"
-                      options={FREQUENCY_OPTIONS}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={12} sm={hasDelete ? 4 : 4}>
-                  <Form.Item
-                    {...rest}
-                    name={[name, "duration"]}
-                    rules={[{ required: true, message: "Required" }]}
-                    style={{ marginBottom: 0 }}
-                  >
-                    <Input placeholder="Duration (e.g. 7 days)" />
-                  </Form.Item>
-                </Col>
-                {hasDelete && (
-                  <Col xs={12} sm={2} style={{ textAlign: "center" }}>
-                    <Button
-                      danger
-                      type="text"
-                      shape="circle"
-                      icon={<CloseCircleOutlined style={{ fontSize: 20 }} />}
-                      onClick={() => remove(name)}
-                      style={{ marginTop: -4 }}
-                    />
+const MedicineFormList = memo(() => {
+  const { theme } = useTheme();
+  return (
+    <Form.List name="items" initialValue={[{}]}>
+      {(fields, { add, remove }) => (
+        <>
+          {fields.map(({ key, name, ...rest }) => {
+            const hasDelete = fields.length > 1;
+            return (
+              <MedRow key={key}>
+                <Row gutter={[12, 12]} align="middle">
+                  <Col xs={24} sm={hasDelete ? 7 : 8}>
+                    <Form.Item
+                      {...rest}
+                      name={[name, "medicine_name"]}
+                      rules={[{ required: true, message: "Required" }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input placeholder="Medicine name" />
+                    </Form.Item>
                   </Col>
-                )}
-              </Row>
-            </MedRow>
-          );
-        })}
-        <Button
-          type="dashed"
-          onClick={() => add()}
-          icon={<PlusOutlined />}
-          block
-          style={{ borderColor: C.primary, color: C.primary }}
-        >
-          Add Medicine
-        </Button>
-      </>
-    )}
-  </Form.List>
-));
+                  <Col xs={12} sm={hasDelete ? 5 : 6}>
+                    <Form.Item
+                      {...rest}
+                      name={[name, "dosage"]}
+                      rules={[{ required: true, message: "Required" }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input placeholder="Dosage (e.g. 500mg)" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={12} sm={6}>
+                    <Form.Item
+                      {...rest}
+                      name={[name, "frequency"]}
+                      rules={[{ required: true, message: "Required" }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Select
+                        placeholder="Frequency"
+                        options={FREQUENCY_OPTIONS}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={12} sm={hasDelete ? 4 : 4}>
+                    <Form.Item
+                      {...rest}
+                      name={[name, "duration"]}
+                      rules={[{ required: true, message: "Required" }]}
+                      style={{ marginBottom: 0 }}
+                    >
+                      <Input placeholder="Duration (e.g. 7 days)" />
+                    </Form.Item>
+                  </Col>
+                  {hasDelete && (
+                    <Col xs={12} sm={2} style={{ textAlign: "center" }}>
+                      <Button
+                        danger
+                        type="text"
+                        shape="circle"
+                        icon={<CloseCircleOutlined style={{ fontSize: 20 }} />}
+                        onClick={() => remove(name)}
+                        style={{ marginTop: -4 }}
+                      />
+                    </Col>
+                  )}
+                </Row>
+              </MedRow>
+            );
+          })}
+          <Button
+            type="dashed"
+            onClick={() => add()}
+            icon={<PlusOutlined />}
+            block
+            style={{ borderColor: theme.primary, color: theme.primary }}
+          >
+            Add Medicine
+          </Button>
+        </>
+      )}
+    </Form.List>
+  );
+});
 
 // (MedicineFormList remains here as it's part of the creation form)
 
 // ─── Main Page ────────────────────────────────────────────────────
 const PrescriptionPage = () => {
   const dispatch = useDispatch();
+  const { theme } = useTheme();
   const user = useSelector((state) => state.auth.user);
   const userRole = user?.role?.toUpperCase() || "PATIENT";
 
   const { list, appointments, loading, submitting, error } = useSelector(
     (state) => state.prescription,
   );
+  const { patients, fetchPatients } = usePatients();
+  const { fetchDropdowns: fetchAppointmentDropdowns } = useAppointments();
 
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -327,7 +305,9 @@ const PrescriptionPage = () => {
 
   useEffect(() => {
     dispatch(fetchRequest());
-  }, [dispatch]);
+    fetchPatients();
+    fetchAppointmentDropdowns();
+  }, [dispatch, fetchPatients, fetchAppointmentDropdowns]);
 
   // Debounce Search
   useEffect(() => {
@@ -391,9 +371,6 @@ const PrescriptionPage = () => {
         form.resetFields();
       }
       setShowForm(true);
-      setTimeout(() => {
-        formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
     },
     [form],
   );
@@ -440,11 +417,21 @@ const PrescriptionPage = () => {
         !list.some((p) => p.appointment_id === a.id) ||
         (editTarget && editTarget.appointment_id === a.id),
     );
-    return filtered.map((a) => ({
-      value: a.id,
-      label: `${a.patient_name || a.patientName || "Patient"} — ${new Date(a.appointment_date || a.date).toLocaleDateString()}`,
-    }));
-  }, [appointments, list, editTarget]);
+    return filtered.map((a) => {
+      // Name resolution logic
+      let name = a.patient_name || a.patientName;
+      if (!name && a.patient_id && patients.length > 0) {
+        const found = patients.find(p => String(p.id) === String(a.patient_id));
+        if (found) {
+          name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+        }
+      }
+      return {
+        value: a.id,
+        label: `${name || "Patient"} — ${new Date(a.appointment_date || a.date).toLocaleDateString()}`,
+      };
+    });
+  }, [appointments, list, editTarget, patients]);
 
   const roleLabel = {
     DOCTOR: "Prescriptions",
@@ -459,28 +446,34 @@ const PrescriptionPage = () => {
         <HeaderRow>
           <HeaderLeft>
             <TitleIcon>
-              <FileTextOutlined style={{ fontSize: "20px", color: C.primary }} />
+              <FileTextOutlined
+                style={{ fontSize: "20px", color: theme.primary }}
+              />
             </TitleIcon>
             <PageTitle>{roleLabel[userRole] || "Prescriptions"}</PageTitle>
           </HeaderLeft>
 
-          {/* New Prescription (Mobile) */}
+          {/* New Prescription */}
           {["DOCTOR", "PROVIDER", "ADMIN"].includes(userRole) && (
-            <AddButtonMobile
-              type="primary"
+            <AppButton
+              variant="header"
               icon={<PlusOutlined />}
               onClick={() => handleOpen(null)}
             >
               New Prescription
-            </AddButtonMobile>
+            </AppButton>
           )}
 
           {/* Desktop Controls (Merged row) */}
           <DesktopActions>
             <SearchWrapper>
               <SearchInput
-                placeholder={userRole === "PATIENT" ? "Search meds..." : "Search patient, meds..."}
-                prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+                placeholder={
+                  userRole === "PATIENT"
+                    ? "Search meds..."
+                    : "Search patient, meds..."
+                }
+                prefix={<SearchOutlined style={{ color: theme.text.light }} />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 allowClear
@@ -506,17 +499,6 @@ const PrescriptionPage = () => {
               onClick={() => dispatch(fetchRequest())}
               loading={loading}
             />
-
-            {["DOCTOR", "PROVIDER", "ADMIN"].includes(userRole) && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => handleOpen(null)}
-                style={{ background: C.primary, border: "none" }}
-              >
-                New Prescription
-              </Button>
-            )}
           </DesktopActions>
         </HeaderRow>
 
@@ -526,13 +508,13 @@ const PrescriptionPage = () => {
             <SearchWrapper>
               <SearchInput
                 placeholder="Search..."
-                prefix={<SearchOutlined style={{ color: "#bfbfbf" }} />}
+                prefix={<SearchOutlined style={{ color: theme.text.light }} />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 allowClear
               />
             </SearchWrapper>
-            
+
             {userRole !== "PATIENT" && (
               <Select
                 value={statusFilter}
@@ -546,7 +528,7 @@ const PrescriptionPage = () => {
                 ]}
               />
             )}
-            
+
             <Button
               icon={<ReloadOutlined />}
               onClick={() => dispatch(fetchRequest())}
@@ -559,6 +541,8 @@ const PrescriptionPage = () => {
 
       <PrescriptionList
         prescriptions={filteredList}
+        patients={patients}
+        appointments={appointments}
         loading={loading}
         userRole={userRole}
         searchQuery={debouncedSearch}
@@ -567,109 +551,113 @@ const PrescriptionPage = () => {
         onStatusChange={handleStatusChange}
       />
 
-      {showForm && ["DOCTOR", "PROVIDER", "ADMIN"].includes(userRole) && (
-        <div ref={formRef} style={{ marginTop: 24 }}>
-          <StyledCard
-            title={
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
+      <Drawer
+        title={
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <TitleIcon
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "8px",
+                background: theme.primaryLight,
+              }}
+            >
+              <FileTextOutlined
+                style={{ fontSize: "16px", color: theme.primary }}
+              />
+            </TitleIcon>
+            <span
+              style={{ fontSize: "16px", fontWeight: 700, color: theme.text.primary }}
+            >
+              {editTarget ? "Edit Prescription" : "Create New Prescription"}
+            </span>
+          </div>
+        }
+        placement="right"
+        onClose={handleClose}
+        open={showForm}
+        size={window.innerWidth > 992 ? 800 : "100%"}
+        styles={{
+          body: { padding: "24px", background: theme.background.card },
+          header: { borderBottom: `1px solid ${theme.border}`, padding: "16px 24px", background: theme.background.card },
+        }}
+        closable={false}
+        extra={
+          <Button type="text" onClick={handleClose} icon={<CloseOutlined />} />
+        }
+      >
+        <Form form={form} layout="vertical">
+          <Row gutter={24}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="appointment_id"
+                label="Appointment"
+                rules={[{ required: true, message: "Required" }]}
               >
-                <span
-                  style={{
-                    fontFamily: "Sora, sans-serif",
-                    fontWeight: 700,
-                    color: C.secondary,
-                  }}
-                >
-                  {editTarget ? "Edit Prescription" : "New Prescription"}
-                </span>
-                <CloseOutlined
-                  onClick={handleClose}
-                  style={{
-                    cursor: "pointer",
-                    fontSize: 18,
-                    color: C.textLight,
-                  }}
-                />
-              </div>
-            }
-          >
-            <Form form={form} layout="vertical">
-              <Row gutter={24}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="appointment_id"
-                    label="Appointment"
-                    rules={[{ required: true, message: "Required" }]}
-                  >
-                    <Select
-                      placeholder="Select appointment"
-                      options={apptOptions}
-                      showSearch
-                      size="large"
-                      disabled={!!editTarget}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="notes"
-                    label="Clinical Notes"
-                    rules={[{ required: true, message: "Required" }]}
-                  >
-                    <Input.TextArea
-                      rows={2}
-                      placeholder="Notes..."
-                      size="large"
-                      style={{ background: C.bg }}
-                    />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <div
-                style={{
-                  fontWeight: 600,
-                  color: C.secondary,
-                  marginBottom: 12,
-                  fontSize: "1.1rem",
-                }}
-              >
-                Medicines
-              </div>
-              <MedicineFormList />
-              <div
-                style={{
-                  marginTop: 24,
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 12,
-                }}
-              >
-                <Button size="large" onClick={handleClose}>
-                  Cancel
-                </Button>
-                <Button
-                  type="primary"
+                <Select
+                  placeholder="Select appointment"
+                  options={apptOptions}
+                  showSearch
                   size="large"
-                  loading={submitting}
-                  onClick={handleSubmit}
-                  style={{
-                    background: C.primary,
-                    border: "none",
-                    minWidth: 120,
-                  }}
-                >
-                  {editTarget ? "Update Changes" : "Create Prescription"}
-                </Button>
-              </div>
-            </Form>
-          </StyledCard>
-        </div>
-      )}
+                  disabled={!!editTarget}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="notes"
+                label="Clinical Notes"
+                rules={[{ required: true, message: "Required" }]}
+              >
+                <Input.TextArea
+                  rows={2}
+                  placeholder="Notes..."
+                  size="large"
+                  style={{ background: theme.background.main }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+          <div
+            style={{
+              fontWeight: 600,
+              color: theme.secondary,
+              marginBottom: 12,
+              fontSize: "1.1rem",
+              fontFamily: "Sora, sans-serif",
+            }}
+          >
+            Medicines List
+          </div>
+          <MedicineFormList />
+          <div
+            style={{
+              marginTop: 32,
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 12,
+            }}
+          >
+            <Button size="large" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              size="large"
+              loading={submitting}
+              onClick={handleSubmit}
+              style={{
+                background: theme.primary,
+                border: "none",
+                minWidth: 150,
+                borderRadius: "6px",
+              }}
+            >
+              {editTarget ? "Update Changes" : "Confirm Prescription"}
+            </Button>
+          </div>
+        </Form>
+      </Drawer>
     </PageWrap>
   );
 };

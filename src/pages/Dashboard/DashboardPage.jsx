@@ -4,26 +4,45 @@ import { Result, Button, Spin, Tag, Space } from "antd";
 import UnifiedDashboard from "../../components/layout/DashboardLayout/UnifiedDashboard";
 import useDashboard from "../../components/layout/DashboardLayout/useDashboard";
 import useAuth from "../../modules/auth/hooks/useAuth";
+import ErrorBoundary from "../../components/common/ErrorBoundary";
+import { useTheme } from "../../context/ThemeContext";
+import styled from "styled-components";
+
+import LoadingScreen from "../../components/common/LoadingScreen";
+import usePatients from "../../modules/patients/hooks/usePatients";
+import useAppointments from "../../modules/appointments/hooks/useAppointments";
+import { useEffect } from "react";
+
+const DashboardHeader = styled.div`
+  margin-bottom: 24px;
+`;
+
+const WelcomeTitle = styled.h1`
+  color: ${props => props.theme.secondary};
+  font-size: 1.75rem;
+  margin: 0;
+`;
+
+const SubtitleText = styled.p`
+  color: ${props => props.theme.text.secondary};
+  margin-top: 4px;
+`;
 
 const DashboardPage = () => {
+  const { theme } = useTheme();
   const { user, userRole } = useAuth();
   const dashboardData = useDashboard(user);
+  const { patients, fetchPatients } = usePatients();
+  const { list: allAppointments, fetchAll: fetchAppointments } = useAppointments();
+
+  useEffect(() => {
+    fetchPatients();
+    fetchAppointments();
+  }, [fetchPatients, fetchAppointments]);
 
   // Guard: If user is not yet loaded, show loading
   if (!user) {
-    return (
-      <div
-        style={{
-          height: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: "#eff6ff",
-        }}
-      >
-        <Spin size="large" />
-      </div>
-    );
+    return <LoadingScreen fullPage label="Loading Dashboard..." />;
   }
 
   // Error Handling State
@@ -46,13 +65,11 @@ const DashboardPage = () => {
 
   return (
     <>
-      <div style={{ marginBottom: "24px" }}>
+      <DashboardHeader>
         <Space align="center" size="middle">
-          <h1 style={{ color: "#1e3a8a", fontSize: "1.75rem", margin: 0 }}>
-            Welcome back, {user?.name}
-          </h1>
+          <WelcomeTitle>Welcome back, {user?.name}</WelcomeTitle>
           <Tag
-            color="blue"
+            color={theme.primary}
             style={{
               borderRadius: "12px",
               fontWeight: 600,
@@ -62,10 +79,10 @@ const DashboardPage = () => {
             {userRole}
           </Tag>
         </Space>
-        <p style={{ color: "#64748b", marginTop: "4px" }}>
+        <SubtitleText>
           Here is what's happening in your workspace today.
-        </p>
-      </div>
+        </SubtitleText>
+      </DashboardHeader>
 
       {dashboardData.loading && !dashboardData.stats ? (
         <div style={{ textAlign: "center", padding: "100px 0" }}>
@@ -75,6 +92,8 @@ const DashboardPage = () => {
         <UnifiedDashboard
           role={userRole}
           data={dashboardData}
+          patients={patients}
+          allAppointments={allAppointments}
           loading={dashboardData.loading}
         />
       )}
