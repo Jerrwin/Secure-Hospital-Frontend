@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
+import { useTheme } from "../../context/ThemeContext";
 import useChat from "../../modules/chat/hooks/useChat";
 
 // --- Styled Components --- //
@@ -8,16 +9,17 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   height: 500px;
-  background: #ffffff;
+  background: ${(props) => props.theme.background.card};
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid ${(props) => props.theme.border};
   overflow: hidden;
   font-family: inherit;
+  box-shadow: ${(props) => props.theme.shadow};
 `;
 
 const Tabs = styled.div`
   display: flex;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid ${(props) => props.theme.border};
 `;
 
 const Tab = styled.button`
@@ -25,14 +27,14 @@ const Tab = styled.button`
   padding: 14px 16px;
   background: none;
   border: none;
-  border-bottom: 3px solid ${(props) => (props.$active ? "#007BFF" : "transparent")};
-  color: ${(props) => (props.$active ? "#007BFF" : "#666")};
+  border-bottom: 3px solid ${(props) => (props.$active ? props.theme.primary : "transparent")};
+  color: ${(props) => (props.$active ? props.theme.primary : props.theme.text.secondary)};
   font-weight: ${(props) => (props.$active ? "600" : "400")};
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: #f8f9fa;
+    background: ${(props) => props.theme.background.main};
   }
 `;
 
@@ -41,7 +43,7 @@ const ContentArea = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #fafafa;
+  background: ${(props) => props.theme.background.main};
 `;
 
 const ScrollArea = styled.div`
@@ -76,15 +78,15 @@ const BubbleCard = styled.div`
   line-height: 1.4;
   position: relative;
   background: ${(props) => {
-    if (props.$isPrivate) return "#f3e8ff"; // Purple
-    return props.$isMine ? "#007BFF" : "#ffffff";
+    if (props.$isPrivate) return props.theme.name === 'dark' ? 'rgba(147, 51, 234, 0.2)' : "#f3e8ff"; // Purple
+    return props.$isMine ? props.theme.primary : props.theme.background.card;
   }};
   color: ${(props) => {
-    if (props.$isPrivate) return "#6b21a8";
-    return props.$isMine ? "#ffffff" : "#333333";
+    if (props.$isPrivate) return props.theme.name === 'dark' ? '#d8b4fe' : "#6b21a8";
+    return props.$isMine ? "#ffffff" : props.theme.text.primary;
   }};
   border: ${(props) =>
-    !props.$isMine && !props.$isPrivate ? "1px solid #e0e0e0" : "none"};
+    !props.$isMine && !props.$isPrivate ? `1px solid ${props.theme.border}` : "none"};
   border-bottom-right-radius: ${(props) => (props.$isMine ? "4px" : "12px")};
   border-bottom-left-radius: ${(props) => (!props.$isMine ? "4px" : "12px")};
 `;
@@ -102,10 +104,10 @@ const PrivateBadge = styled.span`
 
 const HiddenNotice = styled.div`
   font-size: 0.8rem;
-  color: #888;
+  color: ${(props) => props.theme.text.secondary};
   text-align: center;
   padding: 12px;
-  background: #f1f3f5;
+  background: ${(props) => props.theme.primaryLight};
   border-radius: 6px;
   margin: 10px 0;
 `;
@@ -114,8 +116,8 @@ const HiddenNotice = styled.div`
 
 const InputContainer = styled.div`
   padding: 16px;
-  background: #ffffff;
-  border-top: 1px solid #e0e0e0;
+  background: ${(props) => props.theme.background.card};
+  border-top: 1px solid ${(props) => props.theme.border};
 `;
 
 const InputRow = styled.div`
@@ -131,20 +133,22 @@ const StyledTextarea = styled.textarea`
   resize: none;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #ccc;
+  border: 1px solid ${(props) => props.theme.border};
+  background: ${(props) => props.theme.inputBg || props.theme.background.main};
+  color: ${(props) => props.theme.text.primary};
   font-family: inherit;
   font-size: 0.95rem;
 
   &:focus {
     outline: none;
-    border-color: #007bff;
+    border-color: ${(props) => props.theme.primary};
   }
 `;
 
 const SendButton = styled.button`
   height: 48px;
   padding: 0 24px;
-  background: #007bff;
+  background: ${(props) => props.theme.primary};
   color: white;
   border: none;
   border-radius: 8px;
@@ -153,11 +157,11 @@ const SendButton = styled.button`
   transition: 0.2s;
 
   &:disabled {
-    background: #a0cfff;
+    opacity: 0.6;
     cursor: not-allowed;
   }
   &:hover:not(:disabled) {
-    background: #0056b3;
+    background: ${(props) => props.theme.primaryHover};
   }
 `;
 
@@ -173,7 +177,7 @@ const CheckboxLabel = styled.label`
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
-  color: #555;
+  color: ${(props) => props.theme.text.secondary};
   cursor: pointer;
 `;
 
@@ -194,7 +198,7 @@ const TimelineDot = styled.div`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: ${(props) => (props.$isPrivate ? "#9333ea" : "#007BFF")};
+  background: ${(props) => (props.$isPrivate ? "#9333ea" : props.theme.primary)};
   margin-top: 4px;
 `;
 
@@ -205,7 +209,7 @@ const TimelineContent = styled.div`
 const TimelineTitle = styled.div`
   font-weight: 600;
   font-size: 0.95rem;
-  color: #333;
+  color: ${(props) => props.theme.text.primary};
   display: flex;
   align-items: center;
   gap: 8px;
@@ -218,8 +222,8 @@ const TimelineMeta = styled.div`
 `;
 
 // --- Main Component --- //
-
 const ChatPanel = ({ appointmentId }) => {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("chat");
   const [inputText, setInputText] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);

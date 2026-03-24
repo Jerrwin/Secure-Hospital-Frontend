@@ -1,19 +1,20 @@
 import React from 'react';
 import { Card, Typography, Space } from 'antd';
 import styled from 'styled-components';
+import { useTheme } from '../../../context/ThemeContext';
 
 const { Text, Title } = Typography;
 
 const StyledCard = styled(Card)`
-  border-radius: 12px;
-  border: 1px solid #eff6ff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
+  border-radius: ${props => props.theme.borderRadius.md};
+  border: 1px solid ${props => props.theme.border};
+  box-shadow: ${props => props.theme.shadow};
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background: #ffffff;
+  background: ${props => props.theme.background.card};
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.1);
+    box-shadow: ${props => props.theme.glow};
   }
 
   .ant-card-body {
@@ -24,9 +25,9 @@ const StyledCard = styled(Card)`
 const IconWrapper = styled.div`
   width: 48px;
   height: 48px;
-  border-radius: 12px;
-  background: ${(p) => p.$color ? `${p.$color}15` : '#eff6ff'};
-  color: ${(p) => p.$color || '#2563eb'};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background: ${(p) => p.$color ? `${p.$color}15` : p.theme.primaryLight};
+  color: ${(p) => p.$color || p.theme.primary};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -34,18 +35,19 @@ const IconWrapper = styled.div`
 `;
 
 const StatWidget = ({ title, value, icon, trend, color }) => {
+  const { theme } = useTheme();
   return (
     <StyledCard variant="borderless">
       <Space align="start" size="large" style={{ width: '100%', justifyContent: 'space-between' }}>
         <div>
-          <Text style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>
+          <Text style={{ color: theme.text.secondary, fontSize: '0.9rem', fontWeight: 500 }}>
             {title}
           </Text>
-          <Title level={2} style={{ color: color || '#1e3a8a', margin: '8px 0 0 0', fontWeight: 700 }}>
+          <Title level={2} style={{ color: color || theme.secondary, margin: '8px 0 0 0', fontWeight: 700 }}>
             {value !== undefined && value !== null ? value : '-'}
           </Title>
           {trend && (
-            <Text style={{ color: trend >= 0 ? '#10b981' : '#ef4444', fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
+            <Text style={{ color: trend >= 0 ? theme.status.success : theme.status.error, fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
               {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% from last month
             </Text>
           )}

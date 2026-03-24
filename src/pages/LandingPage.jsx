@@ -84,11 +84,11 @@ const NavLogo = styled(Link)`
     color: white;
     font-size: 18px;
     font-weight: 800;
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
   }
 
   .logo-text {
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
     font-size: 1.2rem;
     font-weight: 700;
     color: ${colors.secondary};
@@ -127,7 +127,7 @@ const NavCTA = styled(Link)`
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   letter-spacing: 0.01em;
   transition: all 0.2s;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
@@ -162,7 +162,11 @@ const HeroBg = styled.div`
     right: -5%;
     width: 600px;
     height: 600px;
-    background: radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(37, 99, 235, 0.08) 0%,
+      transparent 70%
+    );
     border-radius: 50%;
     animation: ${pulse} 8s ease-in-out infinite;
   }
@@ -173,7 +177,11 @@ const HeroBg = styled.div`
     left: -10%;
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, rgba(30,58,138,0.06) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(30, 58, 138, 0.06) 0%,
+      transparent 70%
+    );
     border-radius: 50%;
     animation: ${pulse} 10s ease-in-out infinite reverse;
   }
@@ -182,8 +190,8 @@ const HeroBg = styled.div`
     position: absolute;
     inset: 0;
     background-image:
-      linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+      linear-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
     background-size: 60px 60px;
   }
 `;
@@ -222,7 +230,7 @@ const HeroPill = styled.div`
 `;
 
 const HeroTitle = styled.h1`
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   font-size: clamp(2.8rem, 5vw, 4.2rem);
   font-weight: 800;
   line-height: 1.1;
@@ -267,7 +275,7 @@ const PrimaryBtn = styled(Link)`
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 600;
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   text-decoration: none;
   box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
   transition: all 0.25s;
@@ -315,7 +323,9 @@ const HeroVisual = styled.div`
   top: 50%;
   transform: translateY(-50%);
   width: 420px;
-  animation: ${float} 6s ease-in-out infinite, ${fadeIn} 0.8s 0.5s both;
+  animation:
+    ${float} 6s ease-in-out infinite,
+    ${fadeIn} 0.8s 0.5s both;
 
   @media (max-width: 1100px) {
     display: none;
@@ -347,7 +357,7 @@ const StatBox = styled.div`
   text-align: center;
 
   .num {
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
     font-size: 1.5rem;
     font-weight: 800;
     color: ${(p) => p.color || colors.primary};
@@ -368,24 +378,32 @@ const PatientRow = styled.div`
   padding: 10px 0;
   border-bottom: 1px solid #f1f5f9;
 
-  &:last-child { border-bottom: none; }
+  &:last-child {
+    border-bottom: none;
+  }
 
   .avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, ${(p) => p.c1 || "#2563eb"}, ${(p) => p.c2 || "#1e3a8a"});
+    background: linear-gradient(
+      135deg,
+      ${(p) => p.c1 || "#2563eb"},
+      ${(p) => p.c2 || "#1e3a8a"}
+    );
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-size: 0.8rem;
     font-weight: 700;
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
     flex-shrink: 0;
   }
 
-  .info { flex: 1; }
+  .info {
+    flex: 1;
+  }
 
   .name {
     font-size: 0.85rem;
@@ -427,7 +445,7 @@ const StatItem = styled.div`
   animation-delay: ${(p) => p.delay || "0s"};
 
   .num {
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
     font-size: 2.2rem;
     font-weight: 800;
     color: white;
@@ -440,7 +458,7 @@ const StatItem = styled.div`
 
   .lbl {
     font-size: 0.85rem;
-    color: rgba(255,255,255,0.6);
+    color: rgba(255, 255, 255, 0.6);
     margin-top: 4px;
     font-weight: 400;
   }
@@ -463,7 +481,7 @@ const SectionLabel = styled.div`
 `;
 
 const SectionTitle = styled.h2`
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   font-size: clamp(1.8rem, 3vw, 2.6rem);
   font-weight: 800;
   color: ${colors.secondary};
@@ -507,7 +525,7 @@ const FeatureCard = styled.div`
   cursor: default;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -519,11 +537,13 @@ const FeatureCard = styled.div`
   }
 
   &:hover {
-    border-color: rgba(37,99,235,0.2);
-    box-shadow: 0 16px 48px rgba(37,99,235,0.1);
+    border-color: rgba(37, 99, 235, 0.2);
+    box-shadow: 0 16px 48px rgba(37, 99, 235, 0.1);
     transform: translateY(-4px);
 
-    &::before { opacity: 1; }
+    &::before {
+      opacity: 1;
+    }
   }
 
   .icon-wrap {
@@ -544,7 +564,7 @@ const FeatureCard = styled.div`
   }
 
   .title {
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
     font-size: 1.1rem;
     font-weight: 700;
     color: ${colors.secondary};
@@ -581,14 +601,18 @@ const TrustSection = styled.section`
   overflow: hidden;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -50%;
     left: 50%;
     transform: translateX(-50%);
     width: 800px;
     height: 800px;
-    background: radial-gradient(circle, rgba(37,99,235,0.06) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(37, 99, 235, 0.06) 0%,
+      transparent 70%
+    );
     pointer-events: none;
   }
 `;
@@ -612,14 +636,16 @@ const TrustLogos = styled.div`
 `;
 
 const TrustLogo = styled.div`
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
   color: #cbd5e1;
   letter-spacing: -0.02em;
   transition: color 0.2s;
 
-  &:hover { color: ${colors.primary}; }
+  &:hover {
+    color: ${colors.primary};
+  }
 `;
 
 const TrustStats = styled.div`
@@ -636,7 +662,7 @@ const TrustStats = styled.div`
 
 const TrustStatItem = styled.div`
   .num {
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
     font-size: 2rem;
     font-weight: 800;
     color: ${colors.secondary};
@@ -664,19 +690,23 @@ const CTASection = styled.section`
   overflow: hidden;
 
   &::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -40%;
     right: -10%;
     width: 600px;
     height: 600px;
-    background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.05) 0%,
+      transparent 70%
+    );
     border-radius: 50%;
   }
 `;
 
 const CTATitle = styled.h2`
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   font-size: clamp(1.8rem, 3.5vw, 3rem);
   font-weight: 800;
   color: white;
@@ -687,7 +717,7 @@ const CTATitle = styled.h2`
 
 const CTASubtext = styled.p`
   font-size: 1rem;
-  color: rgba(255,255,255,0.65);
+  color: rgba(255, 255, 255, 0.65);
   max-width: 460px;
   margin: 0 auto 2.5rem;
   line-height: 1.7;
@@ -704,15 +734,15 @@ const CTABtn = styled(Link)`
   border-radius: 10px;
   font-size: 1rem;
   font-weight: 700;
-  font-family: 'Sora', sans-serif;
+  font-family: "Sora", sans-serif;
   text-decoration: none;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   transition: all 0.25s;
   letter-spacing: 0.01em;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
     color: ${colors.secondary};
   }
 `;
@@ -757,11 +787,11 @@ const FooterBrand = styled.div`
       color: white;
       font-size: 16px;
       font-weight: 800;
-      font-family: 'Sora', sans-serif;
+      font-family: "Sora", sans-serif;
     }
 
     .name {
-      font-family: 'Sora', sans-serif;
+      font-family: "Sora", sans-serif;
       font-size: 1.1rem;
       font-weight: 700;
       color: white;
@@ -770,7 +800,7 @@ const FooterBrand = styled.div`
 
   .desc {
     font-size: 0.875rem;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255, 255, 255, 0.4);
     line-height: 1.7;
     max-width: 260px;
     font-weight: 300;
@@ -779,10 +809,10 @@ const FooterBrand = styled.div`
 
 const FooterCol = styled.div`
   .heading {
-    font-family: 'Sora', sans-serif;
+    font-family: "Sora", sans-serif;
     font-size: 0.8rem;
     font-weight: 700;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     margin-bottom: 1.25rem;
@@ -797,18 +827,20 @@ const FooterCol = styled.div`
 
   a {
     font-size: 0.875rem;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
     text-decoration: none;
     transition: color 0.2s;
     font-weight: 300;
 
-    &:hover { color: white; }
+    &:hover {
+      color: white;
+    }
   }
 `;
 
 const FooterBottom = styled.div`
   padding-top: 2rem;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -817,7 +849,7 @@ const FooterBottom = styled.div`
 
   p {
     font-size: 0.8rem;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255, 255, 255, 0.3);
     font-weight: 300;
   }
 
@@ -829,11 +861,11 @@ const FooterBottom = styled.div`
       width: 34px;
       height: 34px;
       border-radius: 8px;
-      background: rgba(255,255,255,0.07);
+      background: rgba(255, 255, 255, 0.07);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: rgba(255,255,255,0.4);
+      color: rgba(255, 255, 255, 0.4);
       text-decoration: none;
       font-size: 0.8rem;
       transition: all 0.2s;
@@ -873,8 +905,12 @@ const LandingPage = () => {
   ];
 
   const trustLogos = [
-    "Apollo Health", "Medanta", "Fortis Care",
-    "AIIMS Network", "Cloudnine", "Max Healthcare",
+    "Apollo Health",
+    "Medanta",
+    "Fortis Care",
+    "AIIMS Network",
+    "Cloudnine",
+    "Max Healthcare",
   ];
 
   return (
@@ -912,14 +948,15 @@ const LandingPage = () => {
           </HeroPill>
 
           <HeroTitle>
-            The Operating System<br />
+            The Operating System
+            <br />
             for <span className="highlight">Modern Care</span>
           </HeroTitle>
 
           <HeroSubtext>
-            A secure, multi-tenant platform that gives every hospital
-            its own digital backbone — from patient records to
-            clinical operations, all in one place.
+            A secure, multi-tenant platform that gives every hospital its own
+            digital backbone — from patient records to clinical operations, all
+            in one place.
           </HeroSubtext>
 
           <HeroCTAs>
@@ -927,31 +964,64 @@ const LandingPage = () => {
               Get Started Free
               <span className="arrow">→</span>
             </PrimaryBtn>
-            <SecondaryBtn href="#features">
-              ▶ See how it works
-            </SecondaryBtn>
+            <SecondaryBtn href="#features">▶ See how it works</SecondaryBtn>
           </HeroCTAs>
         </HeroContent>
 
         {/* Floating dashboard preview */}
         <HeroVisual>
           <HeroCard className="main">
-            <div style={{
-              fontSize: "0.7rem",
-              fontWeight: 700,
-              color: colors.textLight,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              marginBottom: "1rem",
-            }}>
+            <div
+              style={{
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                color: colors.textLight,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                marginBottom: "1rem",
+              }}
+            >
               Today's Appointments
             </div>
             {[
-              { init: "JS", name: "John Smith", sub: "Cardiology · 09:00 AM", c1: "#2563eb", c2: "#1e3a8a", badge: "Confirmed", bb: "#dbeafe", bc: "#2563eb" },
-              { init: "AR", name: "Aisha Rahman", sub: "Neurology · 10:30 AM", c1: "#7c3aed", c2: "#4c1d95", badge: "In Progress", bb: "#ede9fe", bc: "#7c3aed" },
-              { init: "MC", name: "Maria Chen", sub: "Pediatrics · 11:00 AM", c1: "#059669", c2: "#064e3b", badge: "Waiting", bb: "#d1fae5", bc: "#059669" },
+              {
+                init: "JS",
+                name: "John Smith",
+                sub: "Cardiology · 09:00 AM",
+                c1: "#2563eb",
+                c2: "#1e3a8a",
+                badge: "Confirmed",
+                bb: "#dbeafe",
+                bc: "#2563eb",
+              },
+              {
+                init: "AR",
+                name: "Aisha Rahman",
+                sub: "Neurology · 10:30 AM",
+                c1: "#7c3aed",
+                c2: "#4c1d95",
+                badge: "In Progress",
+                bb: "#ede9fe",
+                bc: "#7c3aed",
+              },
+              {
+                init: "MC",
+                name: "Maria Chen",
+                sub: "Pediatrics · 11:00 AM",
+                c1: "#059669",
+                c2: "#064e3b",
+                badge: "Waiting",
+                bb: "#d1fae5",
+                bc: "#059669",
+              },
             ].map((p) => (
-              <PatientRow key={p.name} c1={p.c1} c2={p.c2} badgeBg={p.bb} badgeColor={p.bc}>
+              <PatientRow
+                key={p.name}
+                c1={p.c1}
+                c2={p.c2}
+                badgeBg={p.bb}
+                badgeColor={p.bc}
+              >
                 <div className="avatar">{p.init}</div>
                 <div className="info">
                   <div className="name">{p.name}</div>
@@ -997,7 +1067,9 @@ const LandingPage = () => {
       {/* ── Features ───────────────────────────────────────────── */}
       <FeaturesSection id="features">
         <SectionLabel>Platform Capabilities</SectionLabel>
-        <SectionTitle>Everything a hospital needs to run at full capacity</SectionTitle>
+        <SectionTitle>
+          Everything a hospital needs to run at full capacity
+        </SectionTitle>
         <SectionSubtext>
           From isolated tenant environments to clinical precision tools,
           MedPortal is engineered for the demands of enterprise healthcare.
@@ -1017,7 +1089,9 @@ const LandingPage = () => {
 
       {/* ── Trust ──────────────────────────────────────────────── */}
       <TrustSection>
-        <TrustTitle>Used by leading hospitals and healthcare networks</TrustTitle>
+        <TrustTitle>
+          Used by leading hospitals and healthcare networks
+        </TrustTitle>
 
         <TrustLogos>
           {trustLogos.map((logo) => (
@@ -1042,15 +1116,15 @@ const LandingPage = () => {
       {/* ── CTA ────────────────────────────────────────────────── */}
       <CTASection>
         <CTATitle>
-          Ready to modernise<br />your hospital?
+          Ready to modernise
+          <br />
+          your hospital?
         </CTATitle>
         <CTASubtext>
-          Join 500+ healthcare facilities already running on MedPortal.
-          Setup takes less than 2 minutes.
+          Join 500+ healthcare facilities already running on MedPortal. Setup
+          takes less than 2 minutes.
         </CTASubtext>
-        <CTABtn to="/login">
-          Start Your Free Trial →
-        </CTABtn>
+        <CTABtn to="/login">Start Your Free Trial →</CTABtn>
       </CTASection>
 
       {/* ── Footer ─────────────────────────────────────────────── */}
@@ -1062,38 +1136,62 @@ const LandingPage = () => {
               <span className="name">MedPortal</span>
             </Link>
             <p className="desc">
-              The operating system for modern healthcare.
-              Secure, scalable, and built for clinical excellence.
+              The operating system for modern healthcare. Secure, scalable, and
+              built for clinical excellence.
             </p>
           </FooterBrand>
 
           <FooterCol>
             <div className="heading">Product</div>
             <ul>
-              <li><a href="#features">Features</a></li>
-              <li><a href="#pricing">Pricing</a></li>
-              <li><a href="#about">Security</a></li>
-              <li><a href="#about">Changelog</a></li>
+              <li>
+                <a href="#features">Features</a>
+              </li>
+              <li>
+                <a href="#pricing">Pricing</a>
+              </li>
+              <li>
+                <a href="#about">Security</a>
+              </li>
+              <li>
+                <a href="#about">Changelog</a>
+              </li>
             </ul>
           </FooterCol>
 
           <FooterCol>
             <div className="heading">Company</div>
             <ul>
-              <li><a href="#about">About</a></li>
-              <li><a href="#about">Careers</a></li>
-              <li><a href="#about">Blog</a></li>
-              <li><a href="#about">Contact</a></li>
+              <li>
+                <a href="#about">About</a>
+              </li>
+              <li>
+                <a href="#about">Careers</a>
+              </li>
+              <li>
+                <a href="#about">Blog</a>
+              </li>
+              <li>
+                <a href="#about">Contact</a>
+              </li>
             </ul>
           </FooterCol>
 
           <FooterCol>
             <div className="heading">Legal</div>
             <ul>
-              <li><a href="#privacy">Privacy Policy</a></li>
-              <li><a href="#terms">Terms of Service</a></li>
-              <li><a href="#hipaa">HIPAA Compliance</a></li>
-              <li><a href="#cookies">Cookie Policy</a></li>
+              <li>
+                <a href="#privacy">Privacy Policy</a>
+              </li>
+              <li>
+                <a href="#terms">Terms of Service</a>
+              </li>
+              <li>
+                <a href="#hipaa">HIPAA Compliance</a>
+              </li>
+              <li>
+                <a href="#cookies">Cookie Policy</a>
+              </li>
             </ul>
           </FooterCol>
         </FooterGrid>
@@ -1101,9 +1199,15 @@ const LandingPage = () => {
         <FooterBottom>
           <p>© {new Date().getFullYear()} MedPortal. All rights reserved.</p>
           <div className="socials">
-            <a href="#twitter" title="Twitter">𝕏</a>
-            <a href="#linkedin" title="LinkedIn">in</a>
-            <a href="#github" title="GitHub">⌥</a>
+            <a href="#twitter" title="Twitter">
+              𝕏
+            </a>
+            <a href="#linkedin" title="LinkedIn">
+              in
+            </a>
+            <a href="#github" title="GitHub">
+              ⌥
+            </a>
           </div>
         </FooterBottom>
       </Footer>

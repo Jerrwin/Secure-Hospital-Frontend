@@ -1,5 +1,5 @@
 import React from "react";
-import { Layout, Button, message, Space } from "antd";
+import { Layout, Button, Space, App } from "antd";
 import {
   MedicineBoxOutlined,
   PoweroffOutlined,
@@ -14,12 +14,12 @@ import NotificationBell from "../../common/NotificationBell";
 const { Header: AntHeader } = Layout;
 
 const StyledHeader = styled(AntHeader)`
-  background-color: #ffffff;
+  background-color: ${props => props.theme.background.card};
   padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+  box-shadow: ${props => props.theme.shadow};
   position: sticky;
   top: 0;
   z-index: 10;
@@ -49,7 +49,7 @@ const Brand = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #2563eb;
+  color: ${props => props.theme.primary};
   font-size: 1.25rem;
   font-weight: 700;
 
@@ -62,16 +62,16 @@ const Brand = styled.div`
 const LogoutButton = styled(Button)`
   display: flex;
   align-items: center;
-  border-radius: 6px;
+  border-radius: ${props => props.theme.borderRadius.md};
   font-weight: 500;
   color: #ef4444;
-  border-color: #fee2e2;
-  background: #fef2f2;
+  border-color: ${props => props.theme.name === "dark" ? "rgba(239, 68, 68, 0.2)" : "#fca5a5"};
+  background: ${props => props.theme.name === "dark" ? "rgba(239, 68, 68, 0.1)" : "#fef2f2"};
 
   &:hover {
-    background: #fee2e2 !important;
+    background: ${props => props.theme.name === "dark" ? "rgba(239, 68, 68, 0.2)" : "#fee2e2"} !important;
     color: #dc2626 !important;
-    border-color: #fecaca !important;
+    border-color: #ef4444 !important;
   }
 
   @media (max-width: 576px) {
@@ -95,6 +95,7 @@ const LogoutButton = styled(Button)`
 const Header = () => {
   const dispatch = useDispatch();
   const { logout } = useAuth();
+  const { message } = App.useApp();
 
   // Dynamic Hospital Name from Subdomain
   const hostname = window.location.hostname;

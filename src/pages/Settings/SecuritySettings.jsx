@@ -19,15 +19,17 @@ import {
   SaveOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
+import { useTheme } from "../../context/ThemeContext";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
+// ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
 const bp = {
-  xs: "480px",
-  sm: "576px",
-  md: "768px",
-  lg: "992px",
-  xl: "1200px",
+  xs: (props) => props.theme.breakpoints.xs,
+  sm: (props) => props.theme.breakpoints.sm,
+  md: (props) => props.theme.breakpoints.md,
+  lg: (props) => props.theme.breakpoints.lg,
+  xl: (props) => props.theme.breakpoints.xl,
 };
 
 const SettingsWrapper = styled.div`
@@ -35,12 +37,10 @@ const SettingsWrapper = styled.div`
 `;
 
 const HeaderCard = styled.div`
-  background: #ffffff;
-  border: 1px solid #eef2f6;
+  background: ${props => props.theme.background.card};
+  border: 1px solid ${props => props.theme.border};
   border-radius: 12px;
-  box-shadow:
-    0 4px 6px -1px rgba(0, 0, 0, 0.05),
-    0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  box-shadow: ${props => props.theme.shadow};
   margin-bottom: 24px;
   overflow: hidden;
 `;
@@ -53,7 +53,7 @@ const HeaderRow = styled.div`
   flex-wrap: wrap;
   padding: 12px 16px;
 
-  @media (min-width: ${bp.lg}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     padding: 16px 22px;
   }
 `;
@@ -70,7 +70,7 @@ const TitleIcon = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #e8f0fe;
+  background: ${props => props.theme.primaryLight};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -85,7 +85,7 @@ const TitleIcon = styled.div`
 const PageTitle = styled.h2`
   font-size: 15px;
   font-weight: 700;
-  color: #1e3a5f;
+  color: ${props => props.theme.text.primary};
   margin: 0;
   letter-spacing: -0.2px;
   white-space: nowrap;
@@ -101,24 +101,26 @@ const PageTitle = styled.h2`
 
 const StyledCard = styled(Card)`
   border-radius: 12px !important;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.04) !important;
-  border: 1px solid #eef2f6 !important;
+  box-shadow: ${props => props.theme.shadow} !important;
+  border: 1px solid ${props => props.theme.border} !important;
+  background: ${props => props.theme.background.card} !important;
   height: 100%;
 
   .ant-card-head {
-    border-bottom: 1px solid #eef2f6;
-    background: #fafbfc;
+    border-bottom: 1px solid ${props => props.theme.border};
+    background: ${props => props.theme.background.main};
     border-radius: 12px 12px 0 0 !important;
   }
 
   .ant-card-head-title {
-    color: #1e3a8a;
+    color: ${props => props.theme.primary};
     font-weight: 600;
     font-size: 15px;
   }
 `;
 
 const SecuritySettings = () => {
+  const { theme } = useTheme();
   const [form] = Form.useForm();
 
   const onFinish = (values) => {
@@ -132,7 +134,7 @@ const SecuritySettings = () => {
         <HeaderRow>
           <HeaderLeft>
             <TitleIcon>
-              <SafetyOutlined style={{ fontSize: "20px", color: "#2563eb" }} />
+              <SafetyOutlined style={{ fontSize: "20px", color: theme.primary }} />
             </TitleIcon>
             <PageTitle>Security & Settings</PageTitle>
           </HeaderLeft>
@@ -193,7 +195,7 @@ const SecuritySettings = () => {
                   size="large"
                   style={{
                     borderRadius: "8px",
-                    background: "#2563eb",
+                    background: theme.primary,
                     border: "none",
                   }}
                 >

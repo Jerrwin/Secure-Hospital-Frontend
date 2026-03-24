@@ -39,8 +39,9 @@ const rootReducer = (state, action) => {
       document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
-    // Reset Redux state to undefined to return all slices to initial state
-    state = undefined;
+    // Reset Redux state while PRESERVING the tenant info (branding/theme)
+    const { tenant } = state;
+    state = { tenant };
   }
   
   return appReducer(state, action);

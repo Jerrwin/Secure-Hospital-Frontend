@@ -97,11 +97,15 @@ const billingSlice = createSlice({
       state.paymentSuccess = true;
       const paidInvoice = action.payload;
       if (paidInvoice) {
-        const id = paidInvoice.id || paidInvoice.Id;
+        const invId =
+          paidInvoice.invoice_id ||
+          paidInvoice.invoiceId ||
+          paidInvoice.INVOICE_ID ||
+          paidInvoice.id;
         // Update local state to reflect 'paid' status immediately
-        state.invoices = state.invoices.map(inv => {
-          if ((inv.id || inv.Id) === id) {
-            return { ...inv, STATUS: 'paid', status: 'paid' };
+        state.invoices = state.invoices.map((inv) => {
+          if (String(inv.id || inv.Id) === String(invId)) {
+            return { ...inv, STATUS: "paid", status: "paid" };
           }
           return inv;
         });

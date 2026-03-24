@@ -4,10 +4,20 @@ import { PlusCircleOutlined, SolutionOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import useBilling from "../../../modules/billing/hooks/useBilling";
 import styled from "styled-components";
+import { useTheme } from "../../../context/ThemeContext";
 
 const ActionBtn = styled(Button)`
   border-radius: 8px;
   font-weight: 500;
+  background: ${props => props.theme.primary} !important;
+  border-color: ${props => props.theme.primary} !important;
+  color: #ffffff !important;
+
+  &:hover {
+    background: ${props => props.theme.primaryHover} !important;
+    border-color: ${props => props.theme.primaryHover} !important;
+  }
+
   @media (max-width: 576px) {
     padding: 4px 8px;
     font-size: 13px;
@@ -16,6 +26,7 @@ const ActionBtn = styled(Button)`
 `;
 
 const CreateInvoiceTab = ({ setActiveKey }) => {
+  const { theme } = useTheme();
   const { 
     fetchInvoices, 
     invoices, 
@@ -50,7 +61,7 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
     
     if (createSuccess) {
       message.success("Invoice created successfully!");
-      setActiveKey("2");
+      setActiveKey("pending");
       clearBillingError(); 
     }
   }, [submitError, createSuccess, clearBillingError, setActiveKey]);
@@ -80,9 +91,7 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
 
   const handleCreateClick = (record) => {
     setSelectedAppointment(record);
-    form.setFieldsValue({
-      amount: 0,
-    });
+    form.setFieldsValue({});
     setIsModalOpen(true);
   };
 
@@ -153,8 +162,8 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
       <Modal
         title={
           <Space>
-            <SolutionOutlined style={{ color: '#1677ff' }} />
-            <span>Generate New Invoice</span>
+            <SolutionOutlined style={{ color: theme.primary }} />
+            <span style={{ color: theme.text.primary }}>Generate New Invoice</span>
           </Space>
         }
         open={isModalOpen}
@@ -165,9 +174,9 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
         destroyOnHidden
       >
         {selectedAppointment && (
-          <div style={{ marginBottom: 16, padding: 12, background: '#f5f5f5', borderRadius: 8 }}>
-            <p><strong>Patient:</strong> {selectedAppointment.patient_name || selectedAppointment.patientName}</p>
-            <p><strong>Appointment Date:</strong> {dayjs(selectedAppointment.appointment_date).format("DD MMM YYYY")}</p>
+          <div style={{ marginBottom: 16, padding: 12, background: theme.primaryLight, borderRadius: 8, border: `1px solid ${theme.border}` }}>
+            <p style={{ color: theme.text.primary }}><strong>Patient:</strong> {selectedAppointment.patient_name || selectedAppointment.patientName}</p>
+            <p style={{ color: theme.text.secondary }}><strong>Appointment Date:</strong> {dayjs(selectedAppointment.appointment_date).format("DD MMM YYYY")}</p>
           </div>
         )}
         <Form form={form} layout="vertical" onFinish={handleFormSubmit}>

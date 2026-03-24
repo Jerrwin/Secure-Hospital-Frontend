@@ -23,20 +23,24 @@ import {
 } from "@ant-design/icons";
 import useUsers from "../../modules/users/hooks/useUsers";
 import styled from "styled-components";
+import AppButton from "../../components/common/Button/AppButton";
+import { useTheme } from "../../context/ThemeContext";
+import StaffModal from "./components/StaffModal";
 
+// ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
 const bp = {
-  xs: "480px",
-  sm: "576px",
-  md: "768px",
-  lg: "992px",
-  xl: "1200px",
+  xs: (props) => props.theme.breakpoints.xs,
+  sm: (props) => props.theme.breakpoints.sm,
+  md: (props) => props.theme.breakpoints.md,
+  lg: (props) => props.theme.breakpoints.lg,
+  xl: (props) => props.theme.breakpoints.xl,
 };
 
 const HeaderCard = styled.div`
-  background: #ffffff;
-  border: 1px solid #eef2f6;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  background: ${(props) => props.theme.background.card};
+  border: 1px solid ${(props) => props.theme.border};
+  border-radius: ${(props) => props.theme.borderRadius.lg};
+  box-shadow: ${(props) => props.theme.shadow};
   margin-bottom: 24px;
   overflow: hidden;
 `;
@@ -49,7 +53,7 @@ const HeaderRow = styled.div`
   flex-wrap: wrap;
   padding: 12px 16px;
 
-  @media (min-width: ${bp.lg}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     padding: 16px 22px;
   }
 `;
@@ -59,7 +63,7 @@ const MobileRow = styled.div`
   padding: 0 16px 16px 16px;
   width: 100%;
 
-  @media (min-width: ${bp.lg}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.lg}) {
     display: none;
   }
 `;
@@ -76,12 +80,12 @@ const TitleIcon = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: #e8f0fe;
+  background: ${props => props.theme.primaryLight};
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     width: 40px;
     height: 40px;
     border-radius: 10px;
@@ -91,16 +95,16 @@ const TitleIcon = styled.div`
 const PageTitle = styled.h2`
   font-size: 15px;
   font-weight: 700;
-  color: #1e3a5f;
+  color: ${(props) => props.theme.text.primary};
   margin: 0;
   letter-spacing: -0.2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  @media (min-width: ${bp.sm}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.sm}) {
     font-size: 17px;
   }
-  @media (min-width: ${bp.md}) {
+  @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     font-size: 18px;
   }
 `;
@@ -115,38 +119,20 @@ const SearchWrapper = styled.div`
   }
 `;
 
-const AddButtonMobile = styled(Button)`
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  background: #2563eb !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-weight: 600 !important;
-  padding: 0 12px !important;
-  height: 36px !important;
-  font-size: 13px !important;
-  color: #ffffff !important;
-
-  @media (min-width: ${bp.lg}) {
-    display: none !important;
-  }
-`;
-
 const StyledTable = styled(Table)`
   .ant-table-thead > tr > th {
-    background: #eff6ff;
-    color: #1e3a8a;
+    background: ${props => props.theme.background.header} !important;
+    color: ${props => props.theme.primary} !important;
     font-weight: 600;
   }
 
   .inactive-row {
-    background-color: #f8fafc;
-    opacity: 0.6;
+    background-color: ${props => props.theme.background.main};
+    opacity: 0.5;
     transition: all 0.3s ease;
 
     td {
-      color: #94a3b8 !important;
+      color: ${props => props.theme.text.light} !important;
     }
 
     .ant-tag {
@@ -162,6 +148,8 @@ const StyledTable = styled(Table)`
 `;
 
 const StaffManagement = () => {
+  const { theme } = useTheme();
+  const [form] = Form.useForm();
   const {
     staffList,
     loading,
@@ -176,27 +164,6 @@ const StaffManagement = () => {
   const [editingStaff, setEditingStaff] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [form] = Form.useForm();
-
-  // Watch password field for strength meter
-  const password = Form.useWatch("password", form);
-
-  const getPasswordStrength = (pwd) => {
-    if (!pwd) return { score: 0, label: "", color: "#e2e8f0" };
-    let score = 0;
-    if (pwd.length >= 8) score += 1;
-    if (/[0-9]/.test(pwd)) score += 1;
-    if (/[A-Z]/.test(pwd)) score += 1;
-    if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
-
-    if (pwd.length < 6)
-      return { score: 25, label: "Very Weak", color: "#ff4d4f" };
-    if (score <= 1) return { score: 33, label: "Weak", color: "#ff4d4f" };
-    if (score <= 3) return { score: 66, label: "Average", color: "#faad14" };
-    return { score: 100, label: "Strong", color: "#52c41a" };
-  };
-
-  const strength = getPasswordStrength(password);
 
   // Debounce search term
   useEffect(() => {
@@ -213,7 +180,7 @@ const StaffManagement = () => {
       <span>
         {parts.map((part, i) =>
           part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} style={{ backgroundColor: "#ffea00", padding: 0 }}>
+            <mark key={i} style={{ backgroundColor: theme.status.warning + '88', padding: 0 }}>
               {part}
             </mark>
           ) : (
@@ -391,11 +358,11 @@ const StaffManagement = () => {
 
         // 3. Mapping for known IDs
         const roleMap = {
-          1: { name: "Admin", color: "red" },
-          2: { name: "Doctor", color: "blue" },
-          3: { name: "Nurse", color: "cyan" },
+          1: { name: "Admin", color: theme.status.error },
+          2: { name: "Doctor", color: theme.primary },
+          3: { name: "Nurse", color: theme.accent },
           4: { name: "Pharmacist", color: "purple" },
-          5: { name: "Receptionist", color: "orange" },
+          5: { name: "Receptionist", color: theme.status.warning },
         };
 
         if (id && roleMap[id]) {
@@ -406,10 +373,10 @@ const StaffManagement = () => {
         if (name) {
           const s = name.toUpperCase();
           const colorMap = {
-            ADMIN: "red",
-            NURSE: "cyan",
-            PHARMACIST: "purple",
-            PROVIDER: "blue",
+            ADMIN: theme.status.error,
+            NURSE: theme.status.success,
+            PHARMACIST: "purple", // Use "purple" as it's a themed standard in many systems
+            PROVIDER: theme.primary,
           };
           return <Tag color={colorMap[s] || "default"}>{name}</Tag>;
         }
@@ -445,7 +412,7 @@ const StaffManagement = () => {
           <Tooltip title="Edit">
             <Button
               type="text"
-              icon={<EditOutlined style={{ color: "#2563eb" }} />}
+              icon={<EditOutlined style={{ color: theme.primary }} />}
               onClick={() => showModal(record)}
             />
           </Tooltip>
@@ -465,12 +432,12 @@ const StaffManagement = () => {
   ];
 
   return (
-    <div style={{ background: "#eff6ff", minHeight: "100vh" }}>
+    <div style={{ background: theme.background.main, minHeight: "100vh" }}>
       <HeaderCard>
         <HeaderRow>
           <HeaderLeft>
             <TitleIcon>
-              <TeamOutlined style={{ fontSize: 20, color: "#2563eb" }} />
+              <TeamOutlined style={{ fontSize: 20, color: theme.primary }} />
             </TitleIcon>
             <PageTitle>Staff Management</PageTitle>
           </HeaderLeft>
@@ -483,32 +450,17 @@ const StaffManagement = () => {
               value={searchTerm}
               allowClear
               size="large"
-              style={{ borderRadius: "8px" }}
+              style={{ borderRadius: theme.borderRadius.md }}
             />
           </SearchWrapper>
 
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => showModal()}
-            size="large"
-            style={{
-              background: "#2563eb",
-              borderRadius: "8px",
-              fontWeight: 600,
-              display: window.innerWidth >= 992 ? "flex" : "none",
-            }}
-          >
-            Add Staff
-          </Button>
-
-          <AddButtonMobile
-            type="primary"
+          <AppButton
+            variant="header"
             icon={<PlusOutlined />}
             onClick={() => showModal()}
           >
             Add Staff
-          </AddButtonMobile>
+          </AppButton>
         </HeaderRow>
 
         <MobileRow>
@@ -526,10 +478,10 @@ const StaffManagement = () => {
 
       <div
         style={{
-          background: "#fff",
+          background: theme.background.card,
           padding: "clamp(12px, 3vw, 24px)",
           borderRadius: "12px",
-          boxShadow: "0 4px 6px -1px rgba(37, 99, 235, 0.05)",
+          boxShadow: theme.shadow,
           minHeight: "auto",
           overflow: "hidden",
         }}
@@ -555,234 +507,13 @@ const StaffManagement = () => {
           scroll={{ x: 800 }}
         />
 
-        <Modal
-          title={
-            <span
-              style={{ color: "#1e3a8a", fontSize: "1.2rem", fontWeight: 600 }}
-            >
-              {editingStaff ? "Edit Staff Details" : "Add New Staff Member"}
-            </span>
-          }
-          open={isModalVisible}
+        <StaffModal
+          visible={isModalVisible}
           onCancel={handleCancel}
-          footer={null}
-          destroyOnHidden
-          width={600}
-        >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleFinish}
-            initialValues={{ is_active: true }}
-            style={{ marginTop: "24px" }}
-          >
-            <Space style={{ display: "flex", width: "100%" }}>
-              <Form.Item
-                name="first_name"
-                label="First Name"
-                rules={[{ required: true, message: "First name is required" }]}
-                style={{ flex: 1 }}
-              >
-                <Input
-                  size="large"
-                  placeholder="E.g. Gregory"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
-              <Form.Item name="last_name" label="Last Name" style={{ flex: 1 }}>
-                <Input
-                  size="large"
-                  placeholder="E.g. House"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
-            </Space>
-
-            <Space style={{ display: "flex", width: "100%" }}>
-              <Form.Item
-                name="email"
-                label="Email Address"
-                rules={[
-                  { required: true, message: "Email is required" },
-                  { type: "email", message: "Enter a valid email" },
-                ]}
-                style={{ flex: 1 }}
-              >
-                <Input
-                  size="large"
-                  placeholder="doctor@hospital.com"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="gender"
-                label="Gender"
-                rules={[{ required: true, message: "Gender is required" }]}
-                style={{ flex: 1, paddingLeft: "24px" }}
-              >
-                <Select
-                  size="large"
-                  placeholder="Select gender"
-                  options={[
-                    { value: "male", label: "Male" },
-                    { value: "female", label: "Female" },
-                    { value: "other", label: "Other" },
-                  ]}
-                />
-              </Form.Item>
-            </Space>
-
-            {!editingStaff && (
-              <div style={{ marginBottom: "24px" }}>
-                <Form.Item
-                  name="password"
-                  label="Password"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Password is required for new users",
-                    },
-                  ]}
-                  style={{ marginBottom: 8 }}
-                >
-                  <Input.Password
-                    size="large"
-                    placeholder="Secure password"
-                    style={{ borderRadius: "6px" }}
-                  />
-                </Form.Item>
-                {password && (
-                  <div style={{ marginTop: "-4px" }}>
-                    <Progress
-                      percent={strength.score}
-                      showInfo={false}
-                      strokeColor={strength.color}
-                      size="small"
-                      style={{ marginBottom: 4 }}
-                    />
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "12px",
-                          color: strength.color,
-                          fontWeight: 600,
-                        }}
-                      >
-                        Strength: {strength.label}
-                      </span>
-                      <span style={{ fontSize: "11px", color: "#94a3b8" }}>
-                        Use 8+ chars with mix of letters, numbers & symbols
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <Space style={{ display: "flex", width: "100%" }}>
-              <Form.Item
-                name="phone_number"
-                label="Phone Number"
-                rules={[
-                  { required: true, message: "Phone number is required" },
-                  {
-                    pattern: /^\d{10}$/,
-                    message: "Please enter exactly 10 digits",
-                  },
-                ]}
-                style={{ flex: 1 }}
-              >
-                <Input
-                  size="large"
-                  placeholder="9070503210"
-                  style={{ borderRadius: "6px" }}
-                  maxLength={10}
-                  onKeyPress={(event) => {
-                    if (!/[0-9]/.test(event.key)) {
-                      event.preventDefault();
-                    }
-                  }}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="address"
-                label="Address"
-                rules={[{ required: true, message: "Address is required" }]}
-                style={{ flex: 1, paddingLeft: "24px" }}
-              >
-                <Input
-                  size="large"
-                  placeholder="E.g. Chennai"
-                  style={{ borderRadius: "6px" }}
-                />
-              </Form.Item>
-            </Space>
-
-            <Space style={{ display: "flex", width: "100%" }}>
-              <Form.Item
-                name="role_id"
-                label="Assigned Role"
-                rules={[{ required: true, message: "Select a role" }]}
-                style={{ flex: 1 }}
-              >
-                <Select
-                  size="large"
-                  placeholder="Select role"
-                  options={[
-                    { value: 2, label: "Provider" },
-                    { value: 3, label: "Nurse" },
-                    { value: 4, label: "Pharmacist" },
-                    { value: 5, label: "Receptionist" },
-                  ]}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="is_active"
-                label="Account Status"
-                valuePropName="checked"
-                style={{ flex: 1, paddingLeft: "24px" }}
-              >
-                <Switch
-                  checkedChildren="Active"
-                  unCheckedChildren="Suspended"
-                />
-              </Form.Item>
-            </Space>
-
-            <Form.Item
-              style={{ marginBottom: 0, marginTop: "24px", textAlign: "right" }}
-            >
-              <Button
-                size="large"
-                onClick={handleCancel}
-                style={{ marginRight: 12, borderRadius: "6px" }}
-              >
-                Cancel
-              </Button>
-              <Button
-                size="large"
-                type="primary"
-                htmlType="submit"
-                style={{
-                  background: "#2563eb",
-                  borderRadius: "6px",
-                  fontWeight: 500,
-                }}
-              >
-                {editingStaff ? "Save Changes" : "Create Account"}
-              </Button>
-            </Form.Item>
-          </Form>
-        </Modal>
+          onFinish={handleFinish}
+          editingStaff={editingStaff}
+          form={form}
+        />
       </div>
     </div>
   );

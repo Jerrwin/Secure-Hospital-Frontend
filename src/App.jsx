@@ -5,6 +5,7 @@ import AppRouter from "./routes/AppRouter";
 import { checkAuth } from "./modules/auth/authSaga";
 import { fetchTenantInfoRequest } from "./modules/tenant/tenantSlice";
 import ErrorBoundary from "./components/common/ErrorBoundary";
+import { CustomThemeProvider } from "./context/ThemeContext";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -32,9 +33,11 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <AppRouter isSubdomain={isSubdomain} />
-      </BrowserRouter>
+      <CustomThemeProvider>
+        <BrowserRouter>
+          <AppRouter isSubdomain={isSubdomain} />
+        </BrowserRouter>
+      </CustomThemeProvider>
     </ErrorBoundary>
   );
 };
