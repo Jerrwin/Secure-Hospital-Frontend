@@ -25,11 +25,19 @@ import dayjs from "dayjs";
 
 import useAuth from "../../modules/auth/hooks/useAuth";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
-import usePatients from "../../modules/patients/hooks/usePatients";
 import ChatPanel from "../../pages/Chat/ChatPanel";
 import { useTheme } from "../../context/ThemeContext";
+import { usePrefetchPagination } from "../../hooks/usePrefetchPagination";
+import {
+  fetchPagedRequest,
+  setPage,
+  setSearch,
+  setStatus,
+} from "../../modules/appointments/appointmentSlice";
 
 const { Option } = Select;
+
+const paginationActions = { fetchPagedRequest, setPage, setSearch, setStatus };
 
 // ─── Styled Components ───────────────────────────────────────────────────────
 
@@ -40,18 +48,18 @@ const PageWrapper = styled.div`
 `;
 
 const CardWrapper = styled.div`
-  background: ${props => props.theme.background.card};
+  background: ${(props) => props.theme.background.card};
   padding: clamp(16px, 4vw, 32px);
   border-radius: 12px;
-  border: 1px solid ${props => props.theme.border};
-  box-shadow: ${props => props.theme.shadow};
+  border: 1px solid ${(props) => props.theme.border};
+  box-shadow: ${(props) => props.theme.shadow};
   overflow: hidden;
 `;
 
 const Highlight = styled.span`
-  background-color: ${props => props.theme.status.warning}44;
+  background-color: ${(props) => props.theme.status.warning}44;
   font-weight: bold;
-  border-bottom: 2px solid ${props => props.theme.status.warning};
+  border-bottom: 2px solid ${(props) => props.theme.status.warning};
 `;
 
 const ActionBtn = styled(Button)`
@@ -83,7 +91,7 @@ const highlightText = (text, query) => {
   if (!query || !text) return text;
   const parts = text.split(new RegExp(`(${query})`, "gi"));
   return (
-    <Space direction="vertical" size={0}>
+    <span>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
           <Highlight key={i}>{part}</Highlight>
@@ -91,7 +99,7 @@ const highlightText = (text, query) => {
           part
         ),
       )}
-    </Space>
+    </span>
   );
 };
 
@@ -106,18 +114,31 @@ const AppointmentList = forwardRef(
 
     const {
       list,
+      patients,
       staff,
-      loading,
+      loading: appointmentsLoading,
       submitting,
       dropdownLoading,
-      fetched,
-      fetchAll,
       fetchDropdowns: fetchAppointmentDropdowns,
       create,
       update,
+      setProviderId,
     } = useAppointments();
 
-    const { patients, fetchPatients } = usePatients();
+    const {
+      pagination: tablePagination,
+      actions: pagedActions,
+      searchQuery: activeSearch,
+      statusFilter: activeStatus,
+    } = usePrefetchPagination({
+      selector: (state) => state.appointments,
+      actions: paginationActions,
+      fixedPageSize: 5,
+    });
+
+    const loading = appointmentsLoading;
+
+    // Remove usePatients and use dropdown-specific patients from useAppointments
 
     // Debugging
     useEffect(() => {
@@ -125,8 +146,8 @@ const AppointmentList = forwardRef(
         role,
         userId,
         fullUser: user, // Log full user object to see available fields
-        patientsCount: patients.length,
-        patientsData: patients.slice(0, 3), // Log first few patients to see structure
+        patientsCount: patients?.length || 0,
+        patientsData: (patients || []).slice(0, 3), 
         staffCount: staff.length,
         dropdownLoading,
       });
@@ -135,7 +156,9 @@ const AppointmentList = forwardRef(
     const [form] = Form.useForm();
     const statusValue = Form.useWatch("STATUS", form);
     const appointmentDate = Form.useWatch("appointment_date", form);
-    const isFutureDate = appointmentDate ? appointmentDate.isAfter(dayjs(), "day") : false;
+    const isFutureDate = appointmentDate
+      ? appointmentDate.isAfter(dayjs(), "day")
+      : false;
 
     const [modalOpen, setModalOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -145,7 +168,6 @@ const AppointmentList = forwardRef(
     const [chatDrawerOpen, setChatDrawerOpen] = useState(false);
     const [activeChatId, setActiveChatId] = useState(null);
     const [activeChatPatient, setActiveChatPatient] = useState("");
-    const [debouncedSearch, setDebouncedSearch] = useState("");
 
     // ── Modal Handlers ──────────────────────────────────────────────────────
     const openCreate = () => {
@@ -180,16 +202,21 @@ const AppointmentList = forwardRef(
 
     const openChat = (record) => {
       setActiveChatId(record.id);
-      
+
       // Resolve patient name for the Drawer title
       let pName = record.patient_name || record.patientName;
       if (!pName && record.patient) {
-        pName = `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim();
+        pName =
+          `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim();
       }
       if (!pName && record.patient_id && patients.length > 0) {
-        const found = patients.find(p => String(p.id) === String(record.patient_id));
+        const found = patients.find(
+          (p) => String(p.id) === String(record.patient_id),
+        );
         if (found) {
-          pName = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+          pName =
+            `${found.first_name || ""} ${found.last_name || ""}`.trim() ||
+            found.name;
         }
       }
 
@@ -202,13 +229,31 @@ const AppointmentList = forwardRef(
       openCreate,
     }));
 
-    // ── Search Debounce (Synchronized with Parent) ──────────────────────────
     useEffect(() => {
       const timer = setTimeout(() => {
-        setDebouncedSearch(propSearchText);
+        pagedActions.setSearch(propSearchText);
       }, 500);
       return () => clearTimeout(timer);
-    }, [propSearchText]);
+    }, [propSearchText, pagedActions]);
+
+    useEffect(() => {
+      pagedActions.setStatus(propStatusFilter || "all");
+    }, [propStatusFilter, pagedActions]);
+
+    // Re-fetch from page 1 whenever search/filter change
+    const isInitialMount = React.useRef(true);
+    useEffect(() => {
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        if (role === "DOCTOR" || role === "PROVIDER") {
+          setProviderId(String(userId));
+        } else {
+          pagedActions.fetchPaged(1); // Initial load
+        }
+        return;
+      }
+      pagedActions.fetchPaged(1);
+    }, [activeSearch, activeStatus, pagedActions, role, userId, setProviderId]);
 
     const { clearError, submitError } = useAppointments();
 
@@ -229,7 +274,9 @@ const AppointmentList = forwardRef(
     useEffect(() => {
       if (isSubmittingLocal && !submitting && !submitError) {
         message.success(
-          editingId ? "Appointment updated successfully" : "Appointment scheduled successfully"
+          editingId
+            ? "Appointment updated successfully"
+            : "Appointment scheduled successfully",
         );
         setIsSubmittingLocal(false);
         setModalOpen(false);
@@ -240,60 +287,36 @@ const AppointmentList = forwardRef(
 
     // ── Initial load ────────────────────────────────────────────────────────
     useEffect(() => {
-      fetchPatients();
-      if (!fetched) {
-        fetchAll();
-        fetchAppointmentDropdowns();
+      if (!dropdownLoading && (patients.length === 0 || staff.length === 0)) {
+         fetchAppointmentDropdowns();
       }
-    }, [fetched, fetchAll, fetchAppointmentDropdowns, fetchPatients]);
+    }, [fetchAppointmentDropdowns, patients, staff, dropdownLoading]);
 
-    // ── Computed: Filtered List ──────────────────────────────────────────────
-    const filteredData = useMemo(() => {
-      let result = [...list];
-
-      // 1. Role-based visibility
-      if (role === "DOCTOR" || role === "PROVIDER") {
-        result = result.filter((a) => String(a.provider_id) === String(userId));
-      } else if (role === "PATIENT") {
-        result = result.filter((a) => String(a.patient_id) === String(userId));
-      }
-
-      // 2. Status filter
-      if (propStatusFilter && propStatusFilter !== "all") {
-        result = result.filter(
-          (a) => a.STATUS?.toLowerCase() === propStatusFilter.toLowerCase(),
-        );
-      }
-
-      // 3. Search filtering (Doctor Name or Patient Name)
-      if (debouncedSearch) {
-        const q = debouncedSearch.toLowerCase();
-        result = result.filter(
-          (a) =>
-            (a.patient_name || "").toLowerCase().includes(q) ||
-            (a.provider_name || "").toLowerCase().includes(q),
-        );
-      }
-
-      return result;
-    }, [list, role, userId, debouncedSearch, propStatusFilter]);
+    // ── Data is now pre-filtered by the server ──────────────────────────────
+    const filteredData = list;
 
     // ── Fallback Staff for Nurse Role ──────────────────────────────────────
     const uniqueStaff = useMemo(() => {
       const map = new Map();
       // 1. Add real staff if we have them
       staff.forEach((s) => {
-        const isActive = s.status
-          ? s.status === "active"
-          : s.is_active === true || s.is_active === 1 || s.is_active === "1";
+        // For lightweight lookups, these fields might be missing.
+        // We trust the lookup endpoint to return only relevant active providers.
+        const hasRoleInfo = !!(s.role || s.role_name);
+        const hasStatusInfo = !!(s.status !== undefined || s.is_active !== undefined);
 
-        if (
-          isActive &&
-          (s.role_name?.toLowerCase() === "provider" ||
-            s.role_name?.toLowerCase() === "doctor" ||
-            s.role?.toLowerCase() === "doctor" ||
-            s.role?.toLowerCase() === "provider")
-        ) {
+        const isActive = !hasStatusInfo || (s.status
+          ? s.status === "active"
+          : s.is_active === true || s.is_active === 1 || s.is_active === "1");
+
+        const isProvider = !hasRoleInfo || (
+          s.role_name?.toLowerCase() === "provider" ||
+          s.role_name?.toLowerCase() === "doctor" ||
+          s.role?.toLowerCase() === "doctor" ||
+          s.role?.toLowerCase() === "provider"
+        );
+
+        if (isActive && isProvider) {
           map.set(String(s.id), {
             id: s.id,
             name: s.name || s.full_name || `Doctor #${s.id}`,
@@ -319,10 +342,10 @@ const AppointmentList = forwardRef(
 
     // ── Fallback Patients (extracted from appointments list when API is 403) ──
     const uniquePatients = useMemo(() => {
-      // If we got real patients from the API, use them
-      if (patients.length > 0) return patients;
+      // Use dropdown patients as the primary source
+      if (patients && patients.length > 0) return patients;
 
-      // Otherwise extract from the appointments list already loaded
+      // Otherwise extract from the appointments list already loaded (fallback)
       const map = new Map();
       list.forEach((a) => {
         const pid = a.patient_id;
@@ -330,13 +353,14 @@ const AppointmentList = forwardRef(
           const fullName =
             a.patient_name ||
             a.patientName ||
+            a.full_name ||
             (a.patient
-              ? `${a.patient.first_name || ""} ${a.patient.last_name || ""}`.trim()
+              ? a.patient.full_name || `${a.patient.first_name || ""} ${a.patient.last_name || ""}`.trim()
               : `Patient #${pid}`);
           map.set(String(pid), {
             id: pid,
-            first_name: fullName.split(" ")[0] || fullName,
-            last_name: fullName.split(" ").slice(1).join(" ") || "",
+            full_name: fullName,
+            name: fullName,
           });
         }
       });
@@ -415,16 +439,21 @@ const AppointmentList = forwardRef(
 
           // 2. Fallback: Lookup in patients list (fetched for dropdowns)
           if (!name && record.patient_id && patients.length > 0) {
-            const found = patients.find(p => String(p.id) === String(record.patient_id));
+            const found = patients.find(
+              (p) => String(p.id) === String(record.patient_id),
+            );
             if (found) {
-              name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+              name =
+                found.full_name ||
+                found.name ||
+                `${found.first_name || ""} ${found.last_name || ""}`.trim();
             }
           }
 
           // 3. Final fallback: ID string
           name = name || `Patient #${record.patient_id || "?"}`;
-          
-          return highlightText(name, debouncedSearch);
+
+          return highlightText(name, propSearchText);
         },
         hidden: role === "PATIENT",
       },
@@ -440,7 +469,7 @@ const AppointmentList = forwardRef(
             (record.provider
               ? `${record.provider.first_name || record.provider.name} ${record.provider.last_name || ""}`.trim()
               : "—");
-          return highlightText(name, debouncedSearch);
+          return highlightText(name, propSearchText);
         },
         hidden: role === "DOCTOR" || role === "PROVIDER",
       },
@@ -463,7 +492,9 @@ const AppointmentList = forwardRef(
                   type="text"
                   icon={<EditOutlined />}
                   onClick={() => openEdit(record)}
-                  style={{ color: isFinished ? theme.text.light : theme.primary }}
+                  style={{
+                    color: isFinished ? theme.text.light : theme.primary,
+                  }}
                   disabled={isFinished}
                 >
                   Edit
@@ -496,16 +527,17 @@ const AppointmentList = forwardRef(
               rowKey="id"
               loading={loading}
               scroll={{ x: "max-content" }}
-              pagination={{
-                pageSize: 5,
-                showSizeChanger: false,
-                placement: ["bottomCenter"],
-              }}
+              pagination={tablePagination}
+              onChange={pagedActions.handleTableChange}
               locale={{
                 emptyText: (
-                  <Empty 
+                  <Empty
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={<span style={{ color: theme.text.light }}>No appointments matching your criteria</span>} 
+                    description={
+                      <span style={{ color: theme.text.light }}>
+                        No appointments matching your criteria
+                      </span>
+                    }
                   />
                 ),
               }}
@@ -555,8 +587,9 @@ const AppointmentList = forwardRef(
                 >
                   {uniquePatients.map((p) => {
                     const fullName =
-                      `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
+                      p.full_name ||
                       p.name ||
+                      `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
                       p.NAME ||
                       p.patient_name ||
                       `ID: ${p.id}`;
@@ -658,10 +691,12 @@ const AppointmentList = forwardRef(
                   }
                 >
                   <Option value="scheduled">Scheduled</Option>
-                  <Option 
-                    value="completed" 
+                  <Option
+                    value="completed"
                     disabled={isFutureDate}
-                    title={isFutureDate ? "Cannot complete future appointments" : ""}
+                    title={
+                      isFutureDate ? "Cannot complete future appointments" : ""
+                    }
                   >
                     Completed {isFutureDate && "(Disabled for future dates)"}
                   </Option>
@@ -687,7 +722,11 @@ const AppointmentList = forwardRef(
         <Drawer
           title={
             <div
-              style={{ color: theme.secondary, fontSize: "16px", fontWeight: "600" }}
+              style={{
+                color: theme.secondary,
+                fontSize: "16px",
+                fontWeight: "600",
+              }}
             >
               Chat & Notes — {activeChatPatient}
             </div>

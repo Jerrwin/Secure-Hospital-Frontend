@@ -25,17 +25,16 @@ const ActionBtn = styled(Button)`
   }
 `;
 
-const CreateInvoiceTab = ({ setActiveKey }) => {
+const CreateInvoiceTab = ({ 
+  setActiveKey, 
+  completedAppointments, 
+  pagination, 
+  pagedActions, 
+  loading 
+}) => {
   const { theme } = useTheme();
   const { 
-    fetchInvoices, 
-    invoices, 
-    pendingInvoices,
-    paidInvoices,
     sessionBilledIds,
-    fetchCompletedAppointments, 
-    completedAppointments, 
-    loading, 
     createInvoice, 
     createSuccess, 
     submitting, 
@@ -45,13 +44,7 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const [localBilledIds, setLocalBilledIds] = useState(new Set());
   const [form] = Form.useForm();
-
-  useEffect(() => {
-    fetchCompletedAppointments();
-    fetchInvoices(); 
-  }, [fetchCompletedAppointments, fetchInvoices]);
 
   useEffect(() => {
     if (submitError) {
@@ -68,28 +61,15 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
     }
   }, [submitError, createSuccess, clearBillingError, setActiveKey]);
 
-  // Logic: Only show COMPLETED appointments that don't have an invoice yet
+  // Logic: The server now handles the 'unbilled' filter! 
+  // We only need to filter out IDs billed in the current browser session for instant UI feedback.
   const billableAppointments = useMemo(() => {
-    // Combine ALL sources: Local (instant), Session (persisted), and Server (refreshed)
-    const allKnownInvoices = [...(invoices || []), ...(pendingInvoices || []), ...(paidInvoices || [])];
-    
-    const billedIds = new Set([
-      ...allKnownInvoices.map(inv => {
-        const id = inv.appointment_id || inv.appointmentId || inv.APPOINTMENT_ID || inv.appointment?.id || inv.appointment?.ID;
-        return String(id || '');
-      }),
-      ...(sessionBilledIds || []),
-      ...Array.from(localBilledIds || [])
-    ].filter(Boolean));
-    
-    const filtered = (completedAppointments || []).filter(app => {
-      const status = (app.STATUS || app.status || '').toLowerCase();
+    const sessionIds = new Set(sessionBilledIds || []);
+    return (completedAppointments || []).filter(app => {
       const appId = String(app.id || app.ID || '');
-      return status === 'completed' && appId && !billedIds.has(appId);
+      return appId && !sessionIds.has(appId);
     });
-
-    return filtered;
-  }, [completedAppointments, invoices, pendingInvoices, paidInvoices, sessionBilledIds, localBilledIds]);
+  }, [completedAppointments, sessionBilledIds]);
 
   const handleCreateClick = (record) => {
     setSelectedAppointment(record);
@@ -154,7 +134,14 @@ const CreateInvoiceTab = ({ setActiveKey }) => {
         rowKey="id"
         loading={loading}
         scroll={{ x: 'max-content' }}
-        pagination={{ pageSize: 8 }}
+        pagination={{
+          current: pagination.currentPage,
+          pageSize: pagination.perPage,
+          total: pagination.total,
+          onChange: (page) => pagedActions.setPage(page),
+          showSizeChanger: false,
+          position: ['bottomCenter']
+        }}
         locale={{ emptyText: <Empty description="No billable appointments found" /> }}
       />
 

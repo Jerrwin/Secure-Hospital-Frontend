@@ -27,7 +27,8 @@ export const darkTheme = {
   inputBg: "#334155",
   border: "#334155",
   glow: "0 4px 6px -1px rgba(56, 189, 248, 0.15), 0 2px 4px -1px rgba(56, 189, 248, 0.08)",
-  shadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)",
+  shadow:
+    "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)",
   borderRadius: {
     sm: "6px",
     md: "8px",

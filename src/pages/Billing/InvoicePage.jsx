@@ -1,17 +1,27 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import useAuth from "../../modules/auth/hooks/useAuth";
-import { Tabs } from "antd";
 import {
   FileTextOutlined,
   HourglassOutlined,
   CheckCircleOutlined,
-  DollarOutlined,
+  BankOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
+import { Tabs, Input } from "antd";
 import CreateInvoiceTab from "./tabs/CreateInvoiceTab";
-import PendingPaymentsTab from "./tabs/PendingPaymentsTab";
-import CompletedPaymentsTab from "./tabs/CompletedPaymentsTab";
+import BillingList from "./components/BillingList";
 import { useTheme } from "../../context/ThemeContext";
+import { usePrefetchPagination } from "../../hooks/usePrefetchPagination";
+import {
+  fetchPagedRequest,
+  prefetchRequest,
+  setPage,
+  setSearch,
+  setStatus,
+} from "../../modules/billing/billingSlice";
+
+const { Search } = Input;
 
 const bp = {
   xs: "480px",
@@ -23,8 +33,7 @@ const bp = {
 
 const Container = styled.div`
   padding: 0;
-  background: #eff6ff;
-  min-height: calc(100vh - 64px);
+  flex: 1;
 `;
 
 const HeaderCard = styled.div`
@@ -132,11 +141,9 @@ const StyledTabs = styled(Tabs)`
     display: none !important;
   }
 
-  .ant-tabs-content-holder {
-    background: white;
-    padding: clamp(12px, 4vw, 24px);
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  .ant-tabs-nav {
+    margin-bottom: 0px !important;
+    background: transparent;
   }
 
   @media (max-width: 576px) {
@@ -153,11 +160,64 @@ const StyledTabs = styled(Tabs)`
   }
 `;
 
+const ContentCard = styled.div`
+  background: white;
+  padding: clamp(12px, 4vw, 24px);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin-top: 16px;
+
+  .ant-table-pagination {
+    justify-content: center !important;
+    padding-top: 16px;
+  }
+`;
+
+const paginationActions = {
+  fetchPagedRequest,
+  prefetchRequest,
+  setPage,
+  setSearch,
+  setStatus,
+};
+
 const InvoicePage = () => {
   const { theme } = useTheme();
   const { userRole } = useAuth();
   const isPatient = userRole === "PATIENT";
+
+  // Prefetch Pagination Hook
+  const {
+    data: list,
+    pagination,
+    loading,
+    actions: pagedActions,
+    statusFilter,
+  } = usePrefetchPagination({
+    selector: (state) => state.billing,
+    actions: paginationActions,
+    initialStatus: isPatient ? "pending" : "unbilled",
+  });
+
   const [activeKey, setActiveKey] = useState(isPatient ? "pending" : "create");
+
+  // Map tab keys to API status values
+  const handleTabChange = (key) => {
+    setActiveKey(key);
+    const statusMap = {
+      create: "unbilled",
+      pending: "pending",
+      completed: "paid",
+    };
+    if (statusMap[key]) {
+      pagedActions.setStatus(statusMap[key]);
+    }
+  };
+
+  // Derive active tab from statusFilter
+  const activeTabKey = activeKey === "create" || statusFilter === "unbilled"
+    ? "create"
+    : statusFilter === "paid" ? "completed" : "pending";
 
   const tabItems = [
     ...(isPatient
@@ -170,7 +230,6 @@ const InvoicePage = () => {
                 <FileTextOutlined /> Payment Create
               </span>
             ),
-            children: <CreateInvoiceTab setActiveKey={setActiveKey} />,
           },
         ]),
     {
@@ -181,7 +240,6 @@ const InvoicePage = () => {
           {isPatient ? "My Pending Bills" : "Pending Payments"}
         </span>
       ),
-      children: <PendingPaymentsTab setActiveKey={setActiveKey} />,
     },
     {
       key: "completed",
@@ -191,7 +249,6 @@ const InvoicePage = () => {
           {isPatient ? "My Payment History" : "Completed Payments"}
         </span>
       ),
-      children: <CompletedPaymentsTab />,
     },
   ];
 
@@ -201,7 +258,7 @@ const InvoicePage = () => {
         <HeaderRow>
           <HeaderLeft>
             <TitleIcon>
-              <DollarOutlined style={{ fontSize: 22, color: theme.primary }} />
+              <BankOutlined style={{ fontSize: 22, color: theme.primary }} />
             </TitleIcon>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <PageTitle>Billing & Payments</PageTitle>
@@ -212,16 +269,45 @@ const InvoicePage = () => {
               </span>
             </div>
           </HeaderLeft>
+          {activeTabKey !== "create" && (
+            <div style={{ minWidth: "250px", flex: "0 1 auto" }}>
+              <Search
+                placeholder="Search patient or invoice..."
+                allowClear
+                onChange={(e) => pagedActions.setSearch(e.target.value)}
+                style={{ width: "100%" }}
+                prefix={<SearchOutlined style={{ color: "#94a3b8" }} />}
+              />
+            </div>
+          )}
         </HeaderRow>
       </HeaderCard>
 
-      <div style={{ padding: "0 4px" }}>
-        <StyledTabs
-          activeKey={activeKey}
-          onChange={setActiveKey}
-          items={tabItems}
-        />
-      </div>
+      <StyledTabs
+        activeKey={activeTabKey}
+        onChange={handleTabChange}
+        items={tabItems}
+      />
+
+      <ContentCard>
+        {activeTabKey === "create" ? (
+          <CreateInvoiceTab 
+            setActiveKey={(key) => handleTabChange(key)} 
+            completedAppointments={list}
+            pagination={pagination}
+            pagedActions={pagedActions}
+            loading={loading}
+          />
+        ) : (
+          <BillingList
+            statusFilter={statusFilter}
+            list={list}
+            pagination={pagination}
+            loading={loading}
+            pagedActions={pagedActions}
+          />
+        )}
+      </ContentCard>
     </Container>
   );
 };

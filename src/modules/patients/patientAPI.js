@@ -1,7 +1,7 @@
 import axiosClient from '../../services/axiosClient';
 
-export const fetchPatientsAPI = async () => {
-    const response = await axiosClient.get('/api/patients');
+export const fetchPatientsAPI = async (params) => {
+    const response = await axiosClient.get('/api/patients', { params });
     return response.data;
 };
 

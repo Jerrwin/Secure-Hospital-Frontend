@@ -15,15 +15,15 @@ const floatUp = keyframes`
   to   { opacity: 1; transform: translateY(0); }
 `;
 
-
-
 const CardWrap = styled.div`
   position: relative;
   border-radius: ${(p) => p.theme.borderRadius.xl};
   border: 1px solid ${(p) => p.theme.border};
   background: ${(p) => p.theme.background.card};
   box-shadow: ${(p) => p.theme.shadow};
-  padding: 24px;
+  padding: 18px 22px;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
   cursor: default;
   animation: ${floatUp} 0.45s ease both;
@@ -63,8 +63,8 @@ const CardWrap = styled.div`
     content: "";
     position: absolute;
     left: 0;
-    top: 20%;
-    height: 60%;
+    top: 25%;
+    height: 50%;
     width: 4px;
     border-radius: 0 4px 4px 0;
     background: linear-gradient(
@@ -83,10 +83,10 @@ const TopRow = styled.div`
 `;
 
 const IconBox = styled.div`
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
-  border-radius: ${(p) => p.theme.borderRadius.lg};
+  border-radius: ${(p) => p.theme.borderRadius.md};
   background: linear-gradient(
     135deg,
     ${(p) => p.$color}22,
@@ -97,7 +97,7 @@ const IconBox = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   transition: transform 0.2s ease;
 
   ${CardWrap}:hover & {
@@ -106,20 +106,20 @@ const IconBox = styled.div`
 `;
 
 const Label = styled(Text)`
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: ${(p) => p.theme.text.secondary} !important;
   font-family: ${(p) => p.theme.headingFont || "inherit"} !important;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 `;
 
 const ValueText = styled.div`
-  font-size: 2rem;
+  font-size: 1.7rem;
   font-weight: 800;
-  line-height: 1;
+  line-height: 1.1;
   color: ${(p) => p.$color || p.theme.secondary};
   font-family: ${(p) => p.theme.headingFont || "inherit"};
   letter-spacing: -0.02em;
@@ -130,10 +130,10 @@ const TrendBadge = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-top: 10px;
-  padding: 3px 10px;
+  margin-top: 8px;
+  padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   background: ${(p) =>
     p.$positive ? p.theme.status.success + "18" : p.theme.status.error + "18"};

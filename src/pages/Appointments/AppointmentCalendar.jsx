@@ -628,18 +628,14 @@ const getStatusTagColor = (status, theme) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const AppointmentCalendar = () => {
-  const { user } = useAuth();
+  const { userRole } = useAuth();
   const { theme } = useTheme();
-  const { patients } = useAppointments();
-  const role = user?.role?.toUpperCase();
+  const { patients, list: allAppts, fetchPaged, loading } = useAppointments();
+  const role = userRole;
   const isDoctor = role === "DOCTOR" || role === "PROVIDER";
 
   const {
-    rangeData,
-    tooltipData,
     rangeLoading,
-    tooltipLoading,
-    fetchRange,
     fetchByDate,
   } = useCalendar();
 
@@ -649,12 +645,11 @@ const AppointmentCalendar = () => {
   // Unified Control State
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedDate, setSelectedDate] = useState(null);
 
   const listRef = useRef(null);
-  const { fetchAll, loading } = useAppointments();
-
   const handleRefresh = () => {
-    fetchAll();
+    fetchPaged(1);
   };
 
   const handleNewAppointment = () => {
@@ -665,11 +660,9 @@ const AppointmentCalendar = () => {
 
   useEffect(() => {
     if (viewMode === "calendar") {
-      const start = currentMonth.startOf("month").format("YYYY-MM-DD");
-      const end = currentMonth.endOf("month").format("YYYY-MM-DD");
-      fetchRange(start, end);
+      // Data is already handled by allAppts from useAppointments
     }
-  }, [currentMonth, viewMode, fetchRange]);
+  }, [viewMode]);
 
   // ── Nav handlers ─────────────────────────────────────────────────────────
   const goPrev = () => setCurrentMonth((m) => m.subtract(1, "month"));
@@ -679,52 +672,47 @@ const AppointmentCalendar = () => {
   const isCurrentMonth = currentMonth.isSame(dayjs(), "month");
 
   const handleDateClick = (date) => {
+    setSelectedDate(date.format("YYYY-MM-DD"));
     fetchByDate(date.format("YYYY-MM-DD"));
   };
 
   const rangeDict = useMemo(() => {
     const dict = {};
-    if (!Array.isArray(rangeData)) return dict;
+    if (!Array.isArray(allAppts)) return dict;
 
     const q = (searchText || "").toLowerCase();
     const sFilter = (statusFilter || "all").toLowerCase();
 
-    rangeData.forEach((dayGroup) => {
-      // Apply Search and Status filters to each day's appointments
-      const filtered = (dayGroup.appointments || []).filter((appt) => {
-        // 1. Status Filter
-        const statusMatch =
-          sFilter === "all" || (appt.status || "").toLowerCase() === sFilter;
+    allAppts.forEach((appt) => {
+      // 1. Status Filter
+      const status = (appt.status || appt.STATUS || "").toLowerCase();
+      const statusMatch = sFilter === "all" || status === sFilter;
 
-        // 2. Search Filter (Patient Name)
-        const nameMatch = !q || (appt.patient || "").toLowerCase().includes(q);
+      // 2. Search Filter (Patient or Provider Name)
+      const patientName = appt.patient_name || appt.patientName || 
+                         (typeof appt.patient === 'string' ? appt.patient : appt.patient?.name || "");
+      const providerName = appt.provider_name || appt.doctor?.name || "";
+      const nameMatch = !q || 
+                       String(patientName).toLowerCase().includes(q) || 
+                       String(providerName).toLowerCase().includes(q);
 
-        return statusMatch && nameMatch;
-      });
-
-      dict[dayGroup.date] = filtered;
+      if (statusMatch && nameMatch) {
+        const dateStr = dayjs(appt.appointment_date).format("YYYY-MM-DD");
+        if (!dict[dateStr]) dict[dateStr] = [];
+        dict[dateStr].push({ 
+          ...appt,
+          time: appt.start_time ? dayjs(appt.start_time, "HH:mm:ss").format("hh:mm A") : "N/A",
+          status: appt.status || appt.STATUS
+        });
+      }
     });
     return dict;
-  }, [rangeData, searchText, statusFilter]);
+  }, [allAppts, searchText, statusFilter]);
 
   const filteredTooltipData = useMemo(() => {
-    if (!Array.isArray(tooltipData)) return [];
-
-    const q = (searchText || "").toLowerCase();
-    const sFilter = (statusFilter || "all").toLowerCase();
-
-    return tooltipData.filter((appt) => {
-      // 1. Status Filter
-      const statusMatch =
-        sFilter === "all" || (appt.status || "").toLowerCase() === sFilter;
-
-      // 2. Search Filter (Patient Name)
-      const patient = appt.patient?.full_name || appt.patient_name || appt.patient || "";
-      const nameMatch = !q || String(patient).toLowerCase().includes(q);
-
-      return statusMatch && nameMatch;
-    });
-  }, [tooltipData, searchText, statusFilter]);
+    if (!selectedDate) return [];
+    return rangeDict[selectedDate] || [];
+  }, [selectedDate, rangeDict]);
 
   const dateCellRender = (value) => {
     const dateStr = value.format("YYYY-MM-DD");
@@ -752,7 +740,7 @@ const AppointmentCalendar = () => {
           body: { borderRadius: 12, padding: "10px 12px" },
         }}
         content={
-          <StyledSpin spinning={tooltipLoading}>
+          <StyledSpin spinning={loading}>
             {filteredTooltipData && filteredTooltipData.length > 0 ? (
               <TooltipContent>
                 {filteredTooltipData.map((appt, idx) => (

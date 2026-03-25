@@ -15,7 +15,7 @@ import {
   TeamOutlined,
   CalendarOutlined,
   MedicineBoxOutlined,
-  DollarOutlined,
+  BankOutlined,
   BellOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
@@ -66,6 +66,11 @@ const GlassCard = styled(Card)`
   background: ${(p) => p.theme.background.card} !important;
   overflow: hidden;
   transition: box-shadow 0.25s ease;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 
   &:hover {
     box-shadow: ${(p) => p.theme.glow};
@@ -74,11 +79,14 @@ const GlassCard = styled(Card)`
   .ant-card-head {
     background: ${(p) => p.theme.background.header};
     border-bottom: 1px solid ${(p) => p.theme.border};
-    padding: 16px 24px;
+    padding: 14px 22px;
     min-height: unset;
   }
   .ant-card-body {
-    padding: ${(p) => (p.$noPad ? "0" : "24px")};
+    padding: ${(p) => (p.$noPad ? "0" : "20px 22px")};
+    flex: 1;
+    display: flex;
+    flex-direction: column;
   }
 `;
 
@@ -96,7 +104,7 @@ const ActionBtn = styled(Button)`
   height: 56px;
   border-radius: ${(p) => p.theme.borderRadius.lg} !important;
   font-weight: 600 !important;
-  font-size: 0.875rem !important;
+  font-size: 0.95rem !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -127,7 +135,7 @@ const ActionBtn = styled(Button)`
 const StatusTag = styled(Tag)`
   border-radius: 999px !important;
   font-weight: 600 !important;
-  font-size: 0.75rem !important;
+  font-size: 0.8rem !important;
   padding: 2px 10px !important;
   border: none !important;
   text-transform: capitalize;
@@ -472,8 +480,8 @@ const UnifiedDashboard = ({
           {[
             {
               title: "Total Revenue",
-              value: `$${(stats.total_revenue || 0).toLocaleString()}`,
-              icon: <DollarOutlined />,
+              value: `₹${(stats.total_revenue || 0).toLocaleString()}`,
+              icon: <BankOutlined />,
               color: theme.status.success,
               delay: "0.05s",
             },
@@ -499,7 +507,13 @@ const UnifiedDashboard = ({
               delay: "0.20s",
             },
           ].map((s) => (
-            <Col key={s.title} xs={24} sm={12} xl={6}>
+            <Col
+              key={s.title}
+              xs={24}
+              sm={12}
+              xl={6}
+              style={{ display: "flex" }}
+            >
               <StatWidget {...s} />
             </Col>
           ))}
@@ -507,7 +521,7 @@ const UnifiedDashboard = ({
 
         {/* Charts Row */}
         <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
-          <Col xs={24} lg={16}>
+          <Col xs={24} lg={16} style={{ display: "flex" }}>
             <GlassCard
               theme={theme}
               title={
@@ -517,7 +531,7 @@ const UnifiedDashboard = ({
               }
             >
               {ResponsiveContainer && trend.length > 0 ? (
-                <ResponsiveContainer width="100%" height={240}>
+                <ResponsiveContainer width="100%" height={300}>
                   <AreaChart
                     data={trend}
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -544,11 +558,11 @@ const UnifiedDashboard = ({
                     </defs>
                     <XAxis
                       dataKey="day"
-                      tick={{ fontSize: 11, fill: theme.text.secondary }}
+                      tick={{ fontSize: 12, fill: theme.text.secondary }}
                       stroke="transparent"
                     />
                     <YAxis
-                      tick={{ fontSize: 11, fill: theme.text.secondary }}
+                      tick={{ fontSize: 12, fill: theme.text.secondary }}
                       stroke="transparent"
                       allowDecimals={false}
                     />
@@ -557,7 +571,7 @@ const UnifiedDashboard = ({
                         background: theme.background.card,
                         border: `1px solid ${theme.border}`,
                         borderRadius: theme.borderRadius.md,
-                        fontSize: 12,
+                        fontSize: 13,
                       }}
                     />
                     <Area
@@ -581,27 +595,36 @@ const UnifiedDashboard = ({
             </GlassCard>
           </Col>
 
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={8} style={{ display: "flex" }}>
             <GlassCard
               theme={theme}
               title={
                 <SectionTitle level={5} theme={theme}>
-                  <DollarOutlined /> Invoice Status
+                  <BankOutlined /> Invoice Status
                 </SectionTitle>
               }
             >
-              <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "4px 0 12px",
+                }}
+              >
                 <Progress
                   type="dashboard"
                   percent={paidPct}
                   strokeColor={theme.status.success}
                   trailColor={theme.border}
-                  strokeWidth={8}
+                  strokeWidth={10}
+                  width={160}
                   format={(p) => (
                     <div>
                       <div
                         style={{
-                          fontSize: "1.6rem",
+                          fontSize: "1.8rem",
                           fontWeight: 800,
                           color: theme.secondary,
                         }}
@@ -610,7 +633,7 @@ const UnifiedDashboard = ({
                       </div>
                       <div
                         style={{
-                          fontSize: "0.7rem",
+                          fontSize: "0.85rem",
                           color: theme.text.secondary,
                         }}
                       >
@@ -620,19 +643,19 @@ const UnifiedDashboard = ({
                   )}
                 />
               </div>
-              <Row gutter={[12, 12]}>
+              <Row gutter={[12, 12]} style={{ marginTop: "auto" }}>
                 <Col span={12}>
                   <div
                     style={{
                       textAlign: "center",
-                      padding: "12px",
+                      padding: "8px 12px",
                       borderRadius: theme.borderRadius.md,
                       background: theme.status.success + "12",
                     }}
                   >
                     <div
                       style={{
-                        fontSize: "1.4rem",
+                        fontSize: "1.2rem",
                         fontWeight: 800,
                         color: theme.status.success,
                       }}
@@ -653,14 +676,14 @@ const UnifiedDashboard = ({
                   <div
                     style={{
                       textAlign: "center",
-                      padding: "12px",
+                      padding: "8px 12px",
                       borderRadius: theme.borderRadius.md,
                       background: theme.status.warning + "12",
                     }}
                   >
                     <div
                       style={{
-                        fontSize: "1.4rem",
+                        fontSize: "1.2rem",
                         fontWeight: 800,
                         color: theme.status.warning,
                       }}
@@ -742,7 +765,13 @@ const UnifiedDashboard = ({
               delay: "0.20s",
             },
           ].map((s) => (
-            <Col key={s.title} xs={24} sm={12} xl={6}>
+            <Col
+              key={s.title}
+              xs={24}
+              sm={12}
+              xl={6}
+              style={{ display: "flex" }}
+            >
               <StatWidget {...s} />
             </Col>
           ))}
@@ -750,7 +779,7 @@ const UnifiedDashboard = ({
 
         <Row gutter={[20, 20]} style={{ marginTop: 24 }}>
           {/* Timeline */}
-          <Col xs={24} lg={16}>
+          <Col xs={24} lg={16} style={{ display: "flex" }}>
             <GlassCard
               theme={theme}
               title={
@@ -821,7 +850,7 @@ const UnifiedDashboard = ({
           </Col>
 
           {/* Progress sidebar */}
-          <Col xs={24} lg={8}>
+          <Col xs={24} lg={8} style={{ display: "flex" }}>
             <GlassCard
               theme={theme}
               title={
@@ -939,12 +968,12 @@ const UnifiedDashboard = ({
             {
               title: "Pending Invoices",
               value: stats.pending_invoices,
-              icon: <DollarOutlined />,
+              icon: <BankOutlined />,
               color: theme.status.warning,
               delay: "0.15s",
             },
           ].map((s) => (
-            <Col key={s.title} xs={24} sm={8}>
+            <Col key={s.title} xs={24} sm={8} style={{ display: "flex" }}>
               <StatWidget {...s} />
             </Col>
           ))}
@@ -969,7 +998,7 @@ const UnifiedDashboard = ({
               },
               {
                 label: "Process Payment",
-                icon: <DollarOutlined />,
+                icon: <BankOutlined />,
                 path: "/billing",
               },
             ].map((a) => (
@@ -1032,7 +1061,7 @@ const UnifiedDashboard = ({
               delay: "0.15s",
             },
           ].map((s) => (
-            <Col key={s.title} xs={24} sm={8}>
+            <Col key={s.title} xs={24} sm={8} style={{ display: "flex" }}>
               <StatWidget {...s} />
             </Col>
           ))}
@@ -1071,7 +1100,7 @@ const UnifiedDashboard = ({
                   <PipelineStep theme={theme} $active={step.value > 0}>
                     <div
                       style={{
-                        fontSize: "1.6rem",
+                        fontSize: "1.8rem",
                         fontWeight: 800,
                         color: step.color,
                       }}
@@ -1080,7 +1109,7 @@ const UnifiedDashboard = ({
                     </div>
                     <Text
                       style={{
-                        fontSize: "0.8rem",
+                        fontSize: "0.9rem",
                         color: theme.text.secondary,
                       }}
                     >
@@ -1158,7 +1187,7 @@ const UnifiedDashboard = ({
               delay: "0.10s",
             },
           ].map((s) => (
-            <Col key={s.title} xs={24} sm={12}>
+            <Col key={s.title} xs={24} sm={12} style={{ display: "flex" }}>
               <StatWidget {...s} />
             </Col>
           ))}
@@ -1212,7 +1241,7 @@ const UnifiedDashboard = ({
                   flexShrink: 0,
                 }}
               >
-                <DollarOutlined />
+                <BankOutlined />
               </div>
               <div style={{ flex: 1 }}>
                 <Text
@@ -1222,7 +1251,7 @@ const UnifiedDashboard = ({
                   Payment Due
                 </Text>
                 <Text
-                  style={{ fontSize: "0.85rem", color: theme.text.secondary }}
+                  style={{ fontSize: "0.95rem", color: theme.text.secondary }}
                 >
                   You have pending medical invoices.
                 </Text>
@@ -1264,7 +1293,7 @@ const UnifiedDashboard = ({
             {
               title: "Balance Due",
               value: `₹${(stats.unpaid_amount || 0).toLocaleString()}`,
-              icon: <DollarOutlined />,
+              icon: <BankOutlined />,
               color: theme.status.warning,
               delay: "0.15s",
             },
@@ -1276,7 +1305,13 @@ const UnifiedDashboard = ({
               delay: "0.20s",
             },
           ].map((s) => (
-            <Col key={s.title} xs={24} sm={12} xl={6}>
+            <Col
+              key={s.title}
+              xs={24}
+              sm={12}
+              xl={6}
+              style={{ display: "flex" }}
+            >
               <StatWidget {...s} />
             </Col>
           ))}
@@ -1285,7 +1320,11 @@ const UnifiedDashboard = ({
         {/* Main content */}
         <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
           {/* Left — tables */}
-          <Col xs={24} lg={16}>
+          <Col
+            xs={24}
+            lg={16}
+            style={{ display: "flex", flexDirection: "column" }}
+          >
             <TableWidget
               title={
                 <Space>
@@ -1313,7 +1352,11 @@ const UnifiedDashboard = ({
           </Col>
 
           {/* Right — actions + logs */}
-          <Col xs={24} lg={8}>
+          <Col
+            xs={24}
+            lg={8}
+            style={{ display: "flex", flexDirection: "column" }}
+          >
             <GlassCard
               theme={theme}
               title={
@@ -1336,7 +1379,7 @@ const UnifiedDashboard = ({
                   },
                   {
                     label: "View Bills & Payments",
-                    icon: <DollarOutlined />,
+                    icon: <BankOutlined />,
                     path: "/billing",
                   },
                 ].map((a) => (
@@ -1396,7 +1439,7 @@ const UnifiedDashboard = ({
                           strong
                           style={{
                             color: theme.text.primary,
-                            fontSize: "0.85rem",
+                            fontSize: "0.95rem",
                           }}
                         >
                           Lab Results Uploaded
@@ -1404,7 +1447,7 @@ const UnifiedDashboard = ({
                         <Text
                           style={{
                             display: "block",
-                            fontSize: "0.78rem",
+                            fontSize: "0.85rem",
                             color: theme.text.secondary,
                           }}
                         >
@@ -1421,7 +1464,7 @@ const UnifiedDashboard = ({
                           strong
                           style={{
                             color: theme.text.primary,
-                            fontSize: "0.85rem",
+                            fontSize: "0.95rem",
                           }}
                         >
                           New Device Login
@@ -1429,7 +1472,7 @@ const UnifiedDashboard = ({
                         <Text
                           style={{
                             display: "block",
-                            fontSize: "0.78rem",
+                            fontSize: "0.85rem",
                             color: theme.text.secondary,
                           }}
                         >

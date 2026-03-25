@@ -1,20 +1,51 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useCallback, useMemo } from 'react';
-import { fetchStaffRequest, addStaffRequest, updateStaffRequest, deleteStaffRequest, clearError } from '../userSlice';
+import { 
+  fetchPagedRequest, 
+  prefetchRequest, 
+  setPage, 
+  setSearch, 
+  setStatus,
+  addStaffRequest, 
+  updateStaffRequest, 
+  deleteStaffRequest, 
+  clearError 
+} from '../userSlice';
 
 const useUsers = () => {
   const dispatch = useDispatch();
   
-  const staffList = useSelector(state => state.users?.staffList || []);
-  const loading = useSelector(state => state.users?.loading || false);
-  const isLoaded = useSelector(state => state.users?.isLoaded || false);
-  const error = useSelector(state => state.users?.error || null);
+  const state = useSelector(state => state.users);
+  const { 
+    list, 
+    pagination, 
+    loading, 
+    error, 
+    searchQuery, 
+    statusFilter, 
+    fetched,
+    submitting 
+  } = state || {};
 
-  const fetchStaff = useCallback((force = false) => {
-    if (force || !isLoaded) {
-      dispatch(fetchStaffRequest());
-    }
-  }, [dispatch, isLoaded]);
+  const fetchStaff = useCallback((page) => {
+    dispatch(fetchPagedRequest(page));
+  }, [dispatch]);
+
+  const prefetchStaff = useCallback((page) => {
+    dispatch(prefetchRequest(page));
+  }, [dispatch]);
+
+  const handleSetPage = useCallback((page) => {
+    dispatch(setPage(page));
+  }, [dispatch]);
+
+  const handleSetSearch = useCallback((query) => {
+    dispatch(setSearch(query));
+  }, [dispatch]);
+
+  const handleSetStatus = useCallback((status) => {
+    dispatch(setStatus(status));
+  }, [dispatch]);
 
   const addStaff = useCallback((data) => {
     dispatch(addStaffRequest(data));
@@ -33,16 +64,28 @@ const useUsers = () => {
   }, [dispatch]);
 
   return useMemo(() => ({
-    staffList,
+    list,
+    pagination,
     loading,
-    isLoaded,
     error,
+    searchQuery,
+    statusFilter,
+    fetched,
+    submitting,
     fetchStaff,
+    prefetchStaff,
+    setPage: handleSetPage,
+    setSearch: handleSetSearch,
+    setStatus: handleSetStatus,
     addStaff,
     updateStaff,
     removeStaff,
     clearUserError
-  }), [staffList, loading, isLoaded, error, fetchStaff, addStaff, updateStaff, removeStaff, clearUserError]);
+  }), [
+    list, pagination, loading, error, searchQuery, statusFilter, fetched, submitting,
+    fetchStaff, prefetchStaff, handleSetPage, handleSetSearch, handleSetStatus,
+    addStaff, updateStaff, removeStaff, clearUserError
+  ]);
 };
 
 export default useUsers;

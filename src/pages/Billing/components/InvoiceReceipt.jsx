@@ -1,6 +1,6 @@
 import React from "react";
 import styled from "styled-components";
-import { DollarOutlined } from "@ant-design/icons";
+import { BankOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useTheme } from "../../../context/ThemeContext";
 
@@ -123,7 +123,7 @@ const InvoiceReceipt = ({ data }) => {
       <Header>
         <div>
           <Logo>
-             <DollarOutlined /> Apollo Hospital
+             <BankOutlined /> Apollo Hospital
           </Logo>
           <p style={{ margin: '8px 0 0 0', color: theme.text.secondary, fontSize: '13px' }}>
             Quality Healthcare, Anywhere

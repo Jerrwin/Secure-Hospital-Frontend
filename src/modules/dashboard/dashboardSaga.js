@@ -27,12 +27,14 @@ function* fetchDashboardDataSaga(action) {
       }
     } else {
       // For staff/admin, we rely on the stats endpoint for strictly "Today's" appointment data.
-      // We only fetch prescriptions separately.
-      try {
-        const presRes = yield call(dashboardAPI.getPrescriptions);
-        if (presRes.data?.success) payload.prescriptions = presRes.data.data;
-      } catch (e) {
-        console.error("Error fetching staff dashboard prescriptions:", e);
+      // We only fetch prescriptions separately for the Pharmacist (who has a dedicated queue on their dashboard).
+      if (role === "PHARMACIST") {
+        try {
+          const presRes = yield call(dashboardAPI.getPrescriptions);
+          if (presRes.data?.success) payload.prescriptions = presRes.data.data;
+        } catch (e) {
+          console.error("Error fetching pharmacist dashboard prescriptions:", e);
+        }
       }
     }
 

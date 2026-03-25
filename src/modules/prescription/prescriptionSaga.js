@@ -1,9 +1,15 @@
 import { call, put, takeLatest, takeEvery, select } from "redux-saga/effects";
 import { prescriptionAPI } from "./prescriptionAPI";
-import dashboardAPI from "../dashboard/dashboardAPI";
 import {
+  fetchPagedRequest,
+  fetchPagedSuccess,
+  fetchPagedFailure,
+  prefetchRequest,
+  prefetchSuccess,
+  prefetchFailure,
+  setPage,
+  moveBufferToList,
   fetchRequest,
-  fetchSuccess,
   fetchFailure,
   fetchAppointmentsSuccess,
   createRequest,
@@ -19,54 +25,51 @@ import {
   deleteSuccess,
   deleteFailure,
 } from "./prescriptionSlice";
+import {
+  fetchPagedSagaGenerator,
+  prefetchSagaGenerator,
+  handleSetPageSagaGenerator,
+} from "../../utils/paginationSagaUtils";
 
-// ─── Selector ─────────────────────────────────────────────────────
 const selectAuth = (state) => state.auth;
+const selectPrescription = (state) => state.prescription;
 
-// ─── Fetch Prescriptions ──────────────────────────────────────────
+// ─── Paged Fetch ──────────────────────────────────────────────────
+function* fetchPagedSaga(action) {
+  yield call(fetchPagedSagaGenerator, {
+    apiMethod: prescriptionAPI.fetchAll,
+    actions: { fetchPagedSuccess, fetchPagedFailure, prefetchRequest },
+    stateSelector: selectPrescription,
+    action,
+  });
+}
+
+function* prefetchSaga(action) {
+  yield call(prefetchSagaGenerator, {
+    apiMethod: prescriptionAPI.fetchAll,
+    actions: { prefetchSuccess, prefetchFailure },
+    stateSelector: selectPrescription,
+    action,
+  });
+}
+
+function* handleSetPageSaga(action) {
+  yield call(handleSetPageSagaGenerator, {
+    actions: { moveBufferToList, prefetchRequest, fetchPagedRequest },
+    stateSelector: selectPrescription,
+    action,
+  });
+}
+
+// ─── Fetch Prescriptions (Legacy/Initial) ──────────────────────────
 function* fetchPrescriptionsSaga() {
   try {
     const auth = yield select(selectAuth);
     const userRole = (auth.user?.role || "").toUpperCase();
-    const userId = auth.user?.user_id || auth.user?.id;
 
-    let data = [];
     let appointments = [];
 
-    if (userRole === "PATIENT") {
-      // A. Try dashboard stats first (safe, no 403 risk)
-      try {
-        const statsRes = yield call(dashboardAPI.getStats);
-        if (statsRes.data?.success) {
-          const payload = statsRes.data.data;
-          appointments = payload.appointments || [];
-          data =
-            payload.prescriptions ||
-            payload.medications ||
-            payload.active_prescriptions_list ||
-            payload.medications_list ||
-            [];
-        }
-      } catch (e) {
-        console.warn("Dashboard summary fallback failed:", e);
-      }
-
-      // B. Fallback to direct fetch if dashboard returned nothing
-      if (data.length === 0) {
-        try {
-          const listRes = yield call(prescriptionAPI.fetchAll, { patient_id: userId });
-          if (listRes.data?.success) {
-            data = listRes.data.data || [];
-          }
-        } catch (e) {
-          console.warn("Direct patient fetch restricted — relying on dashboard fallback.");
-        }
-      }
-    } else {
-      // Medical staff
-      const response = yield call(prescriptionAPI.fetchAll);
-      data = response.data?.data || response.data || [];
-
+    if (["DOCTOR", "ADMIN", "PROVIDER"].includes(userRole)) {
       try {
         const apptResponse = yield call(prescriptionAPI.fetchCompletedAppointments);
         appointments = apptResponse.data?.data || apptResponse.data || [];
@@ -76,16 +79,8 @@ function* fetchPrescriptionsSaga() {
     }
 
     yield put(fetchAppointmentsSuccess(appointments));
-    yield put(fetchSuccess(data));
   } catch (error) {
-    if (!navigator.onLine || !error.response) {
-      yield put(fetchFailure(null));
-    } else {
-      const message =
-        error.response?.data?.message ||
-        "Failed to load medications. Please try again.";
-      yield put(fetchFailure(message));
-    }
+    yield put(fetchFailure("Initialization failed"));
   }
 }
 
@@ -173,6 +168,9 @@ function* deletePrescriptionSaga(action) {
 // ─── Root Watcher ────────────────────────────────────────────────
 export default function* prescriptionSaga() {
   yield takeLatest(fetchRequest.type, fetchPrescriptionsSaga);
+  yield takeLatest(fetchPagedRequest.type, fetchPagedSaga);
+  yield takeLatest(prefetchRequest.type, prefetchSaga);
+  yield takeLatest(setPage.type, handleSetPageSaga);
   yield takeEvery(createRequest.type, createPrescriptionSaga);
   yield takeEvery(updateRequest.type, updatePrescriptionSaga);
   yield takeEvery(statusChangeRequest.type, statusChangeSaga);

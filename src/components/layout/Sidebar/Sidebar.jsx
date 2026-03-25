@@ -6,7 +6,7 @@ import {
   CalendarOutlined,
   FileTextOutlined,
   IdcardOutlined,
-  DollarOutlined,
+  BankOutlined,
   UserOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
@@ -124,7 +124,7 @@ export const SidebarContent = ({
     if (rawRole === "RECEPTIONIST" || isPatient) {
       baseItems.push({
         key: "/billing",
-        icon: <DollarOutlined />,
+        icon: <BankOutlined />,
         label: isPatient ? "Bills & Invoices" : "Billing",
       });
     }

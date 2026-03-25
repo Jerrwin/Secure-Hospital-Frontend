@@ -19,6 +19,13 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import useUsers from "../../modules/users/hooks/useUsers";
+import { usePrefetchPagination } from "../../hooks/usePrefetchPagination";
+import { 
+  fetchPagedRequest, 
+  setPage, 
+  setSearch, 
+  setStatus 
+} from "../../modules/users/userSlice";
 import styled from "styled-components";
 import AppButton from "../../components/common/Button/AppButton";
 import { useTheme } from "../../context/ThemeContext";
@@ -144,31 +151,56 @@ const StyledTable = styled(Table)`
   }
 `;
 
+const paginationActions = { fetchPagedRequest, setPage, setSearch, setStatus };
+
 const StaffManagement = () => {
   const { theme } = useTheme();
   const [form] = Form.useForm();
+  
+  // 1. Core user actions for writing data
   const {
-    staffList,
-    loading,
-    error,
-    fetchStaff,
     addStaff,
     updateStaff,
     removeStaff,
+    error
   } = useUsers();
+
+  // 2. Prefetch-ahead Pagination & Search Logic
+  const {
+    data: staffList,
+    pagination,
+    loading,
+    searchQuery,
+    actions: pagedActions
+  } = usePrefetchPagination({
+    selector: (state) => state.users,
+    actions: paginationActions,
+    fixedPageSize: 5
+  });
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchQuery || "");
 
-  // Debounce search term
+  // Initial fetch
+  useEffect(() => {
+    pagedActions.fetchPaged(1);
+  }, [pagedActions]);
+
+  // Debounce search term to Redux
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
+      if (searchTerm !== searchQuery) {
+        pagedActions.setSearch(searchTerm);
+      }
     }, 400);
     return () => clearTimeout(handler);
-  }, [searchTerm]);
+  }, [searchTerm, searchQuery, pagedActions]);
+
+  // Sync local search term if Redux changes externally
+  useEffect(() => {
+    setSearchTerm(searchQuery);
+  }, [searchQuery]);
 
   const highlightText = (text, query) => {
     if (!query || !text) return text;
@@ -188,39 +220,15 @@ const StaffManagement = () => {
     );
   };
 
-  // Filter data based on search and roles
+  // Filter out Admin from the display list (UI preference)
   const displayData = useMemo(() => {
-    // 1. First, exclude 'Admin' role from the general staff list view
-    const nonAdminStaff = (staffList || []).filter((item) => {
-      const id =
-        item.role_id ||
-        item.roleId ||
-        item.role?.id ||
-        (typeof item.role === "number" ? item.role : null);
-      const name =
-        item.role_name ||
-        item.role?.name ||
-        (typeof item.role === "string" ? item.role : null);
-
-      // role_id 1 is usually Admin, also check by name
+    return (staffList || []).filter((item) => {
+      const id = item.role_id || item.roleId || item.role?.id;
+      const name = item.role_name || item.role?.name;
       const isAdmin = id === 1 || (name && name.toLowerCase() === "admin");
       return !isAdmin;
     });
-
-    // 2. Then apply search filter
-    if (!debouncedSearch) return nonAdminStaff;
-    const lowerQuery = debouncedSearch.toLowerCase();
-    return (staffList || []).filter(
-      (item) =>
-        item.name?.toLowerCase().includes(lowerQuery) ||
-        item.email?.toLowerCase().includes(lowerQuery) ||
-        item.phone_number?.toLowerCase().includes(lowerQuery),
-    );
-  }, [staffList, debouncedSearch]);
-
-  useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
+  }, [staffList]);
 
   useEffect(() => {
     if (error) {
@@ -236,10 +244,10 @@ const StaffManagement = () => {
   const showModal = (record = null) => {
     setEditingStaff(record);
     if (record) {
-      // If the record only has 'name' but form expects first/last, split it
       const formData = {
         ...record,
         is_active:
+          record.status === "active" ||
           record.is_active === true ||
           record.is_active === 1 ||
           record.is_active === "1",
@@ -251,12 +259,6 @@ const StaffManagement = () => {
       }
       if (!formData.role_id && formData.role?.id) {
         formData.role_id = formData.role.id;
-      } else if (
-        !formData.role_id &&
-        formData.role &&
-        typeof formData.role === "number"
-      ) {
-        formData.role_id = formData.role;
       }
       form.setFieldsValue(formData);
     } else {
@@ -272,42 +274,29 @@ const StaffManagement = () => {
   };
 
   const handleFinish = (values) => {
-    // Combine first_name and last_name into 'name' for the backend
     const payload = {
       ...values,
       name: `${values.first_name || ""} ${values.last_name || ""}`.trim(),
       is_active: values.is_active ? 1 : 0,
+      status: values.is_active ? "active" : "inactive",
     };
 
     if (editingStaff) {
       updateStaff(editingStaff.id, payload);
     } else {
-      addStaff(payload); // Let the backend generate the ID
+      addStaff(payload);
     }
     setIsModalVisible(false);
   };
 
   const handleToggleActive = (checked, record) => {
-    // 1. Find the actual role ID from any potential field in the record
-    const roleId =
-      record.role_id ||
-      record.roleId ||
-      record.role?.id ||
-      (typeof record.role === "number" ? record.role : null);
-
-    // 2. Prepare payload with both possible activity markers (binary and string)
+    const roleId = record.role_id || record.roleId || record.role?.id;
     const cleanRecord = {
-      user_id: record.user_id, // Include user_id to trigger status sync across tables
-      name: record.name,
-      email: record.email,
+      ...record,
       role_id: roleId,
-      gender: record.gender,
-      phone_number: record.phone_number,
-      address: record.address,
       is_active: checked ? 1 : 0,
-      status: checked ? "active" : "inactive", // Support both column formats
+      status: checked ? "active" : "inactive",
     };
-
     updateStaff(record.id, cleanRecord);
     message.success(`User ${checked ? "activated" : "deactivated"}`);
   };
@@ -326,34 +315,23 @@ const StaffManagement = () => {
         const fullName =
           `${record.first_name || ""} ${record.last_name || ""}`.trim() ||
           record.name;
-        return highlightText(fullName, debouncedSearch);
+        return highlightText(fullName, searchQuery);
       },
     },
     {
       title: "Email",
       dataIndex: "email",
       key: "email",
-      render: (text) => highlightText(text, debouncedSearch),
+      render: (text) => highlightText(text, searchQuery),
     },
     {
       title: "Role",
       dataIndex: "role_id",
       key: "role",
       render: (roleId, record) => {
-        // 1. Try to find a numeric ID from any potential field
-        const id =
-          roleId ||
-          record.role_id ||
-          record.roleId ||
-          (typeof record.role === "number" ? record.role : null);
+        const id = roleId || record.role_id || record.roleId || (record.role?.id);
+        const name = record.role_name || record.role?.name || (typeof record.role === "string" ? record.role : null);
 
-        // 2. Try to find a string name directly (e.g. from record.role.name or record.role_name)
-        const name =
-          record.role_name ||
-          record.role?.name ||
-          (typeof record.role === "string" ? record.role : null);
-
-        // 3. Mapping for known IDs
         const roleMap = {
           1: { name: "Admin", color: theme.status.error },
           2: { name: "Doctor", color: theme.primary },
@@ -366,13 +344,12 @@ const StaffManagement = () => {
           return <Tag color={roleMap[id].color}>{roleMap[id].name}</Tag>;
         }
 
-        // 4. Fallback to name if ID mapping failed
         if (name) {
           const s = name.toUpperCase();
           const colorMap = {
             ADMIN: theme.status.error,
             NURSE: theme.status.success,
-            PHARMACIST: "purple", // Use "purple" as it's a themed standard in many systems
+            PHARMACIST: "purple",
             PROVIDER: theme.primary,
           };
           return <Tag color={colorMap[s] || "default"}>{name}</Tag>;
@@ -385,12 +362,7 @@ const StaffManagement = () => {
       title: "Status",
       key: "status",
       render: (_, record) => {
-        // Prioritize 'status' column if it exists, as it's the more reliable indicator for this backend
-        const isActive = record.status
-          ? record.status === "active"
-          : record.is_active === true ||
-            record.is_active === 1 ||
-            record.is_active === "1";
+        const isActive = record.status === "active" || record.is_active === 1 || record.is_active === true;
         return (
           <Switch
             checked={isActive}
@@ -487,18 +459,11 @@ const StaffManagement = () => {
           columns={columns}
           dataSource={displayData}
           rowKey="id"
-          loading={loading && (staffList || []).length === 0}
-          pagination={{
-            pageSize: 5,
-            placement: "bottomCenter",
-            showSizeChanger: false,
-          }}
+          loading={loading}
+          pagination={pagination}
+          onChange={pagedActions.handleTableChange}
           rowClassName={(record) => {
-            const isActive = record.status
-              ? record.status === "active"
-              : record.is_active === 1 ||
-                record.is_active === "1" ||
-                record.is_active === true;
+            const isActive = record.status === "active" || record.is_active === 1 || record.is_active === true;
             return isActive ? "" : "inactive-row";
           }}
           scroll={{ x: 800 }}

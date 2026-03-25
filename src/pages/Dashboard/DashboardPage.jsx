@@ -8,7 +8,7 @@ import ErrorBoundary from "../../components/common/ErrorBoundary";
 import { useTheme } from "../../context/ThemeContext";
 import styled from "styled-components";
 
-import { useEffect } from "react";
+
 import useUsers from "../../modules/users/hooks/useUsers";
 import usePatients from "../../modules/patients/hooks/usePatients";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
@@ -20,12 +20,14 @@ const DashboardHeader = styled.div`
 
 const WelcomeTitle = styled.h1`
   color: ${(props) => props.theme.secondary};
-  font-size: 1.75rem;
+  font-size: 2.1rem;
+  font-weight: 800;
   margin: 0;
 `;
 
 const SubtitleText = styled.p`
   color: ${(props) => props.theme.text.secondary};
+  font-size: 1rem;
   margin-top: 4px;
 `;
 
@@ -33,28 +35,12 @@ const DashboardPage = () => {
   const { theme } = useTheme();
   const { user, userRole } = useAuth();
   const dashboardData = useDashboard(user);
-  const { patients, fetchPatients } = usePatients();
-  const { list: allAppointments, fetchAll: fetchAppointments } =
-    useAppointments();
-  const { staffList, fetchStaff } = useUsers();
+  const { patients } = usePatients();
+  const { list: allAppointments } = useAppointments();
+  const { staffList } = useUsers();
 
-  const isStaff = [
-    "ADMIN",
-    "PROVIDER",
-    "DOCTOR",
-    "NURSE",
-    "RECEPTIONIST",
-    "PHARMACIST",
-  ].includes(userRole);
-
-  useEffect(() => {
-    if (isStaff) {
-      fetchPatients();
-      fetchAppointments();
-      fetchStaff();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaff]);
+  // Redundant full-list fetches removed to optimize performance and bandwidth.
+  // Dashboard data is now strictly handled by useDashboard (stats endpoint).
 
   // Guard: If user is not yet loaded, show loading
   if (!user) {

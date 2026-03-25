@@ -1,4 +1,6 @@
+import React from "react";
 import { notification } from "antd";
+import { LoadingOutlined } from "@ant-design/icons";
 import { getQueuedRequests, removeQueuedRequest } from "./dbService";
 import axiosClient from "./axiosClient";
 import { setOnlineStatus, updateQueueInfo } from "../modules/offline/offlineSlice";
@@ -48,18 +50,28 @@ export const refreshQueueCount = async () => {
 /**
  * Handles the browser going online.
  */
-const handleOnline = () => {
+const handleOnline = async () => {
   if (store) store.dispatch(setOnlineStatus(true));
   // Clear the persistent offline notification
   notification.destroy("offline-status");
 
-
-  notification.success({
-    message: "Back Online",
-    description: "System is back online. Syncing queued requests...",
-    placement: "topRight",
-    duration: 3,
-  });
+  const queuedRequests = await getQueuedRequests();
+  
+  if (queuedRequests.length > 0) {
+    notification.success({
+      message: "Back Online",
+      description: "System is back online. Syncing queued requests...",
+      placement: "topRight",
+      duration: 3,
+    });
+  } else {
+    notification.success({
+      message: "Back to Online",
+      placement: "topRight",
+      duration: 3,
+    });
+  }
+  
   syncOfflineRequests();
 };
 
@@ -69,12 +81,11 @@ const handleOnline = () => {
 const handleOffline = () => {
   if (store) store.dispatch(setOnlineStatus(false));
   notification.warning({
-
     key: "offline-status",
-    message: "System Offline",
-    description: "You are currently offline. New changes will be saved locally and synced when connection is restored.",
+    message: "Offline",
+    description: "Changes will sync automatically.",
     placement: "topRight",
-    duration: 3, // Persistent until system is back online
+    duration: 3, 
   });
 };
 
@@ -91,14 +102,14 @@ export const syncOfflineRequests = async () => {
 
   notification.info({
     key: "sync-notification",
-    message: "Syncing Data",
-    description: `Syncing ${queuedRequests.length} offline requests...`,
+    message: "Syncing...",
     placement: "topRight",
-    duration: 0,
+    icon: <LoadingOutlined spin style={{ color: '#1890ff' }} />,
+    duration: 3,
   });
 
   let successCount = 0;
-  let failCount = 0;
+  //let failCount = 0;
 
   for (const request of queuedRequests) {
     try {
@@ -130,7 +141,7 @@ export const syncOfflineRequests = async () => {
     } catch (error) {
 
       console.error(`Sync failed for request ${request.id}:`, error);
-      failCount++;
+      //failCount++;
       // If it fails with a validation error or something permanent, we might keep it 
       // or move it to a "failed" table. For now, we keep it in the queue to retry.
     }
@@ -140,8 +151,8 @@ export const syncOfflineRequests = async () => {
 
   if (successCount > 0) {
     notification.success({
-      message: "Sync Complete",
-      description: `Successfully synced ${successCount} requests.${failCount > 0 ? ` ${failCount} failed and will be retried.` : ""}`,
+      message: "Synced",
+      description: "All changes updated.",
       placement: "topRight",
     });
 

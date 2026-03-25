@@ -2,12 +2,23 @@ import { createSlice } from "@reduxjs/toolkit";
 
 // ─── State Shape ──────────────────────────────────────────────────────────────
 const initialState = {
-  list: [],           // all appointments for the tenant
-  upcoming: [],       // upcoming scheduled only
+  list: [],           // current page results
+  buffer: [],         // prefetched next page results
+  pagination: {
+    currentPage: 1,
+    perPage: 5,       // fixed as per user requirement
+    total: 0,
+    lastPage: 1,
+  },
+  searchQuery: "",
+  statusFilter: "all",
+  providerId: null,      // for Doctor/Provider role-based filtering
+  upcoming: [],       // upcoming scheduled only (usually for dashboard/small widgets)
   selected: null,     // single appointment detail view
   patients: [],       // for dropdowns
   staff: [],          // for dropdowns
   loading: false,
+  prefetching: false,
   dropdownLoading: false,
   submitting: false,  // for create/update/cancel/complete
   fetched: false,
@@ -20,7 +31,76 @@ const appointmentSlice = createSlice({
   initialState,
 
   reducers: {
-    // ── FETCH ALL ──────────────────────────────────────────────────────────
+    // ── FETCH PAGED ───────────────────────────────────────────────────────
+    fetchPagedRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    fetchPagedSuccess: (state, action) => {
+      state.loading = false;
+      state.fetched = true;
+      state.list = action.payload.data;
+      // Map backend keys to our camelCase keys, but PRESERVE our fixed perPage
+      const backendPagination = action.payload.pagination;
+      state.pagination = {
+        currentPage: backendPagination.current_page,
+        perPage: state.pagination.perPage, // KEEP our fixed 5, ignore backend's 15
+        total: backendPagination.total,
+        lastPage: backendPagination.last_page,
+      };
+      // Clear buffer until next prefetch finishes
+      state.buffer = []; 
+    },
+    fetchPagedFailure: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    // ── PREFETCH NEXT PAGE ─────────────────────────────────────────────────
+    prefetchRequest: (state) => {
+      state.prefetching = true;
+    },
+    prefetchSuccess: (state, action) => {
+      state.prefetching = false;
+      state.buffer = action.payload.data;
+    },
+    prefetchFailure: (state) => {
+      state.prefetching = false;
+      // We don't necessarily show an error for prefetch failure, 
+      // just let the next real request handle it
+    },
+
+    // setPage is dispatched by the UI when user clicks a page number.
+    // It does NOT update currentPage here — the handleSetPageSaga will
+    // decide whether to swap from buffer or fetch fresh, and the saga
+    // dispatches fetchPagedSuccess or moveBufferToList which update currentPage.
+    setPage: () => {
+      // no-op reducer — the saga intercepts this action
+    },
+    moveBufferToList: (state, action) => {
+      // action.payload = targetPage
+      state.list = state.buffer;
+      state.buffer = [];
+      state.pagination.currentPage = action.payload;
+      state.fetched = true;
+    },
+    setSearch: (state, action) => {
+      state.searchQuery = action.payload;
+      state.pagination.currentPage = 1;
+      state.fetched = false;
+    },
+    setStatus: (state, action) => {
+      state.statusFilter = action.payload;
+      state.pagination.currentPage = 1;
+      state.fetched = false;
+    },
+    setProviderId: (state, action) => {
+      state.providerId = action.payload;
+      state.pagination.currentPage = 1;
+      state.fetched = false;
+    },
+
+    // ── FETCH ALL (Legacy/Fallback) ────────────────────────────────────────
     fetchAppointmentsRequest: (state) => {
       state.loading = true;
       state.error = null;
@@ -150,6 +230,17 @@ const appointmentSlice = createSlice({
 });
 
 export const {
+  fetchPagedRequest,
+  fetchPagedSuccess,
+  fetchPagedFailure,
+  prefetchRequest,
+  prefetchSuccess,
+  prefetchFailure,
+  setPage,
+  moveBufferToList,
+  setSearch,
+  setStatus,
+  setProviderId,
   fetchAppointmentsRequest,
   fetchAppointmentsSuccess,
   fetchAppointmentsFailure,

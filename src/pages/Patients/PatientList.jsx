@@ -35,6 +35,13 @@ import usePrescription from "../../modules/prescription/hooks/usePrescription";
 import useBilling from "../../modules/billing/hooks/useBilling";
 import dayjs from "dayjs";
 import styled from "styled-components";
+import { usePrefetchPagination } from "../../hooks/usePrefetchPagination";
+import { 
+  fetchPagedRequest, 
+  setPage, 
+  setSearch, 
+  setStatus 
+} from "../../modules/patients/patientSlice";
 import PatientTimeline from "./components/PatientTimeline";
 
 const { Text } = Typography;
@@ -45,6 +52,7 @@ const PageWrapper = styled.div`
   gap: 16px;
   background: ${(props) => props.theme.background.main};
   min-height: 100vh;
+  padding-bottom: 40px;
   @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     gap: 20px;
   }
@@ -179,14 +187,15 @@ const StyledTable = styled(Table)`
 
 // StyledFormCard removed as form is now in a Drawer
 
+const paginationActions = { fetchPagedRequest, setPage, setSearch, setStatus };
+
 const PatientList = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const {
-    patients,
-    loading,
+    patients: rawPatients,
+    loading: patientsLoading,
     error,
-    fetchPatients,
     addPatient,
     updatePatient,
     removePatient,
@@ -194,8 +203,18 @@ const PatientList = () => {
   } = usePatients();
 
   const {
+    pagination: tablePagination,
+    actions: pagedActions,
+    searchQuery,
+  } = usePrefetchPagination({
+    selector: (state) => state.patients,
+    actions: paginationActions,
+    fixedPageSize: 5,
+  });
+
+  const {
     list: apptList,
-    fetchAll: fetchAppts,
+    fetchPaged: fetchAppts, // We have fetchPaged on appointments now
     loading: apptLoading,
   } = useAppointments();
   const {
@@ -209,13 +228,14 @@ const PatientList = () => {
     loading: billingLoading,
   } = useBilling();
 
+  const loading = patientsLoading;
+
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isTimelineVisible, setIsTimelineVisible] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
   const [selectedPatientForTimeline, setSelectedPatientForTimeline] =
     useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form] = Form.useForm();
   const formValues = Form.useWatch([], form);
 
@@ -246,9 +266,9 @@ const PatientList = () => {
       setIsFormVisible(false);
       setEditingPatient(null);
       form.resetFields();
-      fetchPatients(true);
+      pagedActions.fetchPaged(1); // Refresh first page
     }
-  }, [isSubmitting, loading, error, editingPatient, fetchPatients, form]);
+  }, [isSubmitting, loading, error, editingPatient, pagedActions, form]);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
 
   useEffect(() => {
@@ -289,13 +309,13 @@ const PatientList = () => {
   }, [formValues, editingPatient, form]);
 
   useEffect(() => {
-    fetchPatients();
-  }, [fetchPatients]);
+    pagedActions.fetchPaged(1);
+  }, [pagedActions]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    const timer = setTimeout(() => pagedActions.setSearch(searchTerm), 400);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, pagedActions]);
 
   const showForm = (patient = null) => {
     setEditingPatient(patient);
@@ -385,7 +405,7 @@ const PatientList = () => {
   };
 
   const displayData = useMemo(() => {
-    const data = (patients || []).map((p) => ({
+    const data = (rawPatients || []).map((p) => ({
       ...p,
       display_name:
         `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
@@ -396,19 +416,8 @@ const PatientList = () => {
         (p.id ? `PT-ID-${p.id.toString().padStart(4, "0")}` : "PT-ID-NEW"),
     }));
 
-    if (!debouncedSearch) return data;
-    const q = debouncedSearch.toLowerCase();
-    return data.filter((p) => {
-      const name = p.display_name;
-      const patientId = p.display_uhid;
-      return (
-        name.toLowerCase().includes(q) ||
-        p.email?.toLowerCase().includes(q) ||
-        p.phone_number?.toLowerCase().includes(q) ||
-        patientId.toLowerCase().includes(q)
-      );
-    });
-  }, [patients, debouncedSearch]);
+    return data;
+  }, [rawPatients]);
 
   const columns = [
     {
@@ -427,7 +436,7 @@ const PatientList = () => {
                 cursor: "pointer",
               }}
             >
-              {highlightText(fullName, debouncedSearch)}
+              {highlightText(fullName, searchQuery)}
             </Text>
           </Tooltip>
         );
@@ -464,7 +473,7 @@ const PatientList = () => {
               color: theme.text.primary,
             }}
           >
-            {highlightText(record.phone_number, debouncedSearch)}
+            {highlightText(record.phone_number, searchQuery)}
           </Text>
         </Tooltip>
       ),
@@ -598,15 +607,15 @@ const PatientList = () => {
           borderRadius: "12px",
           boxShadow: theme.shadow,
           minHeight: "auto",
-          overflow: "hidden",
         }}
       >
         <StyledTable
           columns={columns}
           dataSource={displayData}
           rowKey="id"
-          loading={loading && (patients || []).length === 0}
-          pagination={{ pageSize: 8, placement: "bottomCenter" }}
+          loading={loading && (rawPatients || []).length === 0}
+          pagination={tablePagination}
+          onChange={pagedActions.handleTableChange}
           rowClassName={(record) =>
             record.status === "inactive" ? "inactive-row" : ""
           }

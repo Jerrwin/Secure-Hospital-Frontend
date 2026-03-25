@@ -1,27 +1,60 @@
-import { call, put, takeLatest } from 'redux-saga/effects';
+import { all, call, put, takeLatest } from 'redux-saga/effects';
 import { fetchStaffAPI, addStaffAPI, updateStaffAPI, deleteStaffAPI } from './userAPI';
 import {
-  fetchStaffRequest, fetchStaffSuccess, fetchStaffFailure,
+  fetchPagedRequest, fetchPagedSuccess, fetchPagedFailure,
+  prefetchRequest, prefetchSuccess, prefetchFailure,
+  setPage, moveBufferToList, setSearch, setStatus,
   addStaffRequest, addStaffSuccess, addStaffFailure,
   updateStaffRequest, updateStaffSuccess, updateStaffFailure,
   deleteStaffRequest, deleteStaffSuccess, deleteStaffFailure
 } from './userSlice';
+import { 
+  fetchPagedSagaGenerator, 
+  prefetchSagaGenerator, 
+  handleSetPageSagaGenerator 
+} from "../../utils/paginationSagaUtils";
 
-function* fetchStaffSaga() {
-  try {
-    const response = yield call(fetchStaffAPI);
-    yield put(fetchStaffSuccess(response.data || response));
-  } catch (error) {
-    yield put(fetchStaffFailure(error.response?.data?.message || "Failed to fetch staff list"));
-  }
+// ── PAGINATION SAGAS ──────────────────────────────────────────────────────────
+const stateSelector = (state) => state.users;
+const paginationActions = {
+  fetchPagedRequest, fetchPagedSuccess, fetchPagedFailure,
+  prefetchRequest, prefetchSuccess, prefetchFailure,
+  setPage, moveBufferToList, setSearch, setStatus
+};
+
+function* fetchPagedStaffSaga(action) {
+  yield fetchPagedSagaGenerator({
+    apiMethod: fetchStaffAPI,
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
 }
 
+function* prefetchStaffSaga(action) {
+  yield prefetchSagaGenerator({
+    apiMethod: fetchStaffAPI,
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
+}
+
+function* handleSetPageStaffSaga(action) {
+  yield handleSetPageSagaGenerator({
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
+}
+
+// ── WRITE SAGAS ───────────────────────────────────────────────────────────────
 function* addStaffSaga(action) {
   try {
     const response = yield call(addStaffAPI, action.payload);
     yield put(addStaffSuccess(response.data || response));
-    // Re-fetch to guarantee all computed fields from server are present
-    yield put(fetchStaffRequest());
+    // Trigger re-fetch of current page
+    yield put(fetchPagedRequest());
   } catch (error) {
     yield put(addStaffFailure(error.response?.data?.message || "Failed to add staff member"));
   }
@@ -29,13 +62,10 @@ function* addStaffSaga(action) {
 
 function* updateStaffSaga(action) {
   try {
-    const { id, data } = action.payload;
-    const response = yield call(updateStaffAPI, action.payload);
-    // Merge the updated data with the response, ensuring 'id' is preserved
-    const updatedRecord = { id, ...data, ...(response?.data || {}) };
-    yield put(updateStaffSuccess(updatedRecord));
-    // Optional re-fetch to be safe
-    yield put(fetchStaffRequest());
+    yield call(updateStaffAPI, action.payload);
+    yield put(updateStaffSuccess());
+    // Trigger re-fetch of current page
+    yield put(fetchPagedRequest());
   } catch (error) {
     yield put(updateStaffFailure(error.response?.data?.message || "Failed to update staff member"));
   }
@@ -44,15 +74,23 @@ function* updateStaffSaga(action) {
 function* deleteStaffSaga(action) {
   try {
     yield call(deleteStaffAPI, action.payload);
-    yield put(deleteStaffSuccess(action.payload));
+    yield put(deleteStaffSuccess());
+    // Trigger re-fetch of current page
+    yield put(fetchPagedRequest());
   } catch (error) {
     yield put(deleteStaffFailure(error.response?.data?.message || "Failed to delete staff member"));
   }
 }
 
 export default function* userSaga() {
-  yield takeLatest(fetchStaffRequest.type, fetchStaffSaga);
-  yield takeLatest(addStaffRequest.type, addStaffSaga);
-  yield takeLatest(updateStaffRequest.type, updateStaffSaga);
-  yield takeLatest(deleteStaffRequest.type, deleteStaffSaga);
+  yield all([
+    takeLatest(fetchPagedRequest.type, fetchPagedStaffSaga),
+    takeLatest(prefetchRequest.type, prefetchStaffSaga),
+    takeLatest(setPage.type, handleSetPageStaffSaga),
+    takeLatest(setSearch.type, fetchPagedStaffSaga), // Watch for search changes
+    takeLatest(setStatus.type, fetchPagedStaffSaga), // Watch for status changes
+    takeLatest(addStaffRequest.type, addStaffSaga),
+    takeLatest(updateStaffRequest.type, updateStaffSaga),
+    takeLatest(deleteStaffRequest.type, deleteStaffSaga),
+  ]);
 }

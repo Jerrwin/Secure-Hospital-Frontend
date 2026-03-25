@@ -1,24 +1,59 @@
 import { call, put, takeLatest } from 'redux-saga/effects';
 import { fetchPatientsAPI, fetchPatientByIdAPI, createPatientAPI, updatePatientAPI, deletePatientAPI } from './patientAPI';
 import {
-  fetchPatientsRequest, fetchPatientsSuccess, fetchPatientsFailure,
+  fetchPagedRequest, fetchPagedSuccess, fetchPagedFailure,
+  prefetchRequest, prefetchSuccess, prefetchFailure,
+  setPage, moveBufferToList, setSearch, setStatus,
+  fetchPatientsRequest, 
   fetchPatientByIdRequest, fetchPatientByIdSuccess, fetchPatientByIdFailure,
   createPatientRequest, createPatientSuccess, createPatientFailure,
   updatePatientRequest, updatePatientSuccess, updatePatientFailure,
   deletePatientRequest, deletePatientSuccess, deletePatientFailure
 } from './patientSlice';
+import { 
+  fetchPagedSagaGenerator, 
+  prefetchSagaGenerator, 
+  handleSetPageSagaGenerator 
+} from '../../utils/paginationSagaUtils';
 
+// ── PAGINATION SAGAS (Centralized) ──────────────────────────────────────────
+const stateSelector = (state) => state.patients;
+const paginationActions = {
+  fetchPagedRequest, fetchPagedSuccess, fetchPagedFailure,
+  prefetchRequest, prefetchSuccess, prefetchFailure,
+  setPage, moveBufferToList, setSearch, setStatus
+};
+
+function* fetchPagedPatientsSaga(action) {
+  yield fetchPagedSagaGenerator({
+    apiMethod: fetchPatientsAPI,
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
+}
+
+function* prefetchPatientsSaga(action) {
+  yield prefetchSagaGenerator({
+    apiMethod: fetchPatientsAPI,
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
+}
+
+function* handleSetPagePatientsSaga(action) {
+  yield handleSetPageSagaGenerator({
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
+}
+
+// ── STANDARD CRUD SAGAS ─────────────────────────────────────────────────────
 function* fetchPatientsSaga() {
-  try {
-    const response = yield call(fetchPatientsAPI);
-    yield put(fetchPatientsSuccess(response.data || response));
-  } catch (error) {
-    if (!navigator.onLine || !error.response) {
-      yield put(fetchPatientsFailure(null));
-    } else {
-      yield put(fetchPatientsFailure(error.response?.data?.message || "Failed to fetch patients"));
-    }
-  }
+  // Fallback to paged fetch for page 1
+  yield put(fetchPagedRequest(1));
 }
 
 function* fetchPatientByIdSaga(action) {
@@ -26,11 +61,7 @@ function* fetchPatientByIdSaga(action) {
     const response = yield call(fetchPatientByIdAPI, action.payload);
     yield put(fetchPatientByIdSuccess(response.data || response));
   } catch (error) {
-    if (!navigator.onLine || !error.response) {
-      yield put(fetchPatientByIdFailure(null));
-    } else {
-      yield put(fetchPatientByIdFailure(error.response?.data?.message || "Failed to fetch patient details"));
-    }
+    yield put(fetchPatientByIdFailure(error.response?.data?.message || "Failed to fetch details"));
   }
 }
 
@@ -38,15 +69,9 @@ function* createPatientSaga(action) {
   try {
     const response = yield call(createPatientAPI, action.payload);
     yield put(createPatientSuccess(response.data || response));
-    // Re-fetch to guarantee state sync if needed
-    yield put(fetchPatientsRequest());
+    yield put(fetchPagedRequest(1)); // Refresh first page
   } catch (error) {
-    if (error.isOfflineQueued) {
-      // Signal offline queueing to the UI without adding temporary data back to the list
-      yield put(createPatientFailure("OFFLINE_QUEUED"));
-    } else {
-      yield put(createPatientFailure(error.response?.data?.message || "Failed to create patient"));
-    }
+    yield put(createPatientFailure(error.response?.data?.message || "Failed to create patient"));
   }
 }
 
@@ -56,14 +81,8 @@ function* updatePatientSaga(action) {
     const response = yield call(updatePatientAPI, action.payload);
     const updatedPatient = { id, ...data, ...(response?.data || {}) };
     yield put(updatePatientSuccess(updatedPatient));
-    // Optional refresh
-    yield put(fetchPatientsRequest());
   } catch (error) {
-    if (error.isOfflineQueued) {
-      yield put(updatePatientFailure("OFFLINE_QUEUED"));
-    } else {
-      yield put(updatePatientFailure(error.response?.data?.message || "Failed to update patient"));
-    }
+    yield put(updatePatientFailure(error.response?.data?.message || "Failed to update patient"));
   }
 }
 
@@ -71,16 +90,21 @@ function* deletePatientSaga(action) {
   try {
     yield call(deletePatientAPI, action.payload);
     yield put(deletePatientSuccess(action.payload));
+    yield put(fetchPagedRequest(1)); // Refresh
   } catch (error) {
-    if (error.isOfflineQueued) {
-      yield put(deletePatientFailure("OFFLINE_QUEUED"));
-    } else {
-      yield put(deletePatientFailure(error.response?.data?.message || "Failed to delete patient"));
-    }
+    yield put(deletePatientFailure(error.response?.data?.message || "Failed to delete patient"));
   }
 }
 
 export default function* patientSaga() {
+  // Pagination Watchers
+  yield takeLatest(fetchPagedRequest.type, fetchPagedPatientsSaga);
+  yield takeLatest(prefetchRequest.type, prefetchPatientsSaga);
+  yield takeLatest(setPage.type, handleSetPagePatientsSaga);
+  yield takeLatest(setSearch.type, fetchPagedPatientsSaga);
+  yield takeLatest(setStatus.type, fetchPagedPatientsSaga);
+
+  // Standard Watchers
   yield takeLatest(fetchPatientsRequest.type, fetchPatientsSaga);
   yield takeLatest(fetchPatientByIdRequest.type, fetchPatientByIdSaga);
   yield takeLatest(createPatientRequest.type, createPatientSaga);

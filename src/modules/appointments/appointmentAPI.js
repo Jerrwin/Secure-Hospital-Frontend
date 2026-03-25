@@ -11,7 +11,7 @@ import axiosClient from "../../services/axiosClient";
 //   PUT    /api/appointments/complete/{id}
 
 const appointmentAPI = {
-  // Fetch all appointments (optional filters: start_date, end_date)
+  // Fetch appointments with pagination, search, and status filters
   getAll: (params) => axiosClient.get("/api/appointments", { params }),
 
   // Fetch only upcoming scheduled appointments
@@ -33,8 +33,8 @@ const appointmentAPI = {
   complete: (id) => axiosClient.put(`/api/appointments/complete/${id}`),
 
   // Dropdown Data Helpers (Isolated from Patient/Staff modules)
-  getPatients: () => axiosClient.get("/api/patients"),
-  getStaff: () => axiosClient.get("/api/staff"),
+  getPatients: () => axiosClient.get("/api/patients/lookup"),
+  getStaff: () => axiosClient.get("/api/staff/lookup"),
 };
 
 export default appointmentAPI;
