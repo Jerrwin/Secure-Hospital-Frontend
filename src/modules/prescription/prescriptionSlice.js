@@ -69,16 +69,19 @@ const prescriptionSlice = createSlice({
       state.fetched = true;
     },
     setSearch: (state, action) => {
+      if (state.searchQuery === action.payload) return;
       state.searchQuery = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
     },
     setStatus: (state, action) => {
+      if (state.statusFilter === action.payload) return;
       state.statusFilter = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
     },
     setProviderId: (state, action) => {
+      if (state.providerId === action.payload) return;
       state.providerId = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;

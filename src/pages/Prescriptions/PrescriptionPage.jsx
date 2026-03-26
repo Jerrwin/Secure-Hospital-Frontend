@@ -320,7 +320,8 @@ const PrescriptionPage = () => {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    dispatch(fetchRequest());
+    // Initial fetch of page 1 is now handled by the usePrefetchPagination hook internally
+
     const isMedicalStaff = ["DOCTOR", "ADMIN", "PROVIDER"].includes(userRole);
 
     // Set provider filter specifically for doctors

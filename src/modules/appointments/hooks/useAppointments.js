@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchPagedRequest,
@@ -58,42 +58,77 @@ const useAppointments = () => {
   const fetchDropdowns = useCallback(() => dispatch(fetchDropdownDataRequest()), [dispatch]);
   const clearError = useCallback(() => dispatch(clearSubmitError()), [dispatch]);
 
-  return {
-    // State
-    list,
-    buffer,
-    pagination,
-    searchQuery,
-    statusFilter,
-    upcoming,
-    selected,
-    patients,
-    staff,
-    loading,
-    prefetching,
-    dropdownLoading,
-    dropdownFetched,
-    submitting,
-    fetched,
-    error,
-    submitError,
-    
-    // Actions
-    fetchPaged,
-    setPageNum,
-    setSearch,
-    setStatus,
-    setProviderId,
-    fetchAll,
-    fetchUpcoming,
-    fetchById,
-    create,
-    update,
-    cancel,
-    complete,
-    fetchDropdowns,
-    clearError,
-  };
+  return useMemo(
+    () => ({
+      // State
+      list,
+      buffer,
+      pagination,
+      searchQuery,
+      statusFilter,
+      upcoming,
+      selected,
+      patients,
+      staff,
+      loading,
+      prefetching,
+      dropdownLoading,
+      dropdownFetched,
+      submitting,
+      fetched,
+      error,
+      submitError,
+
+      // Actions
+      fetchPaged,
+      setPageNum,
+      setSearch,
+      setStatus,
+      setProviderId,
+      fetchAll,
+      fetchUpcoming,
+      fetchById,
+      create,
+      update,
+      cancel,
+      complete,
+      fetchDropdowns,
+      clearError,
+    }),
+    [
+      list,
+      buffer,
+      pagination,
+      searchQuery,
+      statusFilter,
+      upcoming,
+      selected,
+      patients,
+      staff,
+      loading,
+      prefetching,
+      dropdownLoading,
+      dropdownFetched,
+      submitting,
+      fetched,
+      error,
+      submitError,
+      fetchPaged,
+      setPageNum,
+      setSearch,
+      setStatus,
+      setProviderId,
+      fetchAll,
+      fetchUpcoming,
+      fetchById,
+      create,
+      update,
+      cancel,
+      complete,
+      fetchDropdowns,
+      clearError,
+    ],
+  );
 };
 
 export default useAppointments;

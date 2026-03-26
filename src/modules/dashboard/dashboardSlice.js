@@ -55,6 +55,7 @@ const dashboardSlice = createSlice({
           !type.includes("fetch") &&
           !type.includes("login") &&
           (type.includes("create") ||
+            type.includes("add") ||
             type.includes("update") ||
             type.includes("delete") ||
             type.includes("cancel") ||

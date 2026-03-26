@@ -1,13 +1,5 @@
 import React, { useState, useMemo, useCallback, memo } from "react";
-import {
-  Table,
-  Tag,
-  Button,
-  Tooltip,
-  Popconfirm,
-  Empty,
-  Space,
-} from "antd";
+import { Table, Tag, Button, Tooltip, Popconfirm, Empty, Space } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
@@ -31,7 +23,7 @@ const STATUS_CONFIG = (theme) => ({
 const getStatusColor = (s, theme) => {
   const config = STATUS_CONFIG(theme);
   const rawStatus = (s || "").toLowerCase();
-  return config[rawStatus]?.color || 'default';
+  return config[rawStatus]?.color || "default";
 };
 
 const FREQUENCY_OPTIONS = [
@@ -45,24 +37,31 @@ const FREQUENCY_OPTIONS = [
 
 // ─── Styled ───────────────────────────────────────────────────────
 const StyledCard = styled.div`
-  background: ${props => props.theme.background.card};
+  background: ${(props) => props.theme.background.card};
   border-radius: 12px;
-  border: 1px solid ${props => props.theme.border};
-  box-shadow: ${props => props.theme.shadow};
+  border: 1px solid ${(props) => props.theme.border};
+  box-shadow: ${(props) => props.theme.shadow};
   overflow: hidden;
+  .ant-pagination-item-active {
+    border-color: transparent !important;
+    background-color: transparent !important;
+  }
+  .ant-pagination-item-active:hover {
+    border-color: transparent !important;
+  }
 `;
 
 const PatientCard = styled.div`
-  background: ${props => props.theme.background.card};
+  background: ${(props) => props.theme.background.card};
   border-radius: 12px;
-  border: 1px solid ${props => props.theme.border};
+  border: 1px solid ${(props) => props.theme.border};
   padding: 16px;
   margin-bottom: 12px;
-  box-shadow: ${props => props.theme.shadow};
+  box-shadow: ${(props) => props.theme.shadow};
   transition: all 0.2s;
 
   &:hover {
-    box-shadow: ${props => props.theme.glow};
+    box-shadow: ${(props) => props.theme.glow};
   }
 
   .p-header {
@@ -74,13 +73,13 @@ const PatientCard = styled.div`
 
   .p-name {
     font-weight: 600;
-    color: ${props => props.theme.primary};
+    color: ${(props) => props.theme.primary};
     font-size: 0.95rem;
   }
 
   .p-date {
     font-size: 0.82rem;
-    color: ${props => props.theme.text.secondary};
+    color: ${(props) => props.theme.text.secondary};
   }
 `;
 
@@ -159,21 +158,30 @@ const PrescriptionList = ({
           // 2. Fallback: Lookup in patients list
           const pId = r.patient_id || r.patientId;
           if (!name && pId && patients.length > 0) {
-            const found = patients.find(p => String(p.id) === String(pId));
+            const found = patients.find((p) => String(p.id) === String(pId));
             if (found) {
-              name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+              name =
+                `${found.first_name || ""} ${found.last_name || ""}`.trim() ||
+                found.name;
             }
           }
 
           // 3. Fallback: Lookup in appointments list (prescriptions are tied to appts)
           const apptId = r.appointment_id || r.appointmentId;
           if (!name && apptId && appointments && appointments.length > 0) {
-            const appt = appointments.find(a => String(a.id) === String(apptId));
+            const appt = appointments.find(
+              (a) => String(a.id) === String(apptId),
+            );
             if (appt) {
               name = appt.patient_name || appt.patientName;
               if (!name && appt.patient_id && patients.length > 0) {
-                 const p = patients.find(p => String(p.id) === String(appt.patient_id));
-                 if (p) name = `${p.first_name || ""} ${p.last_name || ""}`.trim() || p.name;
+                const p = patients.find(
+                  (p) => String(p.id) === String(appt.patient_id),
+                );
+                if (p)
+                  name =
+                    `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
+                    p.name;
               }
             }
           }
@@ -253,104 +261,110 @@ const PrescriptionList = ({
     if (statusFilter !== "dispensed") {
       cols.push({
         title: "Actions",
-      key: "actions",
-      render: (_, r) => {
-        const s = (r.status || r.STATUS || r.status_name || "").toLowerCase();
+        key: "actions",
+        render: (_, r) => {
+          const s = (r.status || r.STATUS || r.status_name || "").toLowerCase();
 
-        if (isMedicalStaff) {
-          const isEditable = s === "created";
-          return (
-            <Space size="small">
-              <Tooltip
-                title={
-                  isEditable ? "Edit" : "Only editable in 'Created' status"
-                }
-              >
-                <Button
-                  type="text"
-                  size="small"
-                  disabled={!isEditable}
-                  icon={
-                    <EditOutlined
-                      style={{ color: isEditable ? theme.primary : theme.text.light }}
-                    />
-                  }
-                  onClick={() => onEdit?.(r)}
-                />
-              </Tooltip>
-              <Popconfirm
-                title="Delete this prescription?"
-                onConfirm={() => onDelete?.(r.id)}
-                disabled={!isEditable}
-                okText="Delete"
-                okButtonProps={{ danger: true }}
-              >
+          if (isMedicalStaff) {
+            const isEditable = s === "created";
+            return (
+              <Space size="small">
                 <Tooltip
                   title={
-                    isEditable ? "Delete" : "Only deletable in 'Created' status"
+                    isEditable ? "Edit" : "Only editable in 'Created' status"
                   }
                 >
                   <Button
                     type="text"
                     size="small"
-                    danger
                     disabled={!isEditable}
                     icon={
-                      <DeleteOutlined
-                        style={{ color: !isEditable ? theme.text.light : undefined }}
+                      <EditOutlined
+                        style={{
+                          color: isEditable ? theme.primary : theme.text.light,
+                        }}
                       />
                     }
+                    onClick={() => onEdit?.(r)}
                   />
                 </Tooltip>
-              </Popconfirm>
-            </Space>
-          );
-        }
-
-        if (isPharmacist) {
-          return (
-            <Space size="small">
-              {s === "created" && (
                 <Popconfirm
-                  title="Verify this prescription?"
-                  onConfirm={() => onStatusChange?.(r.id, "verify")}
+                  title="Delete this prescription?"
+                  onConfirm={() => onDelete?.(r.id)}
+                  disabled={!isEditable}
+                  okText="Delete"
+                  okButtonProps={{ danger: true }}
                 >
-                  <Button
-                    size="small"
-                    style={{
-                      background: theme.primaryLight,
-                      borderColor: theme.border,
-                      color: theme.primary,
-                    }}
+                  <Tooltip
+                    title={
+                      isEditable
+                        ? "Delete"
+                        : "Only deletable in 'Created' status"
+                    }
                   >
-                    Verify
-                  </Button>
+                    <Button
+                      type="text"
+                      size="small"
+                      danger
+                      disabled={!isEditable}
+                      icon={
+                        <DeleteOutlined
+                          style={{
+                            color: !isEditable ? theme.text.light : undefined,
+                          }}
+                        />
+                      }
+                    />
+                  </Tooltip>
                 </Popconfirm>
-              )}
-              {s === "verified" && (
-                <Popconfirm
-                  title="Dispense this prescription?"
-                  onConfirm={() => onStatusChange?.(r.id, "dispense")}
-                >
-                  <Button
-                    size="small"
-                    style={{
-                      background: theme.status.success + '22',
-                      borderColor: theme.status.success,
-                      color: theme.status.success,
-                    }}
-                  >
-                    Dispense
-                  </Button>
-                </Popconfirm>
-              )}
-            </Space>
-          );
-        }
+              </Space>
+            );
+          }
 
-        return null;
-      },
-    });
+          if (isPharmacist) {
+            return (
+              <Space size="small">
+                {s === "created" && (
+                  <Popconfirm
+                    title="Verify this prescription?"
+                    onConfirm={() => onStatusChange?.(r.id, "verify")}
+                  >
+                    <Button
+                      size="small"
+                      style={{
+                        background: theme.primaryLight,
+                        borderColor: theme.border,
+                        color: theme.primary,
+                      }}
+                    >
+                      Verify
+                    </Button>
+                  </Popconfirm>
+                )}
+                {s === "verified" && (
+                  <Popconfirm
+                    title="Dispense this prescription?"
+                    onConfirm={() => onStatusChange?.(r.id, "dispense")}
+                  >
+                    <Button
+                      size="small"
+                      style={{
+                        background: theme.status.success + "22",
+                        borderColor: theme.status.success,
+                        color: theme.status.success,
+                      }}
+                    >
+                      Dispense
+                    </Button>
+                  </Popconfirm>
+                )}
+              </Space>
+            );
+          }
+
+          return null;
+        },
+      });
     }
 
     return cols;
@@ -365,14 +379,18 @@ const PrescriptionList = ({
     patients,
     appointments,
     theme,
-    statusFilter, 
+    statusFilter,
   ]);
 
   // ─── Expanded Row Render ──────────────────────────────────────
   const expandedRowRender = useCallback(
     (r) => (
       <div
-        style={{ padding: "12px 20px", background: theme.background.main, borderRadius: 8 }}
+        style={{
+          padding: "12px 20px",
+          background: theme.background.main,
+          borderRadius: 8,
+        }}
       >
         {(isMedicalStaff || isPatientView || isPharmacist) && r.notes && (
           <div style={{ marginBottom: 16 }}>
@@ -443,8 +461,7 @@ const PrescriptionList = ({
   );
 
   // ─── Rendering ────────────────────────────────────────────────
-  if (loading)
-    return <LoadingScreen label="Loading Prescriptions..." />;
+  if (loading) return <LoadingScreen label="Loading Prescriptions..." />;
 
   if (isPatientView) {
     if (!prescriptions.length)
@@ -455,7 +472,7 @@ const PrescriptionList = ({
       );
     return (
       <div style={{ padding: "4px" }}>
-        {prescriptions.map((p) => (
+        {(prescriptions || []).map((p) => (
           <PatientCard key={p.id}>
             <div className="p-header">
               <div>
@@ -471,10 +488,14 @@ const PrescriptionList = ({
                 </div>
               </div>
               <Tag
-                color={getStatusColor((p.status || p.STATUS || "").toLowerCase(), theme)}
+                color={getStatusColor(
+                  (p.status || p.STATUS || "").toLowerCase(),
+                  theme,
+                )}
               >
-                {STATUS_CONFIG(theme)[(p.status || p.STATUS || "").toLowerCase()]
-                  ?.label || p.status}
+                {STATUS_CONFIG(theme)[
+                  (p.status || p.STATUS || "").toLowerCase()
+                ]?.label || p.status}
               </Tag>
             </div>
             {p.notes && (
@@ -520,18 +541,10 @@ const PrescriptionList = ({
       columns={
         hideActions ? columns.filter((col) => col.key !== "actions") : columns
       }
-      dataSource={data.map((p) => ({ ...p, key: p.id }))}
+      dataSource={(data || []).map((p) => ({ ...p, key: p.id }))}
       loading={loading}
       onChange={pagedActions?.handleTableChange}
-      pagination={
-        externalPagination
-          ? {
-              ...externalPagination,
-              showSizeChanger: false,
-              position: ["bottomCenter"],
-            }
-          : false
-      }
+      pagination={externalPagination || false}
       scroll={{ x: "max-content" }}
       locale={{
         emptyText: (
@@ -545,7 +558,6 @@ const PrescriptionList = ({
       }}
     />
   );
-
 
   return (
     <StyledCard>

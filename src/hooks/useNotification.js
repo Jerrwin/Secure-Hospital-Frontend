@@ -4,6 +4,7 @@ import {
   fetchNotificationsRequest,
   markAsReadRequest,
   markAllAsReadRequest,
+  deleteNotificationRequest,
 } from "../modules/notifications/notificationSlice";
 
 const useNotification = () => {
@@ -27,6 +28,13 @@ const useNotification = () => {
     dispatch(markAllAsReadRequest());
   }, [dispatch]);
 
+  const deleteNotification = useCallback(
+    (id) => {
+      dispatch(deleteNotificationRequest(id));
+    },
+    [dispatch]
+  );
+
   return {
     notifications: items,
     unreadCount,
@@ -34,6 +42,7 @@ const useNotification = () => {
     fetchNotifications,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
   };
 };
 

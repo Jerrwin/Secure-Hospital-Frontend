@@ -16,6 +16,7 @@ const StaffModal = ({
   onFinish,
   editingStaff,
   form,
+  submitting,
 }) => {
   const { theme } = useTheme();
   
@@ -249,6 +250,7 @@ const StaffModal = ({
             size="large"
             type="primary"
             htmlType="submit"
+            loading={submitting}
             style={{
               background: theme.primary,
               borderRadius: "6px",

@@ -607,9 +607,11 @@ const getStatusColor = (status) => {
       return "success";
     case "cancelled":
       return "error";
+    case "accepted":
+      return "processing";
     case "scheduled":
     default:
-      return "processing";
+      return "warning"; // Use warning (orange/gold) for scheduled to differentiate from accepted (blue)
   }
 };
 
@@ -619,6 +621,8 @@ const getStatusTagColor = (status, theme) => {
       return "green";
     case "cancelled":
       return "red";
+    case "accepted":
+      return theme.accent;
     case "scheduled":
     default:
       return theme.primary;
@@ -764,17 +768,19 @@ const AppointmentCalendar = () => {
                       </Tag>
                     </TooltipRow>
 
-                    <PatientName>
-                      {(() => {
-                        const directName = appt.patient?.full_name || appt.patient_name || appt.patient;
-                        if (directName && directName !== "Unknown Patient") return directName;
-                        if (appt.patient_id && patients.length > 0) {
-                          const found = patients.find(p => String(p.id) === String(appt.patient_id));
-                          if (found) return `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
-                        }
-                        return directName || `Patient #${appt.patient_id || "?"}`;
-                      })()}
-                    </PatientName>
+                    {role !== "PATIENT" && (
+                      <PatientName>
+                        {(() => {
+                          const directName = appt.patient?.full_name || appt.patient_name || appt.patient;
+                          if (directName && directName !== "Unknown Patient") return directName;
+                          if (appt.patient_id && patients.length > 0) {
+                            const found = patients.find(p => String(p.id) === String(appt.patient_id));
+                            if (found) return `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+                          }
+                          return directName || `Patient #${appt.patient_id || "?"}`;
+                        })()}
+                      </PatientName>
+                    )}
 
                     {appt.patient?.medical_history && (
                       <ConditionText>
@@ -782,13 +788,23 @@ const AppointmentCalendar = () => {
                       </ConditionText>
                     )}
 
-                    {!isDoctor && appt.doctor && (
+                    {!isDoctor && (
                       <DoctorBlock>
                         <div style={{ fontWeight: 600, marginBottom: 2 }}>
-                          Dr. {appt.doctor.name}
+                          {(() => {
+                            const dName = appt.provider_name || 
+                                           appt.providerName || 
+                                           (appt.provider ? `${appt.provider.first_name || appt.provider.name} ${appt.provider.last_name || ""}`.trim() : 
+                                           (appt.doctor?.name || "Unknown Doctor"));
+                            return dName.startsWith("Dr.") ? dName : `Dr. ${dName}`;
+                          })()}
                         </div>
-                        {appt.doctor.phone && <div>📞 {appt.doctor.phone}</div>}
-                        {appt.doctor.email && <div>✉️ {appt.doctor.email}</div>}
+                        {(appt.provider?.phone || appt.doctor?.phone) && (
+                          <div>📞 {appt.provider?.phone || appt.doctor?.phone}</div>
+                        )}
+                        {(appt.provider?.email || appt.doctor?.email) && (
+                          <div>✉️ {appt.provider?.email || appt.doctor?.email}</div>
+                        )}
                       </DoctorBlock>
                     )}
                   </TooltipApptBlock>
@@ -812,12 +828,15 @@ const AppointmentCalendar = () => {
                   status={getStatusColor(appt.status)}
                   text={(() => {
                     const time = appt.time ? appt.time.split(" ")[0] : "";
-                    let name = appt.patient || appt.patient_name;
-                    if ((!name || name === "Unknown Patient") && appt.patient_id && patients.length > 0) {
+                    let name = role === "PATIENT"
+                      ? (appt.provider_name || appt.providerName || (appt.provider ? (appt.provider.name || appt.provider.first_name) : (appt.doctor?.name || "Doctor")))
+                      : (appt.patient || appt.patient_name);
+                      
+                    if (role !== "PATIENT" && (!name || name === "Unknown Patient") && appt.patient_id && patients.length > 0) {
                        const found = patients.find(p => String(p.id) === String(appt.patient_id));
                        if (found) name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
                     }
-                    return `${name || `Patient #${appt.patient_id || "?"}`} · ${time}`;
+                    return `${name || (role === "PATIENT" ? "Doctor" : `Patient #${appt.patient_id || "?"}`)} · ${time}`;
                   })()}
                 />
               </EventBadgeWrapper>
@@ -869,6 +888,7 @@ const AppointmentCalendar = () => {
               >
                 <Select.Option value="all">All Status</Select.Option>
                 <Select.Option value="scheduled">Scheduled</Select.Option>
+                <Select.Option value="accepted">Accepted</Select.Option>
                 <Select.Option value="completed">Completed</Select.Option>
                 <Select.Option value="cancelled">Cancelled</Select.Option>
               </StatusSelect>
@@ -896,15 +916,13 @@ const AppointmentCalendar = () => {
               </ToggleBtn>
             </ViewToggle>
 
-            {role !== "PATIENT" && (
-              <AppButton
-                variant="header"
-                icon={<PlusOutlined />}
-                onClick={handleNewAppointment}
-              >
-                New Appointment
-              </AppButton>
-            )}
+            <AppButton
+              variant="header"
+              icon={<PlusOutlined />}
+              onClick={handleNewAppointment}
+            >
+              New Appointment
+            </AppButton>
           </Space>
 
           <style>{`
@@ -944,16 +962,14 @@ const AppointmentCalendar = () => {
             />
           </SearchWrapper>
 
-          {role !== "PATIENT" && (
-            <AppButton
-              variant="header"
-              icon={<PlusOutlined />}
-              onClick={handleNewAppointment}
-              style={{ padding: "8px 12px", borderRadius: "8px" }}
-            >
-              Add
-            </AppButton>
-          )}
+          <AppButton
+            variant="header"
+            icon={<PlusOutlined />}
+            onClick={handleNewAppointment}
+            style={{ padding: "8px 12px", borderRadius: "8px" }}
+          >
+            Add
+          </AppButton>
         </MobileRow>
 
         {/* Mobile View: Row 3 (Filter + Refresh) */}
@@ -974,6 +990,7 @@ const AppointmentCalendar = () => {
             >
               <Select.Option value="all">All Status</Select.Option>
               <Select.Option value="scheduled">Scheduled</Select.Option>
+              <Select.Option value="accepted">Accepted</Select.Option>
               <Select.Option value="completed">Completed</Select.Option>
               <Select.Option value="cancelled">Cancelled</Select.Option>
             </StatusSelect>
@@ -1004,8 +1021,12 @@ const AppointmentCalendar = () => {
           <CalTopBar>
             <LegendRow>
               <LegendItem>
-                <Badge status="processing" />
+                <Badge status="warning" />
                 <span>Scheduled</span>
+              </LegendItem>
+              <LegendItem>
+                <Badge status="processing" />
+                <span>Accepted</span>
               </LegendItem>
               <LegendItem>
                 <Badge status="success" />

@@ -1,5 +1,35 @@
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Button } from "antd";
+import { LeftOutlined, RightOutlined } from "@ant-design/icons";
+
+const PAGINATION_BTN_STYLE = {
+  borderRadius: "8px",
+  height: "36px",
+  padding: "0 16px",
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  fontWeight: 600,
+  border: "1px solid #e2e8f0",
+  background: "#ffffff",
+  boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+};
+
+const PAGE_BADGE_STYLE = {
+  margin: "0 12px",
+  background: "#f8fafc",
+  border: "1px solid #e2e8f0",
+  padding: "6px 16px",
+  borderRadius: "8px",
+  fontSize: "13px",
+  fontWeight: 600,
+  color: "#475569",
+  display: "flex",
+  alignItems: "center",
+  height: "36px",
+  boxShadow: "inset 0 1px 2px rgba(0,0,0,0.02)",
+};
 
 /**
  * Generic hook for prefetch-ahead pagination.
@@ -24,24 +54,34 @@ export const usePrefetchPagination = ({
 
   const { fetchPagedRequest, setPage: setPageAction, setSearch, setStatus } = actions;
 
-  // Sync initial status if provided and different from current state
+  // Track whether we've synced initialStatus (run only once on mount)
+  const initialStatusSynced = useRef(false);
+
+  // 1. One-time mount sync for initialStatus
   useEffect(() => {
-    if (initialStatus && initialStatus !== "all" && statusFilter !== initialStatus) {
+    if (skip || initialStatusSynced.current) return;
+    initialStatusSynced.current = true;
+
+    if (
+      initialStatus &&
+      initialStatus !== "all" &&
+      statusFilter !== initialStatus
+    ) {
       console.log(`[usePrefetchPagination] Syncing initialStatus: ${initialStatus}`);
       dispatch(setStatus(initialStatus));
+      // The statusFilter change will trigger the parameter-watch effect below
     }
-    // Only run this once on mount/initialStatus change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialStatus]);
+  }, []);
 
-  // Initial Fetch if not already fetched
+  // 2. Parameter-watch effect: fetch page 1 when filters change
   useEffect(() => {
-    const isAlreadyFetched = fetched || state.isLoaded;
-    if (!isAlreadyFetched && !loading && !skip) {
-      console.log(`[usePrefetchPagination] Triggering fetchPagedRequest(1). Status: ${statusFilter}, Search: ${searchQuery}`);
-      dispatch(fetchPagedRequest(1));
-    }
-  }, [dispatch, fetched, loading, state.isLoaded, fetchPagedRequest, statusFilter, searchQuery, providerId, skip]);
+    if (skip) return;
+    console.log(
+      `[usePrefetchPagination] Parameter changed, fetching page 1. Status: ${statusFilter}, Search: ${searchQuery}, Provider: ${providerId}`,
+    );
+    dispatch(fetchPagedRequest(1));
+  }, [dispatch, fetchPagedRequest, statusFilter, searchQuery, providerId, skip]);
 
   const fetchPaged = useCallback(
     (page) => {
@@ -71,6 +111,64 @@ export const usePrefetchPagination = ({
     [dispatch, setStatus],
   );
 
+  // Memoize the itemRender function to avoid re-creating nodes unnecessarily
+  const itemRender = useCallback(
+    (page, type, originalElement) => {
+      const total = pagination.total;
+      const totalPages = Math.ceil(total / fixedPageSize) || 1;
+      const currentPage = pagination.currentPage;
+
+      // Ensure jump-next/jump-prev (ellipsis) are hidden for a cleaner symmetrical look
+      if (type === "jump-prev" || type === "jump-next") {
+        return null;
+      }
+
+      if (type === "prev") {
+        return (
+          <Button
+            {...originalElement.props}
+            icon={<LeftOutlined />}
+            style={{
+              ...PAGINATION_BTN_STYLE,
+              color: currentPage <= 1 ? "#cbd5e1" : "#1e293b",
+            }}
+          >
+            Previous
+          </Button>
+        );
+      }
+
+      if (type === "next") {
+        return (
+          <Button
+            {...originalElement.props}
+            icon={<RightOutlined />}
+            iconPosition="end"
+            style={{
+              ...PAGINATION_BTN_STYLE,
+              color: currentPage >= totalPages ? "#cbd5e1" : "#1e293b",
+            }}
+          >
+            Next
+          </Button>
+        );
+      }
+
+      if (type === "page") {
+        // Render a professional "Page X / Y" badge in the middle
+        if (page !== currentPage) return null;
+        return (
+          <div style={PAGE_BADGE_STYLE}>
+            Page {currentPage} / {totalPages}
+          </div>
+        );
+      }
+
+      return originalElement;
+    },
+    [pagination.currentPage, pagination.total, fixedPageSize],
+  );
+
   // Ant Design Table compatible pagination object
   const tablePagination = useMemo(
     () => ({
@@ -78,44 +176,34 @@ export const usePrefetchPagination = ({
       pageSize: fixedPageSize, // Frontend enforced
       total: pagination.total,
       showSizeChanger: false,
+      simple: false,
       position: ["bottomCenter"],
       hideOnSinglePage: false,
+      itemRender,
+      // Removed redundant onChange: setPageNum to avoid double-dispatches
+      // handletableChange on the Table component is sufficient
     }),
-    [pagination.currentPage, pagination.total, fixedPageSize],
+    [pagination.currentPage, pagination.total, fixedPageSize, itemRender],
   );
 
-  const handleTableChange = useCallback(
-    (pag) => {
-      setPageNum(pag.current);
-    },
-    [setPageNum],
-  );
-
-  const memoizedActions = useMemo(
+  // Memoize actions to prevent infinite loops in useEffects that depend on them
+  const stabilizedActions = useMemo(
     () => ({
       fetchPaged,
-      setPage: setPageNum,
       setSearch: setSearchCallback,
       setStatus: setStatusCallback,
-      handleTableChange,
+      handleTableChange: (pagination) => setPageNum(pagination.current),
     }),
-    [
-      fetchPaged,
-      setPageNum,
-      setSearchCallback,
-      setStatusCallback,
-      handleTableChange,
-    ],
+    [fetchPaged, setSearchCallback, setStatusCallback, setPageNum],
   );
 
   return {
-    data: list,
+    list,
     buffer,
-    pagination: tablePagination,
-    loading,
+    pagination: tablePagination, // This is what the Table uses
     searchQuery,
     statusFilter,
-    providerId,
-    actions: memoizedActions,
+    loading,
+    actions: stabilizedActions,
   };
 };

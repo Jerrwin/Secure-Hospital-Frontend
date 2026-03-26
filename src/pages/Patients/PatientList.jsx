@@ -150,6 +150,23 @@ const SearchWrapper = styled.div`
   }
 `;
 
+const CardWrapper = styled.div`
+  background: ${(props) => props.theme.background.card};
+  padding: clamp(12px, 3vw, 24px);
+  border-radius: 12px;
+  box-shadow: ${(props) => props.theme.shadow};
+  min-height: auto;
+  overflow: hidden;
+
+  .ant-pagination-item-active {
+    border-color: transparent !important;
+    background-color: transparent !important;
+  }
+  .ant-pagination-item-active:hover {
+    border-color: transparent !important;
+  }
+`;
+
 const SearchInput = styled(Input)`
   border-radius: 8px;
   width: 100%;
@@ -308,9 +325,9 @@ const PatientList = () => {
     checkValidity();
   }, [formValues, editingPatient, form]);
 
-  useEffect(() => {
-    pagedActions.fetchPaged(1);
-  }, [pagedActions]);
+  // Initial load handled by usePrefetchPagination hook trigger
+  /* useEffect removed to avoid duplicates */
+
 
   useEffect(() => {
     const timer = setTimeout(() => pagedActions.setSearch(searchTerm), 400);
@@ -419,7 +436,7 @@ const PatientList = () => {
     return data;
   }, [rawPatients]);
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       title: "Name",
       key: "name",
@@ -526,7 +543,7 @@ const PatientList = () => {
         </Space>
       ),
     },
-  ];
+  ], [theme, searchQuery, handleToggleStatus, showForm, showTimeline, user?.role, removePatient]);
 
   return (
     <PageWrapper>
@@ -600,15 +617,7 @@ const PatientList = () => {
         </HeaderCard>
       </PageHeader>
 
-      <div
-        style={{
-          background: theme.background.card,
-          padding: "clamp(12px, 3vw, 24px)",
-          borderRadius: "12px",
-          boxShadow: theme.shadow,
-          minHeight: "auto",
-        }}
-      >
+      <CardWrapper>
         <StyledTable
           columns={columns}
           dataSource={displayData}
@@ -621,7 +630,7 @@ const PatientList = () => {
           }
           scroll={{ x: 800 }}
         />
-      </div>
+      </CardWrapper>
 
       <Drawer
         title={
@@ -997,4 +1006,4 @@ const PatientList = () => {
   );
 };
 
-export default PatientList;
+export default React.memo(PatientList);

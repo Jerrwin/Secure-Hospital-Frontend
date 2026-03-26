@@ -8,6 +8,8 @@ import {
   markAsReadSuccess,
   markAllAsReadRequest,
   markAllAsReadSuccess,
+  deleteNotificationRequest,
+  deleteNotificationSuccess,
 } from "./notificationSlice";
 
 function* fetchNotificationsSaga() {
@@ -42,8 +44,18 @@ function* markAllAsReadSaga() {
   }
 }
 
+function* deleteNotificationSaga(action) {
+  try {
+    yield call(notificationAPI.delete, action.payload);
+    yield put(deleteNotificationSuccess(action.payload));
+  } catch (error) {
+    console.error("Failed to delete notification:", error);
+  }
+}
+
 export default function* notificationSaga() {
   yield takeLatest(fetchNotificationsRequest.type, fetchNotificationsSaga);
   yield takeLatest(markAsReadRequest.type, markAsReadSaga);
   yield takeLatest(markAllAsReadRequest.type, markAllAsReadSaga);
+  yield takeLatest(deleteNotificationRequest.type, deleteNotificationSaga);
 }

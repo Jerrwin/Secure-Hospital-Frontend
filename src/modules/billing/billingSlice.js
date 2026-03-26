@@ -36,7 +36,17 @@ const billingSlice = createSlice({
     fetchPagedSuccess: (state, action) => {
       state.loading = false;
       state.fetched = true;
-      state.list = action.payload.data;
+      
+      // Deduplicate by ID as a defensive measure
+      const rawData = action.payload.data || [];
+      const seen = new Set();
+      state.list = rawData.filter(item => {
+        const id = item.id || item.ID || item.invoice_id || item.invoiceId || item.INVOICE_ID || item.appointment_id || item.APPOINTMENT_ID;
+        if (!id || seen.has(String(id))) return false;
+        seen.add(String(id));
+        return true;
+      });
+
       const backendPagination = action.payload.pagination;
       if (backendPagination) {
         state.pagination = {
@@ -60,7 +70,16 @@ const billingSlice = createSlice({
     },
     prefetchSuccess: (state, action) => {
       state.prefetching = false;
-      state.buffer = action.payload.data;
+      
+      // Deduplicate by ID
+      const rawData = action.payload.data || [];
+      const seen = new Set();
+      state.buffer = rawData.filter(item => {
+        const id = item.id || item.ID || item.invoice_id || item.INVOICE_ID || item.appointment_id || item.APPOINTMENT_ID;
+        if (!id || seen.has(String(id))) return false;
+        seen.add(String(id));
+        return true;
+      });
     },
     prefetchFailure: (state) => {
       state.prefetching = false;
@@ -74,15 +93,21 @@ const billingSlice = createSlice({
       state.fetched = true;
     },
     setSearch: (state, action) => {
+      if (state.searchQuery === action.payload) return;
       state.searchQuery = action.payload;
       state.pagination.currentPage = 1;
+      state.pagination.total = 0;
+      state.pagination.lastPage = 1;
       state.list = [];
       state.buffer = [];
       state.fetched = false;
     },
     setStatus: (state, action) => {
+      if (state.statusFilter === action.payload) return;
       state.statusFilter = action.payload;
       state.pagination.currentPage = 1;
+      state.pagination.total = 0;
+      state.pagination.lastPage = 1;
       state.list = [];
       state.buffer = [];
       state.fetched = false;

@@ -171,6 +171,14 @@ const ContentCard = styled.div`
     justify-content: center !important;
     padding-top: 16px;
   }
+
+  .ant-pagination-item-active {
+    border-color: transparent !important;
+    background-color: transparent !important;
+  }
+  .ant-pagination-item-active:hover {
+    border-color: transparent !important;
+  }
 `;
 
 const paginationActions = {
@@ -188,7 +196,7 @@ const InvoicePage = () => {
 
   // Prefetch Pagination Hook
   const {
-    data: list,
+    list,
     pagination,
     loading,
     actions: pagedActions,
@@ -199,11 +207,8 @@ const InvoicePage = () => {
     initialStatus: isPatient ? "pending" : "unbilled",
   });
 
-  const [, setActiveKey] = useState(isPatient ? "pending" : "create");
-
   // Map tab keys to API status values
   const handleTabChange = (key) => {
-    setActiveKey(key);
     const statusMap = {
       create: "unbilled",
       pending: "pending",
@@ -312,4 +317,4 @@ const InvoicePage = () => {
   );
 };
 
-export default InvoicePage;
+export default React.memo(InvoicePage);
