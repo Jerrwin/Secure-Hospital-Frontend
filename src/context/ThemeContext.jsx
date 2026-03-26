@@ -81,8 +81,13 @@ export const CustomThemeProvider = ({ children }) => {
     [theme, isDark],
   );
 
+  const contextValue = useMemo(
+    () => ({ theme, themeName: themeName || "blue" }),
+    [theme, themeName],
+  );
+
   return (
-    <ThemeContext.Provider value={{ theme, themeName: themeName || "blue" }}>
+    <ThemeContext.Provider value={contextValue}>
       <ConfigProvider theme={antdTheme}>
         <App>
           <StyledThemeProvider theme={theme}>{children}</StyledThemeProvider>

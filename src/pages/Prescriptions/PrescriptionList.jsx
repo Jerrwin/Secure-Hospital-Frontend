@@ -3,12 +3,9 @@ import {
   Table,
   Tag,
   Button,
-  Badge,
   Tooltip,
   Popconfirm,
   Empty,
-  Tabs,
-  Spin,
   Space,
 } from "antd";
 import {
@@ -95,8 +92,9 @@ const MedGrid = styled.div`
 `;
 
 const Highlight = styled.span`
-  background-color: #ffec3d;
+  background-color: ${(props) => props.theme.status.warning}88;
   font-weight: bold;
+  padding: 0 4px;
 `;
 
 // ─── Helpers ──────────────────────────────────────────────────────
@@ -129,6 +127,9 @@ const PrescriptionList = ({
   onEdit,
   onDelete,
   onStatusChange,
+  pagination: externalPagination,
+  pagedActions,
+  statusFilter,
 }) => {
   const { theme } = useTheme();
   const [expandedId, setExpandedId] = useState(null);
@@ -248,9 +249,10 @@ const PrescriptionList = ({
       },
     });
 
-    // 6. Actions Column
-    cols.push({
-      title: "Actions",
+    // 6. Actions Column (Hide if Processed tab is active)
+    if (statusFilter !== "dispensed") {
+      cols.push({
+        title: "Actions",
       key: "actions",
       render: (_, r) => {
         const s = (r.status || r.STATUS || r.status_name || "").toLowerCase();
@@ -270,7 +272,7 @@ const PrescriptionList = ({
                   disabled={!isEditable}
                   icon={
                     <EditOutlined
-                      style={{ color: isEditable ? theme.primary : "#d9d9d9" }}
+                      style={{ color: isEditable ? theme.primary : theme.text.light }}
                     />
                   }
                   onClick={() => onEdit?.(r)}
@@ -295,7 +297,7 @@ const PrescriptionList = ({
                     disabled={!isEditable}
                     icon={
                       <DeleteOutlined
-                        style={{ color: !isEditable ? "#d9d9d9" : undefined }}
+                        style={{ color: !isEditable ? theme.text.light : undefined }}
                       />
                     }
                   />
@@ -349,6 +351,7 @@ const PrescriptionList = ({
         return null;
       },
     });
+    }
 
     return cols;
   }, [
@@ -359,6 +362,10 @@ const PrescriptionList = ({
     onEdit,
     onDelete,
     onStatusChange,
+    patients,
+    appointments,
+    theme,
+    statusFilter, 
   ]);
 
   // ─── Expanded Row Render ──────────────────────────────────────
@@ -432,7 +439,7 @@ const PrescriptionList = ({
         ))}
       </div>
     ),
-    [isMedicalStaff, isPatientView, searchQuery, isPharmacist],
+    [isMedicalStaff, isPatientView, searchQuery, isPharmacist, theme],
   );
 
   // ─── Rendering ────────────────────────────────────────────────
@@ -509,12 +516,22 @@ const PrescriptionList = ({
 
   const renderTable = (data, hideActions = false) => (
     <Table
+      className="theme-table"
       columns={
         hideActions ? columns.filter((col) => col.key !== "actions") : columns
       }
       dataSource={data.map((p) => ({ ...p, key: p.id }))}
       loading={loading}
-      pagination={{ pageSize: 10 }}
+      onChange={pagedActions?.handleTableChange}
+      pagination={
+        externalPagination
+          ? {
+              ...externalPagination,
+              showSizeChanger: false,
+              position: ["bottomCenter"],
+            }
+          : false
+      }
       scroll={{ x: "max-content" }}
       locale={{
         emptyText: (
@@ -529,43 +546,6 @@ const PrescriptionList = ({
     />
   );
 
-  if (isPharmacist) {
-    const pending = prescriptions.filter((p) =>
-      ["created", "verified"].includes(
-        (p.status || p.STATUS || "").toLowerCase(),
-      ),
-    );
-    const processed = prescriptions.filter(
-      (p) => (p.status || p.STATUS || "").toLowerCase() === "dispensed",
-    );
-
-    return (
-      <StyledCard style={{ padding: "0 16px" }}>
-        <Tabs
-          items={[
-            {
-              key: "pending",
-              label: (
-                <span>
-                  Pending{" "}
-                  <Badge
-                    count={pending.length}
-                    style={{ background: theme.primary, marginLeft: 4 }}
-                  />
-                </span>
-              ),
-              children: renderTable(pending),
-            },
-            {
-              key: "processed",
-              label: `Processed (${processed.length})`,
-              children: renderTable(processed, true),
-            },
-          ]}
-        />
-      </StyledCard>
-    );
-  }
 
   return (
     <StyledCard>

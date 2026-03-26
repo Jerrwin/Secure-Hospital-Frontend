@@ -3,12 +3,15 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { store } from './app/store';
 import { injectStore } from './services/axiosClient';
+import { injectOfflineStore } from './services/offlineManager';
 import App from './App';
 import './styles/global.css';
 import hospitalIcon from './assets/icons/hospital.png';
 
 // Inject redux store into Axios to allow reading tokens from secure memory
 injectStore(store);
+// Inject redux store into Offline Manager to allow UI refreshes after sync
+injectOfflineStore(store);
 
 // Set favicon from src assets
 document.querySelector("link[rel*='icon']").href = hospitalIcon;

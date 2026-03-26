@@ -1,10 +1,22 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  list: [],
-  appointments: [], // completed appointments for doctor dropdown
+  list: [],           // current page results
+  buffer: [],         // prefetched next page results
+  pagination: {
+    currentPage: 1,
+    perPage: 5,       // fixed as per user requirement
+    total: 0,
+    lastPage: 1,
+  },
+  searchQuery: "",
+  statusFilter: "all",
+  providerId: null,
+  appointments: [],   // completed appointments for doctor dropdown
   loading: false,
+  prefetching: false,
   submitting: false,
+  fetched: false,
   error: null,
 };
 
@@ -12,10 +24,71 @@ const prescriptionSlice = createSlice({
   name: "prescription",
   initialState,
   reducers: {
-    // ─── Fetch ────────────────────────────────────────────────────
+    // ─── Paged Fetch ──────────────────────────────────────────────
+    fetchPagedRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    fetchPagedSuccess: (state, action) => {
+      state.loading = false;
+      state.fetched = true;
+      state.list = action.payload.data;
+      const backendPagination = action.payload.pagination;
+      if (backendPagination) {
+        state.pagination = {
+          currentPage: backendPagination.current_page,
+          perPage: state.pagination.perPage,
+          total: backendPagination.total,
+          lastPage: backendPagination.last_page,
+        };
+      }
+      state.buffer = [];
+    },
+    fetchPagedFailure: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    },
+
+    // ─── Prefetch ─────────────────────────────────────────────────
+    prefetchRequest: (state) => {
+      state.prefetching = true;
+    },
+    prefetchSuccess: (state, action) => {
+      state.prefetching = false;
+      state.buffer = action.payload.data;
+    },
+    prefetchFailure: (state) => {
+      state.prefetching = false;
+    },
+
+    setPage: () => {},
+    moveBufferToList: (state, action) => {
+      state.list = state.buffer;
+      state.buffer = [];
+      state.pagination.currentPage = action.payload;
+      state.fetched = true;
+    },
+    setSearch: (state, action) => {
+      state.searchQuery = action.payload;
+      state.pagination.currentPage = 1;
+      state.fetched = false;
+    },
+    setStatus: (state, action) => {
+      state.statusFilter = action.payload;
+      state.pagination.currentPage = 1;
+      state.fetched = false;
+    },
+    setProviderId: (state, action) => {
+      state.providerId = action.payload;
+      state.pagination.currentPage = 1;
+      state.fetched = false;
+    },
+
+    // ─── Legacy Fetch (keep for backward compatibility if needed) ──
     fetchRequest: (state) => {
       state.loading = true;
       state.error = null;
+      state.fetched = false; // Reset to trigger hook re-fetch
     },
     fetchSuccess: (state, action) => {
       state.loading = false;
@@ -29,6 +102,7 @@ const prescriptionSlice = createSlice({
     // ─── Appointments (for doctor dropdown) ───────────────────────
     fetchAppointmentsSuccess: (state, action) => {
       state.appointments = action.payload;
+      state.loading = false; // Clear loading if started by fetchRequest
     },
 
     // ─── Create ───────────────────────────────────────────────────
@@ -39,6 +113,7 @@ const prescriptionSlice = createSlice({
     createSuccess: (state, action) => {
       state.submitting = false;
       state.list = [action.payload, ...state.list];
+      state.fetched = false;
     },
     createFailure: (state, action) => {
       state.submitting = false;
@@ -52,9 +127,7 @@ const prescriptionSlice = createSlice({
     },
     updateSuccess: (state, action) => {
       state.submitting = false;
-      state.list = state.list.map((p) =>
-        p.id === action.payload.id ? action.payload : p
-      );
+      state.fetched = false;
     },
     updateFailure: (state, action) => {
       state.submitting = false;
@@ -67,9 +140,7 @@ const prescriptionSlice = createSlice({
     },
     statusChangeSuccess: (state, action) => {
       state.submitting = false;
-      state.list = state.list.map((p) =>
-        p.id === action.payload.id ? action.payload : p
-      );
+      state.fetched = false;
     },
     statusChangeFailure: (state, action) => {
       state.submitting = false;
@@ -83,7 +154,7 @@ const prescriptionSlice = createSlice({
     },
     deleteSuccess: (state, action) => {
       state.submitting = false;
-      state.list = state.list.filter((p) => p.id !== action.payload);
+      state.fetched = false;
     },
     deleteFailure: (state, action) => {
       state.submitting = false;
@@ -97,6 +168,17 @@ const prescriptionSlice = createSlice({
 });
 
 export const {
+  fetchPagedRequest,
+  fetchPagedSuccess,
+  fetchPagedFailure,
+  prefetchRequest,
+  prefetchSuccess,
+  prefetchFailure,
+  setPage,
+  moveBufferToList,
+  setSearch,
+  setStatus,
+  setProviderId,
   fetchRequest,
   fetchSuccess,
   fetchFailure,

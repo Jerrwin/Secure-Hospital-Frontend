@@ -1,9 +1,12 @@
 export const warmTheme = {
   name: "warm",
+  headingFont: "'Plus Jakarta Sans', sans-serif",
+  bodyFont: "'Outfit', sans-serif",
+  fontFamily: "'Outfit', sans-serif",
   primary: "#E67E22",
   primaryHover: "#D35400",
   primaryLight: "#FDF2E9",
-  secondary: "#603808",
+  secondary: "#451a03", // Rich dark brown
   accent: "#FF9900",
   text: {
     primary: "#451a03",

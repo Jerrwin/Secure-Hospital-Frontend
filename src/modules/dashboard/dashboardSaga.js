@@ -27,18 +27,20 @@ function* fetchDashboardDataSaga(action) {
       }
     } else {
       // For staff/admin, we rely on the stats endpoint for strictly "Today's" appointment data.
-      // We only fetch prescriptions separately.
-      try {
-        const presRes = yield call(dashboardAPI.getPrescriptions);
-        if (presRes.data?.success) payload.prescriptions = presRes.data.data;
-      } catch (e) {
-        console.error("Error fetching staff dashboard prescriptions:", e);
+      // We only fetch prescriptions separately for the Pharmacist (who has a dedicated queue on their dashboard).
+      if (role === "PHARMACIST") {
+        try {
+          const presRes = yield call(dashboardAPI.getPrescriptions);
+          if (presRes.data?.success) payload.prescriptions = presRes.data.data;
+        } catch (e) {
+          console.error("Error fetching pharmacist dashboard prescriptions:", e);
+        }
       }
     }
 
     yield put(
       fetchDashboardDataSuccess({
-        stats: payload.stats || null,         // ✅ never pollute stats with list data
+        stats: payload.stats || payload || null, // ✅ Handle both nested and flat responses
         appointments: payload.appointments || [],
         prescriptions: payload.prescriptions || [],
         weekly_trend: payload.weekly_trend || [],
@@ -47,11 +49,15 @@ function* fetchDashboardDataSaga(action) {
       })
     );
   } catch (error) {
-    yield put(
-      fetchDashboardDataFailure(
-        error.response?.data?.message || "Failed to fetch dashboard data"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchDashboardDataFailure(null));
+    } else {
+      yield put(
+        fetchDashboardDataFailure(
+          error.response?.data?.message || "Failed to fetch dashboard data"
+        )
+      );
+    }
   }
 }
 

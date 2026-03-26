@@ -16,9 +16,8 @@ const billingAPI = {
   // Update an invoice (e.g., amount or status)
   updateInvoice: (id, data) => axiosClient.put(`/api/invoices/${id}`, data),
 
-  // Fetch completed appointments to show in "Create Invoice" tab
-  // (Assuming backend supports STATUS filter on appointments)
-  getCompletedAppointments: () => axiosClient.get("/api/appointments", { params: { status: 'completed' } }),
+  // Fetch completed appointments that DO NOT have an invoice yet
+  getCompletedAppointments: (params) => axiosClient.get("/api/appointments/unbilled", { params }),
 };
 
 export default billingAPI;

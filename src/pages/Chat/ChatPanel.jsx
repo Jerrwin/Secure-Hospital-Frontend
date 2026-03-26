@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import { useTheme } from "../../context/ThemeContext";
 import useChat from "../../modules/chat/hooks/useChat";
 
 // --- Styled Components --- //
@@ -27,8 +26,10 @@ const Tab = styled.button`
   padding: 14px 16px;
   background: none;
   border: none;
-  border-bottom: 3px solid ${(props) => (props.$active ? props.theme.primary : "transparent")};
-  color: ${(props) => (props.$active ? props.theme.primary : props.theme.text.secondary)};
+  border-bottom: 3px solid
+    ${(props) => (props.$active ? props.theme.primary : "transparent")};
+  color: ${(props) =>
+    props.$active ? props.theme.primary : props.theme.text.secondary};
   font-weight: ${(props) => (props.$active ? "600" : "400")};
   cursor: pointer;
   transition: all 0.2s ease;
@@ -78,15 +79,21 @@ const BubbleCard = styled.div`
   line-height: 1.4;
   position: relative;
   background: ${(props) => {
-    if (props.$isPrivate) return props.theme.name === 'dark' ? 'rgba(147, 51, 234, 0.2)' : "#f3e8ff"; // Purple
+    if (props.$isPrivate)
+      return props.theme.name === "dark"
+        ? "rgba(147, 51, 234, 0.2)"
+        : "#f3e8ff"; // Purple
     return props.$isMine ? props.theme.primary : props.theme.background.card;
   }};
   color: ${(props) => {
-    if (props.$isPrivate) return props.theme.name === 'dark' ? '#d8b4fe' : "#6b21a8";
+    if (props.$isPrivate)
+      return props.theme.name === "dark" ? "#d8b4fe" : "#6b21a8";
     return props.$isMine ? "#ffffff" : props.theme.text.primary;
   }};
   border: ${(props) =>
-    !props.$isMine && !props.$isPrivate ? `1px solid ${props.theme.border}` : "none"};
+    !props.$isMine && !props.$isPrivate
+      ? `1px solid ${props.theme.border}`
+      : "none"};
   border-bottom-right-radius: ${(props) => (props.$isMine ? "4px" : "12px")};
   border-bottom-left-radius: ${(props) => (!props.$isMine ? "4px" : "12px")};
 `;
@@ -100,16 +107,6 @@ const PrivateBadge = styled.span`
   border-radius: 4px;
   margin-left: 8px;
   vertical-align: middle;
-`;
-
-const HiddenNotice = styled.div`
-  font-size: 0.8rem;
-  color: ${(props) => props.theme.text.secondary};
-  text-align: center;
-  padding: 12px;
-  background: ${(props) => props.theme.primaryLight};
-  border-radius: 6px;
-  margin: 10px 0;
 `;
 
 // -- Input Area Styles -- //
@@ -198,7 +195,8 @@ const TimelineDot = styled.div`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: ${(props) => (props.$isPrivate ? "#9333ea" : props.theme.primary)};
+  background: ${(props) =>
+    props.$isPrivate ? "#9333ea" : props.theme.primary};
   margin-top: 4px;
 `;
 
@@ -223,21 +221,13 @@ const TimelineMeta = styled.div`
 
 // --- Main Component --- //
 const ChatPanel = ({ appointmentId }) => {
-  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState("chat");
   const [inputText, setInputText] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const scrollRef = useRef(null);
 
-  const {
-    notes,
-    hiddenPrivateCount,
-    loading,
-    submitting,
-    addNote,
-    userRole,
-    userId,
-  } = useChat(appointmentId);
+  const { notes, loading, submitting, addNote, userRole, userId } =
+    useChat(appointmentId);
 
   const canMarkPrivate = userRole !== "NURSE";
 
@@ -302,12 +292,6 @@ const ChatPanel = ({ appointmentId }) => {
           <>
             <ScrollArea ref={scrollRef}>
               {loading && notes.length === 0 && <p>Loading...</p>}
-              
-              {hiddenPrivateCount > 0 && (
-                <HiddenNotice>
-                  ⚠️ {hiddenPrivateCount} private note(s) are hidden based on your role.
-                </HiddenNotice>
-              )}
 
               {notes.map((note) => {
                 const isMine = note.user_id === userId;
@@ -316,7 +300,8 @@ const ChatPanel = ({ appointmentId }) => {
                 return (
                   <BubbleWrapper key={note.id} $isMine={isMine}>
                     <BubbleInfo>
-                      {note.user_name} ({note.role_name}) • {formatDate(note.created_at)}
+                      {note.user_name} ({note.role_name}) •{" "}
+                      {formatDate(note.created_at)}
                     </BubbleInfo>
                     <BubbleCard $isMine={isMine} $isPrivate={isNotePrivate}>
                       {note.note}
@@ -336,7 +321,10 @@ const ChatPanel = ({ appointmentId }) => {
                   onKeyDown={handleKeyDown}
                   disabled={submitting}
                 />
-                <SendButton onClick={handleSend} disabled={submitting || !inputText.trim()}>
+                <SendButton
+                  onClick={handleSend}
+                  disabled={submitting || !inputText.trim()}
+                >
                   {submitting ? "Sending..." : "Send"}
                 </SendButton>
               </InputRow>
@@ -374,7 +362,8 @@ const ChatPanel = ({ appointmentId }) => {
                       {isNotePrivate && <PrivateBadge>Private</PrivateBadge>}
                     </TimelineTitle>
                     <TimelineMeta>
-                      By {note.user_name} ({note.role_name}) • {formatFullDate(note.created_at)}
+                      By {note.user_name} ({note.role_name}) •{" "}
+                      {formatFullDate(note.created_at)}
                     </TimelineMeta>
                   </TimelineContent>
                 </TimelineItem>

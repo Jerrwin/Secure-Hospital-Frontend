@@ -8,6 +8,7 @@ import {
   Row,
   Col,
   Button,
+  Tabs,
   message,
   Drawer,
 } from "antd";
@@ -24,14 +25,28 @@ import AppButton from "../../components/common/Button/AppButton";
 import { useTheme } from "../../context/ThemeContext";
 import {
   fetchRequest,
+  setPage,
+  setSearch,
+  setStatus,
+  fetchPagedRequest,
   createRequest,
   updateRequest,
   statusChangeRequest,
   deleteRequest,
   clearError,
+  setProviderId,
 } from "../../modules/prescription/prescriptionSlice";
+import usePrescription from "../../modules/prescription/hooks/usePrescription";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
 import usePatients from "../../modules/patients/hooks/usePatients";
+import { usePrefetchPagination } from "../../hooks/usePrefetchPagination";
+
+const paginationActions = {
+  fetchPagedRequest,
+  setPage,
+  setSearch,
+  setStatus,
+};
 
 // ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
 const bp = {
@@ -45,7 +60,7 @@ const bp = {
 const PageWrap = styled.div`
   min-height: 100vh;
   background: ${(props) => props.theme.background.main};
-  font-family: "DM Sans", sans-serif;
+  font-family: ${(props) => props.theme.fontFamily};
 `;
 
 const HeaderCard = styled.div`
@@ -68,7 +83,7 @@ const HeaderRow = styled.div`
   @media (min-width: ${bp.lg}) {
     padding: 16px 22px;
     flex-wrap: nowrap;
-    border-bottom: 1px solid ${props => props.theme.border};
+    border-bottom: 1px solid ${(props) => props.theme.border};
   }
 `;
 
@@ -78,7 +93,7 @@ const MobileRow = styled.div`
   justify-content: space-between;
   gap: 10px;
   padding: 8px 16px;
-  border-bottom: 1px solid ${props => props.theme.border};
+  border-bottom: 1px solid ${(props) => props.theme.border};
 
   @media (min-width: ${bp.lg}) {
     display: none; // Hidden on desktop, moved into HeaderRow
@@ -97,7 +112,7 @@ const TitleIcon = styled.div`
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: ${props => props.theme.primaryLight};
+  background: ${(props) => props.theme.primaryLight};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -268,79 +283,74 @@ const MedicineFormList = memo(() => {
 const PrescriptionPage = () => {
   const dispatch = useDispatch();
   const { theme } = useTheme();
+
   const user = useSelector((state) => state.auth.user);
   const userRole = user?.role?.toUpperCase() || "PATIENT";
-
-  const { list, appointments, loading, submitting, error } = useSelector(
-    (state) => state.prescription,
-  );
+  const {
+    list,
+    appointments,
+    loading: prescriptionsLoading,
+    submitting,
+    error,
+  } = usePrescription();
   const { patients, fetchPatients } = usePatients();
   const { fetchDropdowns: fetchAppointmentDropdowns } = useAppointments();
+
+  const {
+    pagination: tablePagination,
+    actions: pagedActions,
+    searchQuery: debouncedSearch,
+    statusFilter,
+  } = usePrefetchPagination({
+    selector: (state) => state.prescription,
+    actions: paginationActions,
+    fixedPageSize: 5,
+    initialStatus: userRole === "PHARMACIST" ? "created" : "all",
+  });
+
+  const loading = prescriptionsLoading;
 
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
 
-  // Search & Filter State
+  // Filter State (Local for immediate UI feedback before debounce)
   const [searchText, setSearchText] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form] = Form.useForm();
 
   useEffect(() => {
     dispatch(fetchRequest());
-    fetchPatients();
-    fetchAppointmentDropdowns();
-  }, [dispatch, fetchPatients, fetchAppointmentDropdowns]);
+    const isMedicalStaff = ["DOCTOR", "ADMIN", "PROVIDER"].includes(userRole);
+
+    // Set provider filter specifically for doctors
+    if (userRole === "DOCTOR" || userRole === "PROVIDER") {
+      dispatch(setProviderId(user?.id));
+    } else {
+      dispatch(setProviderId(null)); // Reset for Admin/Pharmacist
+    }
+
+    if (isMedicalStaff) {
+      fetchPatients();
+      fetchAppointmentDropdowns();
+    }
+  }, [dispatch, fetchPatients, fetchAppointmentDropdowns, userRole, user?.id]);
 
   // Debounce Search
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchText), 500);
+    const timer = setTimeout(() => pagedActions.setSearch(searchText), 500);
     return () => clearTimeout(timer);
-  }, [searchText]);
+  }, [searchText, pagedActions]);
 
-  // Filtered List Logic
-  const filteredList = useMemo(() => {
-    let result = [...list];
+  const handleStatusFilterChange = (val) => {
+    pagedActions.setStatus(val);
+  };
 
-    // 1. Status Filter
-    if (statusFilter !== "all") {
-      result = result.filter((v) => {
-        const s = (v.status || v.STATUS || v.status_name || "").toLowerCase();
-        return s === statusFilter.toLowerCase();
-      });
-    }
-
-    // 2. Search Text
-    if (debouncedSearch) {
-      const q = debouncedSearch.toLowerCase();
-      result = result.filter((v) => {
-        const patientName = (
-          v.patient_name ||
-          (v.patient ? `${v.patient.first_name} ${v.patient.last_name}` : "")
-        ).toLowerCase();
-        const doctorName = (
-          v.provider_name ||
-          v.doctor?.name ||
-          (v.doctor ? `${v.doctor.first_name} ${v.doctor.last_name}` : "")
-        ).toLowerCase();
-        const meds = (v.items || v.medicines || []).some((m) =>
-          (m.medicine_name || "").toLowerCase().includes(q),
-        );
-
-        return patientName.includes(q) || doctorName.includes(q) || meds;
-      });
-    }
-
-    return result;
-  }, [list, debouncedSearch, statusFilter]);
-
-  useEffect(() => {
-    if (error) {
-      message.error(error);
-      dispatch(clearError());
-    }
-  }, [error, dispatch]);
+  const handleClose = useCallback(() => {
+    setShowForm(false);
+    setEditTarget(null);
+    form.resetFields();
+  }, [form]);
 
   const handleOpen = useCallback(
     (record = null) => {
@@ -359,26 +369,39 @@ const PrescriptionPage = () => {
     [form],
   );
 
-  const handleClose = useCallback(() => {
-    setShowForm(false);
-    setEditTarget(null);
-    form.resetFields();
-  }, [form]);
+  useEffect(() => {
+    if (error) {
+      if (error === "OFFLINE_QUEUED") {
+        handleClose();
+      } else {
+        message.error(error);
+      }
+      dispatch(clearError());
+      setIsSubmitting(false);
+    }
+  }, [error, dispatch, handleClose]);
+
+  useEffect(() => {
+    if (isSubmitting && !submitting && !error) {
+      message.success(
+        editTarget ? "Prescription updated!" : "Prescription created!",
+      );
+      setIsSubmitting(false);
+      handleClose();
+    }
+  }, [isSubmitting, submitting, error, editTarget, handleClose]);
 
   const handleSubmit = useCallback(async () => {
     try {
       const values = await form.validateFields();
+      setIsSubmitting(true);
       if (editTarget) {
         dispatch(updateRequest({ id: editTarget.id, data: values }));
       } else {
         dispatch(createRequest(values));
       }
-      handleClose();
-      message.success(
-        editTarget ? "Prescription updated!" : "Prescription created!",
-      );
     } catch (e) {}
-  }, [form, editTarget, dispatch, handleClose]);
+  }, [form, editTarget, dispatch]);
 
   const handleStatusChange = useCallback(
     (id, type) => {
@@ -396,18 +419,35 @@ const PrescriptionPage = () => {
   );
 
   const apptOptions = useMemo(() => {
-    const filtered = appointments.filter(
-      (a) =>
+    const userId = user?.id || user?.user_id;
+
+    const filtered = appointments.filter((a) => {
+      // 1. Basic eligibility: No existing prescription OR it's the one we're editing
+      const isEligible =
         !list.some((p) => p.appointment_id === a.id) ||
-        (editTarget && editTarget.appointment_id === a.id),
-    );
+        (editTarget && editTarget.appointment_id === a.id);
+
+      if (!isEligible) return false;
+
+      // 2. Role-based filtering: If Doctor/Provider, only show their own appointments
+      if (userRole === "DOCTOR" || userRole === "PROVIDER") {
+        return String(a.provider_id) === String(userId);
+      }
+
+      return true; // Admin/Pharmacist etc. see all
+    });
+
     return filtered.map((a) => {
       // Name resolution logic
       let name = a.patient_name || a.patientName;
       if (!name && a.patient_id && patients.length > 0) {
-        const found = patients.find(p => String(p.id) === String(a.patient_id));
+        const found = patients.find(
+          (p) => String(p.id) === String(a.patient_id),
+        );
         if (found) {
-          name = `${found.first_name || ""} ${found.last_name || ""}`.trim() || found.name;
+          name =
+            `${found.first_name || ""} ${found.last_name || ""}`.trim() ||
+            found.name;
         }
       }
       return {
@@ -415,7 +455,7 @@ const PrescriptionPage = () => {
         label: `${name || "Patient"} — ${new Date(a.appointment_date || a.date).toLocaleDateString()}`,
       };
     });
-  }, [appointments, list, editTarget, patients]);
+  }, [appointments, list, editTarget, patients, user, userRole]);
 
   const roleLabel = {
     DOCTOR: "Prescriptions",
@@ -464,16 +504,24 @@ const PrescriptionPage = () => {
               />
             </SearchWrapper>
 
-            {userRole !== "PATIENT" && (
+            {(userRole === "PATIENT" ||
+              userRole === "DOCTOR" ||
+              userRole === "PROVIDER") && (
               <Select
                 value={statusFilter}
-                onChange={setStatusFilter}
+                onChange={handleStatusFilterChange}
                 style={{ width: 140 }}
                 options={[
                   { value: "all", label: "All Status" },
-                  { value: "created", label: "Created" },
+                  {
+                    value: "created",
+                    label: userRole === "PATIENT" ? "Created" : "Recent",
+                  },
                   { value: "verified", label: "Verified" },
-                  { value: "dispensed", label: "Dispensed" },
+                  {
+                    value: "dispensed",
+                    label: userRole === "PATIENT" ? "Dispensed" : "Done",
+                  },
                 ]}
               />
             )}
@@ -499,16 +547,24 @@ const PrescriptionPage = () => {
               />
             </SearchWrapper>
 
-            {userRole !== "PATIENT" && (
+            {(userRole === "PATIENT" ||
+              userRole === "DOCTOR" ||
+              userRole === "PROVIDER") && (
               <Select
                 value={statusFilter}
-                onChange={setStatusFilter}
+                onChange={handleStatusFilterChange}
                 style={{ width: 120 }}
                 options={[
                   { value: "all", label: "All" },
-                  { value: "created", label: "Recent" },
+                  {
+                    value: "created",
+                    label: userRole === "PATIENT" ? "Created" : "Recent",
+                  },
                   { value: "verified", label: "Verified" },
-                  { value: "dispensed", label: "Done" },
+                  {
+                    value: "dispensed",
+                    label: userRole === "PATIENT" ? "Dispensed" : "Done",
+                  },
                 ]}
               />
             )}
@@ -523,8 +579,48 @@ const PrescriptionPage = () => {
         </MobileRow>
       </HeaderCard>
 
+      {userRole === "PHARMACIST" && (
+        <Tabs
+          activeKey={
+            statusFilter === "dispensed"
+              ? "processed"
+              : statusFilter === "verified"
+                ? "verified"
+                : "pending"
+          }
+          onChange={(key) => {
+            const statusMap = {
+              pending: "created",
+              verified: "verified",
+              processed: "dispensed",
+            };
+            pagedActions.setStatus(statusMap[key] || "created");
+          }}
+          style={{
+            marginBottom: 16,
+            background: theme.background.card,
+            padding: "0 20px",
+            borderRadius: "12px",
+          }}
+          items={[
+            {
+              key: "pending",
+              label: "Pending",
+            },
+            {
+              key: "verified",
+              label: "Verified",
+            },
+            {
+              key: "processed",
+              label: "Processed",
+            },
+          ]}
+        />
+      )}
+
       <PrescriptionList
-        prescriptions={filteredList}
+        prescriptions={list}
         patients={patients}
         appointments={appointments}
         loading={loading}
@@ -533,6 +629,9 @@ const PrescriptionPage = () => {
         onEdit={handleOpen}
         onDelete={handleDelete}
         onStatusChange={handleStatusChange}
+        pagination={tablePagination}
+        pagedActions={pagedActions}
+        statusFilter={statusFilter}
       />
 
       <Drawer
@@ -551,7 +650,11 @@ const PrescriptionPage = () => {
               />
             </TitleIcon>
             <span
-              style={{ fontSize: "16px", fontWeight: 700, color: theme.text.primary }}
+              style={{
+                fontSize: "16px",
+                fontWeight: 700,
+                color: theme.text.primary,
+              }}
             >
               {editTarget ? "Edit Prescription" : "Create New Prescription"}
             </span>
@@ -563,7 +666,11 @@ const PrescriptionPage = () => {
         size={window.innerWidth > 992 ? 800 : "100%"}
         styles={{
           body: { padding: "24px", background: theme.background.card },
-          header: { borderBottom: `1px solid ${theme.border}`, padding: "16px 24px", background: theme.background.card },
+          header: {
+            borderBottom: `1px solid ${theme.border}`,
+            padding: "16px 24px",
+            background: theme.background.card,
+          },
         }}
         closable={false}
         extra={

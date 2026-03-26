@@ -2,6 +2,10 @@ import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchRequest,
+  fetchPagedRequest,
+  setPage,
+  setSearch as setSearchAction,
+  setStatus as setStatusAction,
   createRequest,
   updateRequest,
   statusChangeRequest,
@@ -15,6 +19,22 @@ const usePrescription = () => {
 
   const fetchPrescriptions = useCallback(() => {
     dispatch(fetchRequest());
+  }, [dispatch]);
+
+  const fetchPaged = useCallback((page) => {
+    dispatch(fetchPagedRequest(page));
+  }, [dispatch]);
+
+  const setPageNum = useCallback((page) => {
+    dispatch(setPage(page));
+  }, [dispatch]);
+
+  const setSearch = useCallback((q) => {
+    dispatch(setSearchAction(q));
+  }, [dispatch]);
+
+  const setStatus = useCallback((s) => {
+    dispatch(setStatusAction(s));
   }, [dispatch]);
 
   const createPrescription = useCallback((data) => {
@@ -40,6 +60,10 @@ const usePrescription = () => {
   return {
     ...state,
     fetchPrescriptions,
+    fetchPaged,
+    setPageNum,
+    setSearch,
+    setStatus,
     createPrescription,
     updatePrescription,
     changeStatus,

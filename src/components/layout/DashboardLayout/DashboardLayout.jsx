@@ -1,10 +1,13 @@
 import React, { Suspense } from "react";
-import { Layout, Spin, Drawer } from "antd";
+import { Layout, Drawer } from "antd";
 import { MedicineBoxOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import { useSelector, useDispatch } from "react-redux";
 import { Outlet, useLocation } from "react-router-dom";
-import { setSidebarCollapsed, setMobileDrawerOpen } from "../../../modules/ui/uiSlice";
+import {
+  setSidebarCollapsed,
+  setMobileDrawerOpen,
+} from "../../../modules/ui/uiSlice";
 import Sidebar, { SidebarContent } from "../Sidebar/Sidebar";
 import Header from "../Header/Header";
 import Footer from "../Footer/Footer";
@@ -20,7 +23,7 @@ const { Content } = Layout;
 const MainLayout = styled(Layout)`
   height: 100vh;
   overflow: hidden;
-  background: ${props => props.theme.background.main};
+  background: ${(props) => props.theme.background.main};
 `;
 
 const StyledContent = styled(Content)`
@@ -45,7 +48,7 @@ const DashboardLayout = () => {
   const location = useLocation();
   const { theme } = useTheme();
   const { user, userRole } = useAuth();
-  
+
   // Start inactivity timer (5 minutes auto-logout)
   useIdleLogout();
   const collapsed = useSelector((state) => state.ui.sidebarCollapsed);
@@ -68,7 +71,7 @@ const DashboardLayout = () => {
       <ErrorBoundary variant="mini">
         <Header user={safeUser} />
       </ErrorBoundary>
-      
+
       <Layout style={{ background: "transparent" }}>
         {/* Persistent Sidebar for Desktop */}
         <Sidebar
@@ -82,8 +85,15 @@ const DashboardLayout = () => {
         {/* Slide-out Drawer for Mobile */}
         <Drawer
           title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: theme.primary }}>
-              <MedicineBoxOutlined style={{ fontSize: '1.4rem' }} />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                color: theme.primary,
+              }}
+            >
+              <MedicineBoxOutlined style={{ fontSize: "1.4rem" }} />
               <span style={{ fontWeight: 700 }}>MedPortal</span>
             </div>
           }
@@ -93,16 +103,23 @@ const DashboardLayout = () => {
           closeIcon={<span style={{ color: theme.primary }}>×</span>}
           styles={{
             body: { padding: 0, background: theme.secondary },
-            header: { 
-              background: theme.background.card, 
+            header: {
+              background: theme.background.card,
               borderBottom: `1px solid ${theme.border}`,
-              padding: '16px 20px'
+              padding: "16px 20px",
             },
-            wrapper: { width: 280 }
+            wrapper: { width: 280 },
           }}
         >
-          <div style={{ background: theme.secondary, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <SidebarContent 
+          <div
+            style={{
+              background: theme.secondary,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <SidebarContent
               role={currentUserRole}
               user={safeUser}
               currentPath={location.pathname}
@@ -121,13 +138,11 @@ const DashboardLayout = () => {
         >
           <StyledContent>
             <ErrorBoundary key={location.key}>
-              <Suspense
-                fallback={<LoadingScreen label="Loading Page..." />}
-              >
+              <Suspense fallback={<LoadingScreen label="Loading Page..." />}>
                 <Outlet />
               </Suspense>
             </ErrorBoundary>
-            <div style={{ marginTop: 'auto' }}>
+            <div style={{ marginTop: "auto" }}>
               <Footer />
             </div>
           </StyledContent>

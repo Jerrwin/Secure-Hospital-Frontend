@@ -1,63 +1,186 @@
-import React from 'react';
-import { Card, Typography, Space } from 'antd';
-import styled from 'styled-components';
-import { useTheme } from '../../../context/ThemeContext';
+import React from "react";
+import { Typography } from "antd";
+import styled, { keyframes } from "styled-components";
+import { useTheme } from "../../../context/ThemeContext";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
-const StyledCard = styled(Card)`
-  border-radius: ${props => props.theme.borderRadius.md};
-  border: 1px solid ${props => props.theme.border};
-  box-shadow: ${props => props.theme.shadow};
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  background: ${props => props.theme.background.card};
+const shimmer = keyframes`
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(300%) rotate(45deg); }
+`;
+
+const floatUp = keyframes`
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
+
+const CardWrap = styled.div`
+  position: relative;
+  border-radius: ${(p) => p.theme.borderRadius.xl};
+  border: 1px solid ${(p) => p.theme.border};
+  background: ${(p) => p.theme.background.card};
+  box-shadow: ${(p) => p.theme.shadow};
+  padding: 18px 22px;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  cursor: default;
+  animation: ${floatUp} 0.45s ease both;
+  animation-delay: ${(p) => p.$delay || "0s"};
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: ${props => props.theme.glow};
+    transform: translateY(-4px);
+    box-shadow: ${(p) => p.theme.glow};
   }
 
-  .ant-card-body {
-    padding: 20px 24px;
+  /* Shimmer sweep on hover */
+  &::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 30%;
+    height: 200%;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      ${(p) => p.$accentColor}18 50%,
+      transparent 60%
+    );
+    transform: translateX(-100%) rotate(45deg);
+    transition: none;
+  }
+  &:hover::before {
+    animation: ${shimmer} 0.6s ease forwards;
+  }
+
+  /* Accent bar on the left */
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 25%;
+    height: 50%;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: linear-gradient(
+      180deg,
+      ${(p) => p.$accentColor},
+      ${(p) => p.$accentColor}55
+    );
   }
 `;
 
-const IconWrapper = styled.div`
-  width: 48px;
-  height: 48px;
-  border-radius: ${props => props.theme.borderRadius.md};
-  background: ${(p) => p.$color ? `${p.$color}15` : p.theme.primaryLight};
-  color: ${(p) => p.$color || p.theme.primary};
+const TopRow = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const IconBox = styled.div`
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: ${(p) => p.theme.borderRadius.md};
+  background: linear-gradient(
+    135deg,
+    ${(p) => p.$color}22,
+    ${(p) => p.$color}0a
+  );
+  border: 1px solid ${(p) => p.$color}33;
+  color: ${(p) => p.$color};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
+  transition: transform 0.2s ease;
+
+  ${CardWrap}:hover & {
+    transform: scale(1.1) rotate(-4deg);
+  }
 `;
 
-const StatWidget = ({ title, value, icon, trend, color }) => {
+const Label = styled(Text)`
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: ${(p) => p.theme.text.secondary} !important;
+  font-family: ${(p) => p.theme.headingFont || "inherit"} !important;
+  display: block;
+  margin-bottom: 4px;
+`;
+
+const ValueText = styled.div`
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: ${(p) => p.$color || p.theme.secondary};
+  font-family: ${(p) => p.theme.headingFont || "inherit"};
+  letter-spacing: -0.02em;
+  margin-top: 2px;
+`;
+
+const TrendBadge = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: ${(p) =>
+    p.$positive ? p.theme.status.success + "18" : p.theme.status.error + "18"};
+  color: ${(p) =>
+    p.$positive ? p.theme.status.success : p.theme.status.error};
+`;
+
+const BgPattern = styled.div`
+  position: absolute;
+  right: -16px;
+  bottom: -16px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, ${(p) => p.$color}0f 0%, transparent 70%);
+  pointer-events: none;
+`;
+
+const StatWidget = ({ title, value, icon, trend, color, delay }) => {
   const { theme } = useTheme();
+  const accentColor = color || theme.primary;
+  const safeValue = value !== undefined && value !== null ? value : "—";
+
   return (
-    <StyledCard variant="borderless">
-      <Space align="start" size="large" style={{ width: '100%', justifyContent: 'space-between' }}>
-        <div>
-          <Text style={{ color: theme.text.secondary, fontSize: '0.9rem', fontWeight: 500 }}>
-            {title}
-          </Text>
-          <Title level={2} style={{ color: color || theme.secondary, margin: '8px 0 0 0', fontWeight: 700 }}>
-            {value !== undefined && value !== null ? value : '-'}
-          </Title>
-          {trend && (
-            <Text style={{ color: trend >= 0 ? theme.status.success : theme.status.error, fontSize: '0.85rem', marginTop: '4px', display: 'block' }}>
-              {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% from last month
-            </Text>
+    <CardWrap theme={theme} $accentColor={accentColor} $delay={delay}>
+      <BgPattern theme={theme} $color={accentColor} />
+      <TopRow>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Label theme={theme}>{title}</Label>
+          <ValueText theme={theme} $color={accentColor}>
+            {safeValue}
+          </ValueText>
+          {trend !== undefined && trend !== null && (
+            <TrendBadge theme={theme} $positive={trend >= 0}>
+              {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
+              <span style={{ fontWeight: 400, opacity: 0.75 }}>
+                vs last month
+              </span>
+            </TrendBadge>
           )}
         </div>
-        <IconWrapper $color={color}>
+        <IconBox theme={theme} $color={accentColor}>
           {icon}
-        </IconWrapper>
-      </Space>
-    </StyledCard>
+        </IconBox>
+      </TopRow>
+    </CardWrap>
   );
 };
 
-export default StatWidget;
+export default React.memo(StatWidget);

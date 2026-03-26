@@ -1,13 +1,21 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  invoices: [], // Master list (All)
-  pendingInvoices: [], // Filtered pending
-  paidInvoices: [], // Filtered paid
-  sessionBilledIds: [], // IDs of appointments billed in this session
-  completedAppointments: [],
+  list: [],           // current page results
+  buffer: [],         // prefetched next page
+  pagination: {
+    currentPage: 1,
+    perPage: 5,       // fixed
+    total: 0,
+    lastPage: 1,
+  },
+  searchQuery: "",
+  statusFilter: "unbilled", // default to unbilled to match initial page tab
+  invoices: [], 
+  sessionBilledIds: [], 
   selectedInvoice: null,
   loading: false,
+  prefetching: false,
   submitting: false,
   createSuccess: false,
   paymentSuccess: false,
@@ -20,10 +28,71 @@ const billingSlice = createSlice({
   name: "billing",
   initialState,
   reducers: {
-    // Fetch Invoices (All)
+    // ── FETCH PAGED ───────────────────────────────────────────────────────
+    fetchPagedRequest: (state) => {
+      state.loading = true;
+      state.error = null;
+    },
+    fetchPagedSuccess: (state, action) => {
+      state.loading = false;
+      state.fetched = true;
+      state.list = action.payload.data;
+      const backendPagination = action.payload.pagination;
+      if (backendPagination) {
+        state.pagination = {
+          currentPage: backendPagination.current_page,
+          perPage: state.pagination.perPage,
+          total: backendPagination.total,
+          lastPage: backendPagination.last_page,
+        };
+      }
+      state.buffer = []; 
+    },
+    fetchPagedFailure: (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+      state.fetched = true; // Stop loop on error
+    },
+
+    // ── PREFETCH ───────────────────────────────────────────────────────────
+    prefetchRequest: (state) => {
+      state.prefetching = true;
+    },
+    prefetchSuccess: (state, action) => {
+      state.prefetching = false;
+      state.buffer = action.payload.data;
+    },
+    prefetchFailure: (state) => {
+      state.prefetching = false;
+    },
+
+    setPage: () => {}, // Handled by saga
+    moveBufferToList: (state, action) => {
+      state.list = state.buffer;
+      state.buffer = [];
+      state.pagination.currentPage = action.payload;
+      state.fetched = true;
+    },
+    setSearch: (state, action) => {
+      state.searchQuery = action.payload;
+      state.pagination.currentPage = 1;
+      state.list = [];
+      state.buffer = [];
+      state.fetched = false;
+    },
+    setStatus: (state, action) => {
+      state.statusFilter = action.payload;
+      state.pagination.currentPage = 1;
+      state.list = [];
+      state.buffer = [];
+      state.fetched = false;
+    },
+
+    // Fetch Invoices (Manual/Legacy)
     fetchInvoicesRequest: (state) => {
       state.loading = true;
       state.error = null;
+      state.fetched = false; // Add reset to fix refresh button logic too
     },
     fetchInvoicesSuccess: (state, action) => {
       state.loading = false;
@@ -48,20 +117,6 @@ const billingSlice = createSlice({
       state.paidInvoices = data;
     },
 
-    // Fetch Completed Appointments
-    fetchCompletedAppointmentsRequest: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-    fetchCompletedAppointmentsSuccess: (state, action) => {
-      state.loading = false;
-      const data = Array.isArray(action.payload) ? action.payload : (action.payload?.data || []);
-      state.completedAppointments = data;
-    },
-    fetchCompletedAppointmentsFailure: (state, action) => {
-      state.loading = false;
-      state.error = action.payload;
-    },
 
     // Create Invoice
     createInvoiceRequest: (state) => {
@@ -127,14 +182,21 @@ const billingSlice = createSlice({
 });
 
 export const {
+  fetchPagedRequest,
+  fetchPagedSuccess,
+  fetchPagedFailure,
+  prefetchRequest,
+  prefetchSuccess,
+  prefetchFailure,
+  setPage,
+  moveBufferToList,
+  setSearch,
+  setStatus,
   fetchInvoicesRequest,
   fetchInvoicesSuccess,
   fetchInvoicesFailure,
   fetchPendingInvoicesSuccess,
   fetchPaidInvoicesSuccess,
-  fetchCompletedAppointmentsRequest,
-  fetchCompletedAppointmentsSuccess,
-  fetchCompletedAppointmentsFailure,
   createInvoiceRequest,
   createInvoiceSuccess,
   createInvoiceFailure,

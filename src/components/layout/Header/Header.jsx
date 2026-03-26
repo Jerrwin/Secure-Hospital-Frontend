@@ -14,12 +14,12 @@ import NotificationBell from "../../common/NotificationBell";
 const { Header: AntHeader } = Layout;
 
 const StyledHeader = styled(AntHeader)`
-  background-color: ${props => props.theme.background.card};
+  background-color: ${(props) => props.theme.background.card};
   padding: 0 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: ${props => props.theme.shadow};
+  box-shadow: ${(props) => props.theme.shadow};
   position: sticky;
   top: 0;
   z-index: 10;
@@ -49,7 +49,7 @@ const Brand = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  color: ${props => props.theme.primary};
+  color: ${(props) => props.theme.primary};
   font-size: 1.25rem;
   font-weight: 700;
 
@@ -62,14 +62,19 @@ const Brand = styled.div`
 const LogoutButton = styled(Button)`
   display: flex;
   align-items: center;
-  border-radius: ${props => props.theme.borderRadius.md};
+  border-radius: ${(props) => props.theme.borderRadius.md};
   font-weight: 500;
   color: #ef4444;
-  border-color: ${props => props.theme.name === "dark" ? "rgba(239, 68, 68, 0.2)" : "#fca5a5"};
-  background: ${props => props.theme.name === "dark" ? "rgba(239, 68, 68, 0.1)" : "#fef2f2"};
+  border-color: ${(props) =>
+    props.theme.name === "dark" ? "rgba(239, 68, 68, 0.2)" : "#fca5a5"};
+  background: ${(props) =>
+    props.theme.name === "dark" ? "rgba(239, 68, 68, 0.1)" : "#fef2f2"};
 
   &:hover {
-    background: ${props => props.theme.name === "dark" ? "rgba(239, 68, 68, 0.2)" : "#fee2e2"} !important;
+    background: ${(props) =>
+      props.theme.name === "dark"
+        ? "rgba(239, 68, 68, 0.2)"
+        : "#fee2e2"} !important;
     color: #dc2626 !important;
     border-color: #ef4444 !important;
   }

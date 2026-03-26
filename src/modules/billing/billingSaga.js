@@ -1,14 +1,20 @@
-import { call, put, takeLatest, all } from "redux-saga/effects";
+import { call, put, takeLatest, all, select } from "redux-saga/effects";
 import billingAPI from "./billingAPI";
+import { 
+  handleSetPageSagaGenerator 
+} from "../../utils/paginationSagaUtils";
 import {
+  fetchPagedRequest,
+  fetchPagedSuccess,
+  fetchPagedFailure,
+  prefetchRequest,
+  prefetchSuccess,
+  prefetchFailure,
+  setPage,
+  moveBufferToList,
+  setSearch,
+  setStatus,
   fetchInvoicesRequest,
-  fetchInvoicesSuccess,
-  fetchInvoicesFailure,
-  fetchPendingInvoicesSuccess,
-  fetchPaidInvoicesSuccess,
-  fetchCompletedAppointmentsRequest,
-  fetchCompletedAppointmentsSuccess,
-  fetchCompletedAppointmentsFailure,
   createInvoiceRequest,
   createInvoiceSuccess,
   createInvoiceFailure,
@@ -17,76 +23,185 @@ import {
   processPaymentFailure,
 } from "./billingSlice";
 
-function* fetchInvoicesSaga(action) {
+const stateSelector = (state) => state.billing;
+const paginationActions = {
+  fetchPagedRequest, fetchPagedSuccess, fetchPagedFailure,
+  prefetchRequest, prefetchSuccess, prefetchFailure,
+  setPage, moveBufferToList, setSearch, setStatus
+};
+
+function* fetchPagedInvoicesSaga(action) {
   try {
-    const res = yield call(billingAPI.getInvoices, action.payload);
-    console.log("fetchInvoicesSaga Response:", res.data);
+    const state = yield select(stateSelector);
+    const { perPage } = state.pagination;
+    const { searchQuery, statusFilter } = state;
+    const page = action.payload || state.pagination.currentPage;
+
+    console.log(`[billingSaga] Fetching paged invoices. Page: ${page}, Status: ${statusFilter}, Search: ${searchQuery}`);
+
+    const auth = yield select((state) => state.auth);
+    const userRole = (auth.user?.role || "").toUpperCase();
+    const patientRoleId = 6; // From useAuth.js
+
+    const params = {
+      page,
+      per_page: perPage,
+      search: searchQuery || undefined,
+      status: (statusFilter === "all" || statusFilter === "unbilled") ? undefined : statusFilter,
+    };
+
+    // If user is a patient, strictly filter by their patient ID
+    if (userRole === "PATIENT" || auth.user?.role_id === patientRoleId) {
+      params.patient_id = auth.user.id;
+    }
+
+    const apiMethod = statusFilter === "unbilled" 
+      ? billingAPI.getCompletedAppointments 
+      : billingAPI.getInvoices;
+
+    const res = yield call(apiMethod, params);
+    let data = res.data;
     
-    // Handle both wrapped {success, data} and raw [...] formats
-    const data = res.data.success ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-    
-    if (res.data.success || Array.isArray(res.data)) {
-      let finalData = data;
+    // Normalize: If raw array, wrap it.
+    if (Array.isArray(data)) {
+        console.log(`[billingSaga] Received raw array of ${data.length} items`);
+        // If it's a raw array, we simulate pagination. 
+        // If it's full (length === perPage), we assume there's a next page.
+        data = { 
+          success: true, 
+          data: data, 
+          pagination: { 
+            current_page: page, 
+            last_page: data.length >= perPage ? page + 1 : page, 
+            total: data.length 
+          } 
+        };
+    }
+
+    if (data.success) {
+      let finalData = data.data || [];
       
-      // If we only have invoice_id, fetch complete details for each invoice
-      if (data.length > 0 && data[0].invoice_id && !data[0].amount) {
-        console.log("Only invoice_id found, fetching complete invoice details...");
+      // Enforce perPage limit strictly if backend is misbehaving
+      if (finalData.length > perPage) {
+        console.log(`[billingSaga] Backend returned ${finalData.length} items, slicing to ${perPage}`);
+        finalData = finalData.slice(0, perPage);
+      }
+      
+      // RESTORE: Fetch complete details if only IDs/minimal data are returned
+      if (finalData.length > 0 && finalData[0].invoice_id && !finalData[0].amount) {
+        console.log(`[billingSaga] Fetching missing details for ${finalData.length} invoices`);
         const completeInvoices = [];
-        
-        for (const invoice of data) {
+        for (const invoice of finalData) {
           try {
-            console.log("Fetching details for invoice:", invoice.invoice_id);
             const detailRes = yield call(billingAPI.getInvoiceById, invoice.invoice_id);
-            console.log("Invoice detail response:", detailRes.data);
-            console.log("Invoice detail response status:", detailRes.status);
-            console.log("Invoice detail response headers:", detailRes.headers);
-            
-            const invoiceDetail = detailRes.data.success ? detailRes.data.data : detailRes.data;
-            console.log("Processed invoice detail:", invoiceDetail);
-            completeInvoices.push(invoiceDetail);
-          } catch (error) {
-            console.error("Failed to fetch invoice details for", invoice.invoice_id, error);
-            console.error("Error response:", error.response?.data);
-            completeInvoices.push(invoice); // Keep the partial data
+            completeInvoices.push(detailRes.data.success ? detailRes.data.data : detailRes.data);
+          } catch (e) {
+            completeInvoices.push(invoice);
           }
         }
-        
-        console.log("Complete invoices array:", completeInvoices);
         finalData = completeInvoices;
-        yield put(fetchInvoicesSuccess(finalData));
-      } else {
-        yield put(fetchInvoicesSuccess(finalData));
       }
 
-      const status = action.payload?.STATUS?.toLowerCase();
-      if (status === 'pending') {
-        yield put(fetchPendingInvoicesSuccess(finalData));
-      } else if (status === 'paid') {
-        yield put(fetchPaidInvoicesSuccess(finalData));
+      console.log(`[billingSaga] Dispatching fetchPagedSuccess with ${finalData.length} items`);
+      
+      // Normalize: if unbilled appointments, ensure they have name fields for the UI
+      if (statusFilter === "unbilled") {
+        finalData = finalData.map(app => ({
+          ...app,
+          patient_name: app.patient_name || app.patientName || (app.patient ? `${app.patient.first_name || ""} ${app.patient.last_name || ""}`.trim() : null),
+          provider_name: app.provider_name || app.providerName || (app.provider ? `${app.provider.first_name || app.provider.name || ""} ${app.provider.last_name || ""}`.trim() : null),
+          provider_id: app.provider_id || (app.provider ? app.provider.id : null),
+          patient_id: app.patient_id || (app.patient ? app.patient.id : null),
+        }));
+      }
+
+      yield put(fetchPagedSuccess({ data: finalData, pagination: data.pagination }));
+      
+      // Auto-trigger prefetch for next page
+      if (data.pagination && data.pagination.current_page < data.pagination.last_page) {
+        console.log(`[billingSaga] Triggering prefetch for page ${data.pagination.current_page + 1}`);
+        yield put(prefetchRequest(data.pagination.current_page + 1));
       }
     } else {
-      yield put(fetchInvoicesFailure("Invalid response format"));
+      yield put(fetchPagedFailure(data.message || "Fetch failed"));
     }
-  } catch (error) {
-    yield put(fetchInvoicesFailure(error.response?.data?.message || "Error fetching invoices"));
+  } catch (e) {
+    console.error("[billingSaga] Error in fetchPagedInvoicesSaga:", e);
+    yield put(fetchPagedFailure(e.message));
   }
 }
 
-function* fetchCompletedAppointmentsSaga() {
+function* prefetchSaga(action) {
   try {
-    const res = yield call(billingAPI.getCompletedAppointments);
-    console.log("fetchCompletedAppointments Response:", res.data);
-    const data = res.data.success ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-    
-    if (res.data.success || Array.isArray(res.data)) {
-      yield put(fetchCompletedAppointmentsSuccess(data));
-    } else {
-      yield put(fetchCompletedAppointmentsFailure("Invalid response format"));
+    const state = yield select(stateSelector);
+    const { perPage } = state.pagination;
+    const { searchQuery, statusFilter } = state;
+    const page = action.payload;
+
+    console.log(`[billingSaga] Prefetching page ${page}`);
+
+    const auth = yield select((state) => state.auth);
+    const userRole = (auth.user?.role || "").toUpperCase();
+    const patientRoleId = 6;
+
+    const params = {
+      page,
+      per_page: perPage,
+      search: searchQuery || undefined,
+      status: (statusFilter === "all" || statusFilter === "unbilled") ? undefined : statusFilter,
+    };
+
+    if (userRole === "PATIENT" || auth.user?.role_id === patientRoleId) {
+      params.patient_id = auth.user.id;
     }
-  } catch (error) {
-    yield put(fetchCompletedAppointmentsFailure(error.response?.data?.message || "Error fetching appointments"));
+    
+    const apiMethod = statusFilter === "unbilled" 
+      ? billingAPI.getCompletedAppointments 
+      : billingAPI.getInvoices;
+
+    const res = yield call(apiMethod, params);
+    let data = res.data;
+    if (Array.isArray(data)) data = { success: true, data: data };
+
+    if (data.success) {
+      let finalData = data.data || [];
+      if (finalData.length > perPage) finalData = finalData.slice(0, perPage);
+
+       // Fetch complete details if needed
+       if (finalData.length > 0 && finalData[0].invoice_id && !finalData[0].amount) {
+        const completeInvoices = [];
+        for (const invoice of finalData) {
+           try {
+             const detailRes = yield call(billingAPI.getInvoiceById, invoice.invoice_id);
+             completeInvoices.push(detailRes.data.success ? detailRes.data.data : detailRes.data);
+           } catch (e) {
+             completeInvoices.push(invoice);
+           }
+        }
+        finalData = completeInvoices;
+      }
+      console.log(`[billingSaga] Prefetch success. Storing ${finalData.length} items in buffer.`);
+      
+      // Normalize: if unbilled appointments, ensure they have name fields
+      if (statusFilter === "unbilled") {
+        finalData = finalData.map(app => ({
+          ...app,
+          patient_name: app.patient_name || app.patientName || (app.patient ? `${app.patient.first_name || ""} ${app.patient.last_name || ""}`.trim() : null),
+          provider_name: app.provider_name || app.providerName || (app.provider ? `${app.provider.first_name || app.provider.name || ""} ${app.provider.last_name || ""}`.trim() : null),
+          provider_id: app.provider_id || (app.provider ? app.provider.id : null),
+          patient_id: app.patient_id || (app.patient ? app.patient.id : null),
+        }));
+      }
+
+      yield put(prefetchSuccess({ data: finalData }));
+    } else {
+      yield put(prefetchFailure());
+    }
+  } catch (e) {
+    yield put(prefetchFailure());
   }
 }
+
 
 function* createInvoiceSaga(action) {
   try {
@@ -102,7 +217,11 @@ function* createInvoiceSaga(action) {
       yield put(createInvoiceFailure("Failed to create invoice"));
     }
   } catch (error) {
-    yield put(createInvoiceFailure(error.response?.data?.message || "Error creating invoice"));
+    if (error.isOfflineQueued) {
+      yield put(createInvoiceFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(createInvoiceFailure(error.response?.data?.message || "Error creating invoice"));
+    }
   }
 }
 
@@ -120,14 +239,28 @@ function* processPaymentSaga(action) {
       yield put(processPaymentFailure("Failed to process payment"));
     }
   } catch (error) {
-    yield put(processPaymentFailure(error.response?.data?.message || "Error processing payment"));
+    if (error.isOfflineQueued) {
+      yield put(processPaymentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(processPaymentFailure(error.response?.data?.message || "Error processing payment"));
+    }
   }
+}
+
+function* handleSetPageSaga(action) {
+  yield handleSetPageSagaGenerator({
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
 }
 
 export default function* billingSaga() {
   yield all([
-    takeLatest(fetchInvoicesRequest.type, fetchInvoicesSaga),
-    takeLatest(fetchCompletedAppointmentsRequest.type, fetchCompletedAppointmentsSaga),
+    takeLatest(fetchPagedRequest.type, fetchPagedInvoicesSaga),
+    takeLatest(prefetchRequest.type, prefetchSaga),
+    takeLatest(setPage.type, handleSetPageSaga),
+    takeLatest(fetchInvoicesRequest.type, fetchPagedInvoicesSaga),
     takeLatest(createInvoiceRequest.type, createInvoiceSaga),
     takeLatest(processPaymentRequest.type, processPaymentSaga),
   ]);
