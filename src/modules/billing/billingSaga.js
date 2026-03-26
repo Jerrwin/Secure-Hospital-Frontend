@@ -32,9 +32,6 @@ const paginationActions = {
 
 function* fetchPagedInvoicesSaga(action) {
   try {
-<<<<<<< HEAD
-    const res = yield call(billingAPI.getInvoices, action.payload);
-=======
     const state = yield select(stateSelector);
     const { perPage } = state.pagination;
     const { searchQuery, statusFilter } = state;
@@ -64,7 +61,6 @@ function* fetchPagedInvoicesSaga(action) {
 
     const res = yield call(apiMethod, params);
     let data = res.data;
->>>>>>> test
     
     // Normalize: If raw array, wrap it.
     if (Array.isArray(data)) {
@@ -85,10 +81,6 @@ function* fetchPagedInvoicesSaga(action) {
     if (data.success) {
       let finalData = data.data || [];
       
-<<<<<<< HEAD
-      // If we only have invoice_id, fetch complete details for each invoice
-      if (data.length > 0 && data[0].invoice_id && !data[0].amount) {
-=======
       // Enforce perPage limit strictly if backend is misbehaving
       if (finalData.length > perPage) {
         console.log(`[billingSaga] Backend returned ${finalData.length} items, slicing to ${perPage}`);
@@ -98,29 +90,15 @@ function* fetchPagedInvoicesSaga(action) {
       // RESTORE: Fetch complete details if only IDs/minimal data are returned
       if (finalData.length > 0 && finalData[0].invoice_id && !finalData[0].amount) {
         console.log(`[billingSaga] Fetching missing details for ${finalData.length} invoices`);
->>>>>>> test
         const completeInvoices = [];
         for (const invoice of finalData) {
           try {
             const detailRes = yield call(billingAPI.getInvoiceById, invoice.invoice_id);
-<<<<<<< HEAD
-            
-            const invoiceDetail = detailRes.data.success ? detailRes.data.data : detailRes.data;
-            completeInvoices.push(invoiceDetail);
-          } catch (error) {
-            console.error("Failed to fetch invoice details for", invoice.invoice_id, error);
-            console.error("Error response:", error.response?.data);
-            completeInvoices.push(invoice); // Keep the partial data
-          }
-        }
-        
-=======
             completeInvoices.push(detailRes.data.success ? detailRes.data.data : detailRes.data);
           } catch (e) {
             completeInvoices.push(invoice);
           }
         }
->>>>>>> test
         finalData = completeInvoices;
       }
 
@@ -155,15 +133,6 @@ function* fetchPagedInvoicesSaga(action) {
 
 function* prefetchSaga(action) {
   try {
-<<<<<<< HEAD
-    const res = yield call(billingAPI.getCompletedAppointments);
-    const data = res.data.success ? res.data.data : (Array.isArray(res.data) ? res.data : []);
-    
-    if (res.data.success || Array.isArray(res.data)) {
-      yield put(fetchCompletedAppointmentsSuccess(data));
-    } else {
-      yield put(fetchCompletedAppointmentsFailure("Invalid response format"));
-=======
     const state = yield select(stateSelector);
     const { perPage } = state.pagination;
     const { searchQuery, statusFilter } = state;
@@ -184,7 +153,6 @@ function* prefetchSaga(action) {
 
     if (userRole === "PATIENT" || auth.user?.role_id === patientRoleId) {
       params.patient_id = auth.user.id;
->>>>>>> test
     }
     
     const apiMethod = statusFilter === "unbilled" 

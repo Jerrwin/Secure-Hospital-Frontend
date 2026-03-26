@@ -4,6 +4,7 @@ import { Result, Button, Spin, Tag, Space } from "antd";
 import UnifiedDashboard from "../../components/layout/DashboardLayout/UnifiedDashboard";
 import useDashboard from "../../components/layout/DashboardLayout/useDashboard";
 import useAuth from "../../modules/auth/hooks/useAuth";
+import ErrorBoundary from "../../components/common/ErrorBoundary";
 import { useTheme } from "../../context/ThemeContext";
 import styled from "styled-components";
 
