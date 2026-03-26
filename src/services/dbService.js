@@ -30,7 +30,6 @@ export const addOfflineRequest = async (request) => {
     };
 
     const id = await db.requestQueue.add(offlineRecord);
-    console.log(`Request queued offline with id: ${id}`, url);
     return id;
   } catch (error) {
     console.error("Error adding to offline queue:", error);

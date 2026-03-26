@@ -49,7 +49,6 @@ export function checkAuth(dispatch) {
     .catch(() => {
       // No session cookie - reset status to allow redirect to login
       dispatch(loginFailure(null));
-      console.log("No active session found on mount.");
     });
 }
 

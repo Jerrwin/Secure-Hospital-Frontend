@@ -214,7 +214,6 @@ function* prefetchSaga(action) {
 function* createInvoiceSaga(action) {
   try {
     const res = yield call(billingAPI.createInvoice, action.payload);
-    console.log("createInvoice Response:", res.data);
     const data = res.data.success ? res.data.data : res.data;
     
     if (res.data.success || data) {
@@ -236,7 +235,6 @@ function* createInvoiceSaga(action) {
 function* processPaymentSaga(action) {
   try {
     const res = yield call(billingAPI.processPayment, action.payload);
-    console.log("processPayment Response:", res.data);
     const data = res.data.success ? res.data.data : res.data;
     
     if (res.data.success || data) {

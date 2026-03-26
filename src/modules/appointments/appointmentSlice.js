@@ -167,7 +167,12 @@ const appointmentSlice = createSlice({
     },
     createAppointmentSuccess: (state, action) => {
       state.submitting = false;
-      state.list = [action.payload, ...state.list];
+      // Prepend to list but slice to perPage to avoid AntD "length > pageSize" warning
+      state.list = [action.payload, ...state.list].slice(
+        0,
+        state.pagination.perPage
+      );
+      state.pagination.total += 1;
       state.fetched = false; // force re-fetch on next load
     },
     createAppointmentFailure: (state, action) => {
@@ -239,7 +244,9 @@ const appointmentSlice = createSlice({
       state.error = action.payload;
     },
 
-    // ── RESET ──────────────────────────────────────────────────────────────
+    invalidateDropdownCache: (state) => {
+      state.dropdownFetched = false;
+    },
     clearSubmitError: (state) => {
       state.submitError = null;
     },
@@ -283,6 +290,7 @@ export const {
   fetchDropdownDataRequest,
   fetchDropdownDataSuccess,
   fetchDropdownDataFailure,
+  invalidateDropdownCache,
   clearSubmitError,
   resetAppointments,
 } = appointmentSlice.actions;

@@ -617,9 +617,9 @@ const UnifiedDashboard = ({
                   type="dashboard"
                   percent={paidPct}
                   strokeColor={theme.status.success}
-                  trailColor={theme.border}
+                  railColor={theme.border}
                   strokeWidth={10}
-                  width={160}
+                  size={160}
                   format={(p) => (
                     <div>
                       <div

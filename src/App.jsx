@@ -7,7 +7,7 @@ import { fetchTenantInfoRequest } from "./modules/tenant/tenantSlice";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { CustomThemeProvider } from "./context/ThemeContext";
 import { initOfflineManager } from "./services/offlineManager";
-
+import { App as AntApp } from "antd";
 
 const App = () => {
   const dispatch = useDispatch();
@@ -39,9 +39,11 @@ const App = () => {
   return (
     <ErrorBoundary>
       <CustomThemeProvider>
-        <BrowserRouter>
-          <AppRouter isSubdomain={isSubdomain} />
-        </BrowserRouter>
+        <AntApp>
+          <BrowserRouter>
+            <AppRouter isSubdomain={isSubdomain} />
+          </BrowserRouter>
+        </AntApp>
       </CustomThemeProvider>
     </ErrorBoundary>
   );

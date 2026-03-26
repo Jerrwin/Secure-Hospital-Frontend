@@ -8,7 +8,6 @@ import {
   Space,
   Switch,
   Tag,
-  message,
   Popconfirm,
   Typography,
   DatePicker,
@@ -16,6 +15,7 @@ import {
   Row,
   Col,
   Drawer,
+  App,
 } from "antd";
 import {
   SearchOutlined,
@@ -25,6 +25,7 @@ import {
   DeleteOutlined,
   UserOutlined,
   PlusOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import AppButton from "../../components/common/Button/AppButton";
@@ -43,6 +44,7 @@ import {
   setStatus 
 } from "../../modules/patients/patientSlice";
 import PatientTimeline from "./components/PatientTimeline";
+import ProfileDetailsCard from "../../components/common/ProfileDetailsCard";
 
 const { Text } = Typography;
 
@@ -50,8 +52,6 @@ const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: ${(props) => props.theme.background.main};
-  min-height: 100vh;
   padding-bottom: 40px;
   @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     gap: 20px;
@@ -216,8 +216,9 @@ const PatientList = () => {
     addPatient,
     updatePatient,
     removePatient,
-    clearError,
+    clearError: clearPatientError, // Renamed clearError to clearPatientError
   } = usePatients();
+  const { message } = App.useApp(); // Added App.useApp() to get message instance
 
   const {
     pagination: tablePagination,
@@ -252,6 +253,7 @@ const PatientList = () => {
   const [editingPatient, setEditingPatient] = useState(null);
   const [selectedPatientForTimeline, setSelectedPatientForTimeline] =
     useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
   const formValues = Form.useWatch([], form);
@@ -267,10 +269,10 @@ const PatientList = () => {
       } else {
         message.error(error);
       }
-      clearError();
+      clearPatientError();
       setIsSubmitting(false);
     }
-  }, [error, clearError, form]);
+  }, [error, clearPatientError, form]);
 
   useEffect(() => {
     if (isSubmitting && !loading && !error) {
@@ -513,18 +515,34 @@ const PatientList = () => {
       key: "actions",
       render: (_, record) => (
         <Space>
+          <Tooltip title="View Details">
+            <ActionButton
+              type="text"
+              icon={<EyeOutlined style={{ color: theme.primary }} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedPatient(record);
+              }}
+            />
+          </Tooltip>
           <Tooltip title="Edit Profile">
             <ActionButton
               type="text"
               icon={<EditOutlined style={{ color: theme.primary }} />}
-              onClick={() => showForm(record)}
+              onClick={(e) => {
+                e.stopPropagation();
+                showForm(record);
+              }}
             />
           </Tooltip>
           <Tooltip title="Medical History">
             <ActionButton
               type="text"
               icon={<HistoryOutlined style={{ color: theme.accent }} />}
-              onClick={() => showTimeline(record)}
+              onClick={(e) => {
+                e.stopPropagation();
+                showTimeline(record);
+              }}
             />
           </Tooltip>
           {(user?.role === "Admin" || user?.role === "Provider") && (
@@ -536,7 +554,7 @@ const PatientList = () => {
               okButtonProps={{ danger: true }}
             >
               <Tooltip title="Remove Record">
-                <ActionButton type="text" danger icon={<DeleteOutlined />} />
+                <ActionButton type="text" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
               </Tooltip>
             </Popconfirm>
           )}
@@ -625,12 +643,32 @@ const PatientList = () => {
           loading={loading && (rawPatients || []).length === 0}
           pagination={tablePagination}
           onChange={pagedActions.handleTableChange}
+          onRow={(record) => ({
+            onClick: () => setSelectedPatient(record),
+            style: { cursor: "pointer" },
+          })}
           rowClassName={(record) =>
             record.status === "inactive" ? "inactive-row" : ""
           }
           scroll={{ x: 800 }}
         />
       </CardWrapper>
+
+      {selectedPatient && (
+        <div style={{ padding: "0 clamp(16px, 5vw, 40px) 80px clamp(16px, 5vw, 40px)", animation: "fadeIn 0.5s" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', marginTop: '32px' }}>
+            <Text strong style={{ color: theme.primary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Selected Patient Profile
+            </Text>
+            <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, ${theme.border}, transparent)` }} />
+          </div>
+          <ProfileDetailsCard
+            data={selectedPatient}
+            title="Patient Details"
+            onClose={() => setSelectedPatient(null)}
+          />
+        </div>
+      )}
 
       <Drawer
         title={

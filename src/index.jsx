@@ -8,7 +8,7 @@ import App from './App';
 import './styles/global.css';
 import hospitalIcon from './assets/icons/hospital.png';
 
-// Inject redux store into Axios to allow reading tokens from secure memory
+// Inject redux store into services
 injectStore(store);
 // Inject redux store into Offline Manager to allow UI refreshes after sync
 injectOfflineStore(store);

@@ -83,6 +83,21 @@ export const usePrefetchPagination = ({
     dispatch(fetchPagedRequest(1));
   }, [dispatch, fetchPagedRequest, statusFilter, searchQuery, providerId, skip]);
 
+  // 3. Cache-watch effect: re-fetch current page when 'fetched' is invalidated (false)
+  useEffect(() => {
+    // If skip is on, or if we already have data (fetched is true), don't fetch.
+    // We only fetch if fetched is explicitly false (invalidated) or initially false.
+    if (skip || fetched) {
+      return;
+    }
+
+    console.log(
+      `[usePrefetchPagination] Cache invalidated or initial load. Fetching current page: ${pagination.currentPage}`,
+      { statusFilter, searchQuery, fetched }
+    );
+    dispatch(fetchPagedRequest(pagination.currentPage));
+  }, [dispatch, fetchPagedRequest, fetched, pagination.currentPage, skip, statusFilter, searchQuery]);
+
   const fetchPaged = useCallback(
     (page) => {
       dispatch(fetchPagedRequest(page));

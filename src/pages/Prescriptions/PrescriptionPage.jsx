@@ -9,8 +9,8 @@ import {
   Col,
   Button,
   Tabs,
-  message,
   Drawer,
+  App,
 } from "antd";
 import {
   PlusOutlined,
@@ -58,8 +58,6 @@ const bp = {
 };
 
 const PageWrap = styled.div`
-  min-height: 100vh;
-  background: ${(props) => props.theme.background.main};
   font-family: ${(props) => props.theme.fontFamily};
 `;
 
@@ -292,7 +290,9 @@ const PrescriptionPage = () => {
     loading: prescriptionsLoading,
     submitting,
     error,
+    fetchPrescriptions,
   } = usePrescription();
+  const { message } = App.useApp();
   const { patients, fetchPatients } = usePatients();
   const { fetchDropdowns: fetchAppointmentDropdowns } = useAppointments();
 
@@ -334,8 +334,9 @@ const PrescriptionPage = () => {
     if (isMedicalStaff) {
       fetchPatients();
       fetchAppointmentDropdowns();
+      fetchPrescriptions(); // Populates state.prescription.appointments
     }
-  }, [dispatch, fetchPatients, fetchAppointmentDropdowns, userRole, user?.id]);
+  }, [dispatch, fetchPatients, fetchAppointmentDropdowns, fetchPrescriptions, userRole, user?.id]);
 
   // Debounce Search
   useEffect(() => {

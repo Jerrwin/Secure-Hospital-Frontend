@@ -7,9 +7,9 @@ import {
   Input,
   Select,
   Tag,
-  message,
   Space,
   Empty,
+  App,
 } from "antd";
 import {
   CreditCardOutlined,
@@ -58,6 +58,9 @@ const BillingList = ({
 }) => {
   const { theme } = useTheme();
   const { userRole } = useAuth();
+  const { message } = App.useApp();
+
+  // ── Local UI State ──────────────────────────────────────────────────────
   const {
     processPayment,
     paymentSuccess,
