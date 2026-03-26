@@ -10,6 +10,7 @@ import {
   message,
   Tooltip,
   Popconfirm,
+  Typography,
 } from "antd";
 import {
   PlusOutlined,
@@ -17,6 +18,7 @@ import {
   TeamOutlined,
   DeleteOutlined,
   SearchOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import useUsers from "../../modules/users/hooks/useUsers";
 import { usePrefetchPagination } from "../../hooks/usePrefetchPagination";
@@ -30,6 +32,9 @@ import styled from "styled-components";
 import AppButton from "../../components/common/Button/AppButton";
 import { useTheme } from "../../context/ThemeContext";
 import StaffModal from "./components/StaffModal";
+import ProfileDetailsCard from "../../components/common/ProfileDetailsCard";
+
+const { Text } = Typography;
 
 // ─── Breakpoints (Dynamic Helpers) ───────────────────────────────────────────
 const bp = {
@@ -180,6 +185,7 @@ const StaffManagement = () => {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
+  const [selectedStaff, setSelectedStaff] = useState(null);
   const [searchTerm, setSearchTerm] = useState(searchQuery || "");
 
   // Initial fetch
@@ -385,11 +391,24 @@ const StaffManagement = () => {
       key: "actions",
       render: (_, record) => (
         <Space size="small">
+          <Tooltip title="View Details">
+            <Button
+              type="text"
+              icon={<EyeOutlined style={{ color: theme.primary }} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedStaff(record);
+              }}
+            />
+          </Tooltip>
           <Tooltip title="Edit">
             <Button
               type="text"
               icon={<EditOutlined style={{ color: theme.primary }} />}
-              onClick={() => showModal(record)}
+              onClick={(e) => {
+                e.stopPropagation();
+                showModal(record);
+              }}
             />
           </Tooltip>
           <Popconfirm
@@ -399,7 +418,7 @@ const StaffManagement = () => {
             cancelText="No"
           >
             <Tooltip title="Delete">
-              <Button type="text" danger icon={<DeleteOutlined />} />
+              <Button type="text" danger icon={<DeleteOutlined />} onClick={(e) => e.stopPropagation()} />
             </Tooltip>
           </Popconfirm>
         </Space>
@@ -469,6 +488,10 @@ const StaffManagement = () => {
           loading={loading}
           pagination={pagination}
           onChange={pagedActions.handleTableChange}
+          onRow={(record) => ({
+            onClick: () => setSelectedStaff(record),
+            style: { cursor: "pointer" },
+          })}
           rowClassName={(record) => {
             const isActive = record.status ? record.status === "active" : (record.is_active === 1 || record.is_active === true);
             return isActive ? "" : "inactive-row";
@@ -484,6 +507,22 @@ const StaffManagement = () => {
           form={form}
         />
       </div>
+
+      {selectedStaff && (
+        <div style={{ padding: "0 clamp(16px, 5vw, 40px) 80px clamp(16px, 5vw, 40px)", animation: "fadeIn 0.5s" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', marginTop: '32px' }}>
+            <Text strong style={{ color: theme.primary, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Selected Staff Profile
+            </Text>
+            <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, ${theme.border}, transparent)` }} />
+          </div>
+          <ProfileDetailsCard
+            data={selectedStaff}
+            title="Staff Details"
+            onClose={() => setSelectedStaff(null)}
+          />
+        </div>
+      )}
     </div>
   );
 };
