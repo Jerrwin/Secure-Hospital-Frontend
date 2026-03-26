@@ -1,7 +1,7 @@
 import axiosClient from "../../services/axiosClient";
 
-export const fetchStaffAPI = async () => {
-  const response = await axiosClient.get("/api/staff");
+export const fetchStaffAPI = async (params) => {
+  const response = await axiosClient.get("/api/staff", { params });
   return response.data;
 };
 

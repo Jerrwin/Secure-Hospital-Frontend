@@ -1,5 +1,8 @@
 export const blueTheme = {
   name: "blue",
+  headingFont: "'Plus Jakarta Sans', sans-serif",
+  bodyFont: "'Outfit', sans-serif",
+  fontFamily: "'Outfit', sans-serif",
   primary: "#2563eb",
   primaryHover: "#1d4ed8",
   primaryLight: "#eff6ff",
@@ -24,7 +27,8 @@ export const blueTheme = {
   border: "#eef2f6",
   inputBg: "#ffffff",
   glow: "0 4px 6px -1px rgba(37, 99, 235, 0.15), 0 2px 4px -1px rgba(37, 99, 235, 0.08)",
-  shadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
+  shadow:
+    "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)",
   borderRadius: {
     sm: "6px",
     md: "8px",
@@ -37,5 +41,5 @@ export const blueTheme = {
     md: "768px",
     lg: "992px",
     xl: "1200px",
-  }
+  },
 };

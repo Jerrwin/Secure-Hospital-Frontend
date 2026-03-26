@@ -1,9 +1,12 @@
 export const darkTheme = {
   name: "dark",
+  headingFont: "'Plus Jakarta Sans', sans-serif",
+  bodyFont: "'Outfit', sans-serif",
+  fontFamily: "'Outfit', sans-serif",
   primary: "#38bdf8",
   primaryHover: "#0ea5e9",
   primaryLight: "rgba(56, 189, 248, 0.1)",
-  secondary: "#e2e8f0",
+  secondary: "#0f172a", // Deep dark navy instead of light gray
   accent: "#06b6d4",
   text: {
     primary: "#f1f5f9",
@@ -24,7 +27,8 @@ export const darkTheme = {
   inputBg: "#334155",
   border: "#334155",
   glow: "0 4px 6px -1px rgba(56, 189, 248, 0.15), 0 2px 4px -1px rgba(56, 189, 248, 0.08)",
-  shadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)",
+  shadow:
+    "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)",
   borderRadius: {
     sm: "6px",
     md: "8px",

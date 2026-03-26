@@ -4,7 +4,7 @@ import {
   CalendarOutlined,
   MedicineBoxOutlined,
   UserOutlined,
-  DollarOutlined,
+  BankOutlined,
   LoadingOutlined,
 } from "@ant-design/icons";
 import styled from "styled-components";
@@ -26,7 +26,7 @@ const EventCard = styled(Card)`
   border-radius: 8px;
   border: 1px solid #f1f5f9;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  
+
   .ant-card-body {
     padding: 12px;
   }
@@ -39,7 +39,13 @@ const EventHeader = styled.div`
   margin-bottom: 4px;
 `;
 
-const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoices = [], loading = false }) => {
+const PatientTimeline = ({
+  patient,
+  appointments = [],
+  prescriptions = [],
+  invoices = [],
+  loading = false,
+}) => {
   const { theme } = useTheme();
   const timelineData = useMemo(() => {
     if (!patient) return [];
@@ -59,15 +65,23 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
 
     // 2. Add Appointment Events
     appointments
-      .filter(app => String(app.patient_id) === String(patient.id) || String(app.PATIENT_ID) === String(patient.id))
-      .forEach(app => {
+      .filter(
+        (app) =>
+          String(app.patient_id) === String(patient.id) ||
+          String(app.PATIENT_ID) === String(patient.id),
+      )
+      .forEach((app) => {
         events.push({
           id: `appt-${app.id || app.ID}`,
           date: app.appointment_date || app.APPOINTMENT_DATE,
           type: "Appointment",
           title: app.reason || app.REASON || "Medical Visit",
           details: `Status: ${app.status || app.STATUS}. ${app.notes || app.NOTES || ""}`,
-          doctor: app.doctor_name || app.DOCTOR_NAME || app.staff_name || app.STAFF_NAME,
+          doctor:
+            app.doctor_name ||
+            app.DOCTOR_NAME ||
+            app.staff_name ||
+            app.STAFF_NAME,
           icon: <CalendarOutlined style={{ color: theme.primary }} />,
           color: theme.primary,
         });
@@ -75,13 +89,16 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
 
     // 3. Add Prescription Events
     prescriptions
-      .filter(rx => 
-        String(rx.patient_id) === String(patient.id) || 
-        rx.patient_name === patient.display_name ||
-        rx.patient_name === `${patient.first_name} ${patient.last_name}`
+      .filter(
+        (rx) =>
+          String(rx.patient_id) === String(patient.id) ||
+          rx.patient_name === patient.display_name ||
+          rx.patient_name === `${patient.first_name} ${patient.last_name}`,
       )
-      .forEach(rx => {
-        const medNames = rx.items?.map(i => i.medicine_name || i.MEDICINE_NAME).join(", ") || "Medications";
+      .forEach((rx) => {
+        const medNames =
+          rx.items?.map((i) => i.medicine_name || i.MEDICINE_NAME).join(", ") ||
+          "Medications";
         events.push({
           id: `rx-${rx.id || rx.ID}`,
           date: rx.created_at || rx.CREATED_AT,
@@ -96,15 +113,19 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
 
     // 4. Add Billing Events
     invoices
-      .filter(inv => String(inv.patient_id) === String(patient.id) || String(inv.PATIENT_ID) === String(patient.id))
-      .forEach(inv => {
+      .filter(
+        (inv) =>
+          String(inv.patient_id) === String(patient.id) ||
+          String(inv.PATIENT_ID) === String(patient.id),
+      )
+      .forEach((inv) => {
         events.push({
           id: `bill-${inv.id || inv.ID}`,
           date: inv.created_at || inv.CREATED_AT || inv.invoice_date,
           type: "Billing",
           title: `Invoice #${inv.invoice_number || inv.ID}`,
           details: `Amount: $${inv.total_amount || inv.TOTAL_AMOUNT || 0}. Status: ${inv.status || inv.STATUS}.`,
-          icon: <DollarOutlined style={{ color: theme.status.warning }} />,
+          icon: <BankOutlined style={{ color: theme.status.warning }} />,
           color: theme.status.warning,
         });
       });
@@ -117,7 +138,9 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
 
   if (loading && timelineData.length === 1) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
+      <div
+        style={{ display: "flex", justifyContent: "center", padding: "40px" }}
+      >
         <Spin
           indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}
           description="Loading history..."
@@ -132,7 +155,10 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
         <Title level={4} style={{ margin: 0, color: theme.secondary }}>
           Timeline
         </Title>
-        <Text type="secondary">Historical activity for {patient.display_name || `${patient.first_name} ${patient.last_name}`}</Text>
+        <Text type="secondary">
+          Historical activity for{" "}
+          {patient.display_name || `${patient.first_name} ${patient.last_name}`}
+        </Text>
       </div>
 
       {timelineData.length > 0 ? (
@@ -157,7 +183,10 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
                     >
                       {event.type.toUpperCase()}
                     </Tag>
-                    <Text strong style={{ fontSize: "14px", color: theme.text.primary }}>
+                    <Text
+                      strong
+                      style={{ fontSize: "14px", color: theme.text.primary }}
+                    >
                       {event.title}
                     </Text>
                   </div>
@@ -166,7 +195,11 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
                   </Text>
                 </EventHeader>
                 <Paragraph
-                  style={{ margin: "8px 0", fontSize: "13px", color: "#475569" }}
+                  style={{
+                    margin: "8px 0",
+                    fontSize: "13px",
+                    color: "#475569",
+                  }}
                 >
                   {event.details}
                 </Paragraph>
@@ -180,7 +213,9 @@ const PatientTimeline = ({ patient, appointments = [], prescriptions = [], invoi
                   >
                     <Text type="secondary" style={{ fontSize: "12px" }}>
                       Provider:{" "}
-                      <Text style={{ color: theme.primary }}>{event.doctor}</Text>
+                      <Text style={{ color: theme.primary }}>
+                        {event.doctor}
+                      </Text>
                     </Text>
                   </div>
                 )}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Card,
   Avatar,
@@ -8,8 +8,6 @@ import {
   Input,
   Select,
   Button,
-  Progress,
-  Divider,
   message,
   Tooltip,
   Space,
@@ -22,7 +20,6 @@ import {
   SaveOutlined,
   EditOutlined,
   CloseOutlined,
-  LockOutlined,
   SafetyOutlined,
   HomeOutlined,
   CalendarOutlined,
@@ -34,14 +31,12 @@ import {
 import styled, { keyframes } from "styled-components";
 import { useTheme } from "../../context/ThemeContext";
 import useAuth from "../../modules/auth/hooks/useAuth";
-import useUsers from "../../modules/users/hooks/useUsers";
 import { updateUser } from "../../modules/auth/authSlice";
 import dayjs from "dayjs";
 import axiosClient from "../../services/axiosClient";
 import { updateStaffAPI } from "../../modules/users/userAPI";
 import { updatePatientAPI } from "../../modules/patients/patientAPI";
 import { useDispatch } from "react-redux";
-
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -63,16 +58,6 @@ const shimmer = keyframes`
   100% { background-position: 200% 0; }
 `;
 
-// ─── Helpers ─────────────────────────────────────────────
-const getPasswordStrength = (pass, theme) => {
-  if (!pass) return { score: 0, label: "None", color: theme.border };
-  if (pass.length < 6)
-    return { score: 1, label: "Weak", color: theme.status.error };
-  if (pass.length < 10)
-    return { score: 2, label: "Average", color: theme.status.warning };
-  return { score: 3, label: "Strong", color: theme.status.success };
-};
-
 // ─── Styled Components ───────────────────────────────────
 const ProfileWrapper = styled.div`
   width: 100%;
@@ -82,7 +67,7 @@ const ProfileWrapper = styled.div`
 `;
 
 const HeroBanner = styled.div`
-  background: ${props => props.theme.primary};
+  background: ${(props) => props.theme.primary};
   background: linear-gradient(
     135deg,
     ${(props) => props.theme.secondary} 0%,
@@ -284,10 +269,11 @@ const StatCard = styled.div`
 
   .stat-label {
     font-size: 11.5px;
-    color: #94a3b8;
+    color: ${(props) => props.theme.text.secondary};
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    font-weight: 600;
+    font-weight: 650;
+    opacity: 0.85;
   }
 `;
 
@@ -359,11 +345,12 @@ const InfoLabel = styled.div`
   align-items: center;
   gap: 8px;
   font-size: 11.5px;
-  color: #94a3b8;
+  color: ${(props) => props.theme.text.secondary};
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 6px;
+  opacity: 0.9;
 
   .anticon {
     font-size: 13px;
@@ -436,45 +423,68 @@ const EditBtn = styled(Button)`
 `;
 
 const ShimmerTag = styled(Tag)`
-  background: linear-gradient(90deg, ${props => props.theme.background.main} 25%, ${props => props.theme.primaryLight} 50%, ${props => props.theme.background.main} 75%);
+  background: linear-gradient(
+    90deg,
+    ${(props) => props.theme.background.main} 25%,
+    ${(props) => props.theme.primaryLight} 50%,
+    ${(props) => props.theme.background.main} 75%
+  );
   background-size: 200% auto;
   animation: ${shimmer} 3s linear infinite;
   border: none;
   border-radius: 20px;
   padding: 2px 14px;
   font-weight: 600;
-  color: ${props => props.theme.primary};
+  color: ${(props) => props.theme.primary};
 `;
 
 // ─── Component ───────────────────────────────────────────
 const ProfilePage = () => {
   const { user, userRole } = useAuth();
-  const { staffList, fetchStaff, loading: staffLoading } = useUsers();
   const [form] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
+  const [enrichedProfile, setEnrichedProfile] = useState({});
+  const [fetchingProfile, setFetchingProfile] = useState(false);
+
   const dispatch = useDispatch();
 
-
   const { theme } = useTheme();
-  const passwordValue = Form.useWatch("new_password", form);
-  const strength = useMemo(
-    () => getPasswordStrength(passwordValue, theme),
-    [passwordValue, theme],
-  );
+
+  const loadEnrichedProfile = useCallback(async () => {
+    if (!user?.id) return;
+    setFetchingProfile(true);
+    try {
+      const isPatient = userRole === "PATIENT";
+
+      if (isPatient) {
+        // Direct resourceful fetch for patients
+        const response = await axiosClient.get(`/api/patients/${user.id}`);
+        setEnrichedProfile(response.data?.data || response.data || {});
+      } else {
+        // Staff still uses query param for now as per legacy pattern
+        const response = await axiosClient.get("/api/staff", {
+          params: { user_id: user.id },
+        });
+        const list = response.data?.data || response.data || [];
+        const profileData =
+          list.find((s) => String(s.user_id) === String(user.id)) || {};
+        setEnrichedProfile(profileData);
+      }
+    } catch (err) {
+      console.error("Failed to fetch enriched profile:", err);
+    } finally {
+      setFetchingProfile(false);
+    }
+  }, [user?.id, userRole]);
 
   useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
-
-  const staffProfile = useMemo(
-    () => (staffList || []).find((s) => s.user_id === (user?.id || 0)) || {},
-    [staffList, user?.id],
-  );
-
+    loadEnrichedProfile();
+  }, [loadEnrichedProfile]);
 
   const activeProfile = useMemo(
-    () => ({ ...user, ...staffProfile }),
-    [user, staffProfile],
+    // Identity from Auth (user) takes precedence over metadata from Staff (enrichedProfile)
+    () => ({ ...enrichedProfile, ...user }),
+    [user, enrichedProfile],
   );
 
   const fullName = useMemo(
@@ -521,28 +531,28 @@ const ProfilePage = () => {
   );
 
   useEffect(() => {
-    if (staffProfile.id) {
+    if (enrichedProfile.id) {
       form.setFieldsValue({
         name: fullName,
-        email: staffProfile.email,
+        email: enrichedProfile.email,
         phone_number:
-          staffProfile.phone_number ||
-          staffProfile.phone ||
-          staffProfile.contact ||
-          staffProfile.mobile,
-        gender: staffProfile.gender,
+          enrichedProfile.phone_number ||
+          enrichedProfile.phone ||
+          enrichedProfile.contact ||
+          enrichedProfile.mobile,
+        gender: enrichedProfile.gender,
         address:
-          staffProfile.address ||
-          staffProfile.permanent_address ||
-          staffProfile.resident_address,
-        dob: staffProfile.dob
-          ? dayjs(staffProfile.dob)
-          : staffProfile.date_of_birth
-            ? dayjs(staffProfile.date_of_birth)
+          enrichedProfile.address ||
+          enrichedProfile.permanent_address ||
+          enrichedProfile.resident_address,
+        dob: enrichedProfile.dob
+          ? dayjs(enrichedProfile.dob)
+          : enrichedProfile.date_of_birth
+            ? dayjs(enrichedProfile.date_of_birth)
             : null,
       });
     }
-  }, [staffProfile, form, fullName]);
+  }, [enrichedProfile, form, fullName]);
 
   if (!user)
     return (
@@ -554,7 +564,7 @@ const ProfilePage = () => {
   const onFinish = async (values) => {
     try {
       const isPatient = userRole === "PATIENT";
-      
+
       // 1. Update Basic Profile Info
       const updateData = {
         name: values.name,
@@ -566,14 +576,14 @@ const ProfilePage = () => {
       };
 
       if (isPatient) {
-        // For patients, assume user.id matches patient.id or they have a similar link
+        // For patients, use the direct resourceful route
         await updatePatientAPI({ id: user.id, data: updateData });
       } else {
-        // CRITICAL: use staffProfile.id (Staff Table) not user.id (User Table)
-        if (!staffProfile.id) {
+        // CRITICAL: use enrichedProfile.id (Staff Table) not user.id (User Table)
+        if (!enrichedProfile.id) {
           throw new Error("Staff profile not found. Unable to update.");
         }
-        
+
         // Handle names for staff table
         const nameParts = values.name.split(" ");
         const staffUpdateData = {
@@ -581,46 +591,20 @@ const ProfilePage = () => {
           name: values.name, // Ensure full name is sent
           first_name: nameParts[0],
           last_name: nameParts.slice(1).join(" "),
-          user_id: user.id, 
+          user_id: user.id,
         };
 
-        await updateStaffAPI({ id: staffProfile.id, data: staffUpdateData });
+        await updateStaffAPI({ id: enrichedProfile.id, data: staffUpdateData });
       }
-
 
       // Update local Redux state so header/sidebar refresh immediately
       dispatch(updateUser(updateData));
 
-      // 2. Handle Password Change (Optional)
-      if (values.new_password) {
-        if (!values.current_password) {
-          return message.error(
-            "Current password is required to set a new password",
-          );
-        }
-
-        const response = await axiosClient.post("/api/auth/change-password", {
-          current_password: values.current_password,
-          new_password: values.new_password,
-          new_password_confirmation: values.confirm_password,
-        });
-
-        if (response.data.success) {
-          message.success("Password updated successfully");
-        }
-      }
-
       message.success("Profile updated successfully");
       setIsEditing(false);
-      form.setFieldsValue({
-        current_password: "",
-        new_password: "",
-        confirm_password: "",
-      });
-      
-      // Re-fetch staff list to ensure consistency
-      if (!isPatient) fetchStaff(true);
-      
+
+      // Re-fetch enriched profile to ensure consistency
+      loadEnrichedProfile();
     } catch (error) {
       console.error("Update failed:", error);
       message.error(
@@ -628,7 +612,6 @@ const ProfilePage = () => {
       );
     }
   };
-
 
   const joinedDate = activeProfile.created_at
     ? new Date(activeProfile.created_at).toLocaleDateString("en-US", {
@@ -849,88 +832,6 @@ const ProfilePage = () => {
               </Form.Item>
             </FormGrid>
 
-            <Divider
-              orientation="left"
-              style={{ color: theme.primary, fontWeight: 600 }}
-            >
-              <SafetyOutlined /> Security & Password
-            </Divider>
-
-            <FormGrid>
-              <Form.Item
-                label="Current Password"
-                name="current_password"
-                tooltip="Required to confirm identity"
-              >
-                <Input.Password
-                  prefix={<LockOutlined style={{ color: theme.text.light }} />}
-                  size="large"
-                  placeholder="Enter current password"
-                  style={{ borderRadius: 10 }}
-                />
-              </Form.Item>
-
-              <div>
-                <Form.Item
-                  label="New Password"
-                  name="new_password"
-                  rules={[
-                    {
-                      min: 6,
-                      message: "Password must be at least 6 characters",
-                    },
-                  ]}
-                >
-                  <Input.Password
-                    prefix={<LockOutlined style={{ color: theme.text.light }} />}
-                    size="large"
-                    style={{ borderRadius: 10 }}
-                  />
-                </Form.Item>
-                {passwordValue && (
-                  <div style={{ marginTop: "-16px", marginBottom: "16px" }}>
-                    <Progress
-                      percent={strength.score * 33.3}
-                      showInfo={false}
-                      strokeColor={strength.color}
-                      size="small"
-                    />
-                    <Text
-                      style={{
-                        fontSize: "12px",
-                        color: strength.color,
-                        fontWeight: 600,
-                      }}
-                    >
-                      Strength: {strength.label}
-                    </Text>
-                  </div>
-                )}
-              </div>
-
-              <Form.Item
-                label="Confirm New Password"
-                name="confirm_password"
-                dependencies={["new_password"]}
-                rules={[
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue("new_password") === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error("Password mismatch"));
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password
-                  prefix={<LockOutlined style={{ color: theme.text.light }} />}
-                  size="large"
-                  style={{ borderRadius: 10 }}
-                />
-              </Form.Item>
-            </FormGrid>
-
             <ActionBar>
               <Button
                 icon={<CloseOutlined />}
@@ -945,7 +846,7 @@ const ProfilePage = () => {
                 htmlType="submit"
                 icon={<SaveOutlined />}
                 size="large"
-                loading={staffLoading}
+                loading={fetchingProfile}
                 style={{
                   borderRadius: 10,
                   height: 46,

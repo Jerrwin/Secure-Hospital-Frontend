@@ -10,6 +10,7 @@ import hospitalIcon from './assets/icons/hospital.png';
 
 // Inject redux store into services
 injectStore(store);
+// Inject redux store into Offline Manager to allow UI refreshes after sync
 injectOfflineStore(store);
 
 // Set favicon from src assets

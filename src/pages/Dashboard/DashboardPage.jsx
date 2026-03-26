@@ -7,23 +7,26 @@ import useAuth from "../../modules/auth/hooks/useAuth";
 import { useTheme } from "../../context/ThemeContext";
 import styled from "styled-components";
 
-import LoadingScreen from "../../components/common/LoadingScreen";
+
+import useUsers from "../../modules/users/hooks/useUsers";
 import usePatients from "../../modules/patients/hooks/usePatients";
 import useAppointments from "../../modules/appointments/hooks/useAppointments";
-import { useEffect } from "react";
+import LoadingScreen from "../../components/common/LoadingScreen";
 
 const DashboardHeader = styled.div`
   margin-bottom: 24px;
 `;
 
 const WelcomeTitle = styled.h1`
-  color: ${props => props.theme.secondary};
-  font-size: 1.75rem;
+  color: ${(props) => props.theme.secondary};
+  font-size: 2.1rem;
+  font-weight: 800;
   margin: 0;
 `;
 
 const SubtitleText = styled.p`
-  color: ${props => props.theme.text.secondary};
+  color: ${(props) => props.theme.text.secondary};
+  font-size: 1rem;
   margin-top: 4px;
 `;
 
@@ -31,13 +34,12 @@ const DashboardPage = () => {
   const { theme } = useTheme();
   const { user, userRole } = useAuth();
   const dashboardData = useDashboard(user);
-  const { patients, fetchPatients } = usePatients();
-  const { list: allAppointments, fetchAll: fetchAppointments } = useAppointments();
+  const { patients } = usePatients();
+  const { list: allAppointments } = useAppointments();
+  const { staffList } = useUsers();
 
-  useEffect(() => {
-    fetchPatients();
-    fetchAppointments();
-  }, [fetchPatients, fetchAppointments]);
+  // Redundant full-list fetches removed to optimize performance and bandwidth.
+  // Dashboard data is now strictly handled by useDashboard (stats endpoint).
 
   // Guard: If user is not yet loaded, show loading
   if (!user) {
@@ -88,13 +90,16 @@ const DashboardPage = () => {
           <Spin size="large" />
         </div>
       ) : (
-        <UnifiedDashboard
-          role={userRole}
-          data={dashboardData}
-          patients={patients}
-          allAppointments={allAppointments}
-          loading={dashboardData.loading}
-        />
+        <ErrorBoundary>
+          <UnifiedDashboard
+            role={userRole}
+            data={dashboardData}
+            patients={patients}
+            allAppointments={allAppointments}
+            staffList={staffList}
+            loading={dashboardData.loading}
+          />
+        </ErrorBoundary>
       )}
     </>
   );

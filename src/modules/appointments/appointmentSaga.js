@@ -1,9 +1,17 @@
 import { call, put, takeLatest, all, select } from "redux-saga/effects";
 import appointmentAPI from "./appointmentAPI";
 import {
+  fetchPagedRequest,
+  fetchPagedSuccess,
+  fetchPagedFailure,
+  prefetchRequest,
+  prefetchSuccess,
+  prefetchFailure,
+  setPage,
+  moveBufferToList,
+  setSearch,
+  setStatus,
   fetchAppointmentsRequest,
-  fetchAppointmentsSuccess,
-  fetchAppointmentsFailure,
   fetchUpcomingRequest,
   fetchUpcomingSuccess,
   fetchUpcomingFailure,
@@ -26,23 +34,44 @@ import {
   fetchDropdownDataSuccess,
   fetchDropdownDataFailure,
 } from "./appointmentSlice";
+import { 
+  fetchPagedSagaGenerator, 
+  prefetchSagaGenerator, 
+  handleSetPageSagaGenerator 
+} from "../../utils/paginationSagaUtils";
 
-// ── FETCH ALL ──────────────────────────────────────────────────────────────────
-function* fetchAppointmentsSaga(action) {
-  try {
-    const res = yield call(appointmentAPI.getAll, action.payload);
-    if (res.data.success) {
-      yield put(fetchAppointmentsSuccess(res.data.data));
-    } else {
-      yield put(fetchAppointmentsFailure(res.data.message || "Failed to fetch appointments"));
-    }
-  } catch (error) {
-    yield put(
-      fetchAppointmentsFailure(
-        error.response?.data?.message || "Failed to fetch appointments"
-      )
-    );
-  }
+// ── PAGINATION SAGAS (Centralized) ──────────────────────────────────────────
+const stateSelector = (state) => state.appointments;
+const paginationActions = {
+  fetchPagedRequest, fetchPagedSuccess, fetchPagedFailure,
+  prefetchRequest, prefetchSuccess, prefetchFailure,
+  setPage, moveBufferToList, setSearch, setStatus
+};
+
+function* fetchPagedAppointmentsSaga(action) {
+  yield fetchPagedSagaGenerator({
+    apiMethod: appointmentAPI.getAll,
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
+}
+
+function* prefetchSaga(action) {
+  yield prefetchSagaGenerator({
+    apiMethod: appointmentAPI.getAll,
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
+}
+
+function* handleSetPageSaga(action) {
+  yield handleSetPageSagaGenerator({
+    actions: paginationActions,
+    stateSelector,
+    action
+  });
 }
 
 // ── FETCH UPCOMING ─────────────────────────────────────────────────────────────
@@ -52,15 +81,21 @@ function* fetchUpcomingSaga() {
     if (res.data.success) {
       yield put(fetchUpcomingSuccess(res.data.data));
     } else {
-      yield put(fetchUpcomingFailure(res.data.message || "Failed to fetch upcoming"));
+      yield put(fetchUpcomingFailure(res.data.message || "No upcoming found"));
     }
   } catch (error) {
     yield put(
       fetchUpcomingFailure(
-        error.response?.data?.message || "Failed to fetch upcoming appointments"
-      )
+        error.response?.data?.message || "Failed to fetch upcoming",
+      ),
     );
   }
+}
+
+// ── FETCH ALL (Legacy/Fallback) ────────────────────────────────────────────────
+function* fetchAppointmentsSaga() {
+  // Fallback to paged fetch for page 1
+  yield put(fetchPagedRequest(1));
 }
 
 // ── FETCH SINGLE ───────────────────────────────────────────────────────────────
@@ -73,11 +108,15 @@ function* fetchAppointmentByIdSaga(action) {
       yield put(fetchAppointmentByIdFailure(res.data.message || "Not found"));
     }
   } catch (error) {
-    yield put(
-      fetchAppointmentByIdFailure(
-        error.response?.data?.message || "Failed to fetch appointment"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchAppointmentByIdFailure(null));
+    } else {
+      yield put(
+        fetchAppointmentByIdFailure(
+          error.response?.data?.message || "Failed to fetch appointment",
+        ),
+      );
+    }
   }
 }
 
@@ -88,14 +127,20 @@ function* createAppointmentSaga(action) {
     if (res.data.success) {
       yield put(createAppointmentSuccess(res.data.data));
     } else {
-      yield put(createAppointmentFailure(res.data.message || "Failed to create"));
+      yield put(
+        createAppointmentFailure(res.data.message || "Failed to create"),
+      );
     }
   } catch (error) {
-    yield put(
-      createAppointmentFailure(
-        error.response?.data?.message || "Failed to create appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(createAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        createAppointmentFailure(
+          error.response?.data?.message || "Failed to create appointment",
+        ),
+      );
+    }
   }
 }
 
@@ -103,20 +148,28 @@ function* createAppointmentSaga(action) {
 function* updateAppointmentSaga(action) {
   try {
     // action.payload = { id, data }
-    const res = yield call(appointmentAPI.update, action.payload.id, action.payload.data);
+    const res = yield call(
+      appointmentAPI.update,
+      action.payload.id,
+      action.payload.data,
+    );
     if (res.data.success) {
       yield put(updateAppointmentSuccess(action.payload.id));
-      // Re-fetch the full list after update
-      yield put(fetchAppointmentsRequest());
+      // Re-fetch the current page to ensure list accuracy
+      yield put(fetchPagedRequest());
     } else {
       yield put(updateAppointmentFailure(res.data.message || "Update failed"));
     }
   } catch (error) {
-    yield put(
-      updateAppointmentFailure(
-        error.response?.data?.message || "Failed to update appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(updateAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        updateAppointmentFailure(
+          error.response?.data?.message || "Failed to update appointment",
+        ),
+      );
+    }
   }
 }
 
@@ -131,11 +184,15 @@ function* cancelAppointmentSaga(action) {
       yield put(cancelAppointmentFailure(res.data.message || "Cancel failed"));
     }
   } catch (error) {
-    yield put(
-      cancelAppointmentFailure(
-        error.response?.data?.message || "Failed to cancel appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(cancelAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        cancelAppointmentFailure(
+          error.response?.data?.message || "Failed to cancel appointment",
+        ),
+      );
+    }
   }
 }
 
@@ -147,57 +204,23 @@ function* completeAppointmentSaga(action) {
     if (res.data.success) {
       yield put(completeAppointmentSuccess(action.payload));
     } else {
-      yield put(completeAppointmentFailure(res.data.message || "Complete failed"));
+      yield put(
+        completeAppointmentFailure(res.data.message || "Complete failed"),
+      );
     }
   } catch (error) {
-    yield put(
-      completeAppointmentFailure(
-        error.response?.data?.message || "Failed to complete appointment"
-      )
-    );
+    if (error.isOfflineQueued) {
+      yield put(completeAppointmentFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(
+        completeAppointmentFailure(
+          error.response?.data?.message || "Failed to complete appointment",
+        ),
+      );
+    }
   }
 }
 
-// ── FETCH DROPDOWN DATA ────────────────────────────────────────────────────────
-// function* fetchDropdownDataSaga() {
-//   try {
-//     let patients = [];
-//     let staff = [];
-
-//     // Fetch patients
-//     try {
-//       const patientsRes = yield call(appointmentAPI.getPatients);
-//       if (patientsRes.data.success) {
-//         patients = patientsRes.data.data;
-//       }
-//     } catch (e) {
-//       console.error("Failed to fetch patients:", e);
-//     }
-
-//     // Fetch staff
-//     try {
-//       const staffRes = yield call(appointmentAPI.getStaff);
-//       if (staffRes.data.success) {
-//         staff = staffRes.data.data;
-//       }
-//     } catch (e) {
-//       console.error("Failed to fetch staff:", e);
-//     }
-
-//     yield put(
-//       fetchDropdownDataSuccess({
-//         patients,
-//         staff,
-//       })
-//     );
-//   } catch (error) {
-//     yield put(
-//       fetchDropdownDataFailure(
-//         error.response?.data?.message || "Failed to fetch dropdown data"
-//       )
-//     );
-//   }
-// }
 // ── FETCH DROPDOWN DATA ────────────────────────────────────────────────────────
 function* fetchDropdownDataSaga() {
   try {
@@ -215,7 +238,9 @@ function* fetchDropdownDataSaga() {
         patients = patientsRes.data.data;
       }
     } catch (e) {
-      console.warn("patients endpoint blocked (role restricted) — will use appointment list fallback");
+      console.warn(
+        "patients endpoint blocked (role restricted) — will use appointment list fallback",
+      );
     }
 
     // 3. ONLY Try staff — may 403 for Nurse role if the user is NOT a doctor/provider
@@ -227,23 +252,31 @@ function* fetchDropdownDataSaga() {
           staff = staffRes.data.data;
         }
       } catch (e) {
-        console.warn("staff endpoint blocked (role restricted) — will use appointment list fallback");
+        console.warn(
+          "staff endpoint blocked (role restricted) — will use appointment list fallback",
+        );
       }
     }
 
     yield put(fetchDropdownDataSuccess({ patients, staff }));
-
   } catch (error) {
-    yield put(
-      fetchDropdownDataFailure(
-        error.response?.data?.message || "Failed to fetch dropdown data"
-      )
-    );
+    if (!navigator.onLine || !error.response) {
+      yield put(fetchDropdownDataFailure(null));
+    } else {
+      yield put(
+        fetchDropdownDataFailure(
+          error.response?.data?.message || "Failed to fetch dropdown data",
+        ),
+      );
+    }
   }
 }
 // ── ROOT APPOINTMENT SAGA ──────────────────────────────────────────────────────
 export default function* appointmentSaga() {
   yield all([
+    takeLatest(fetchPagedRequest.type, fetchPagedAppointmentsSaga),
+    takeLatest(prefetchRequest.type, prefetchSaga),
+    takeLatest(setPage.type, handleSetPageSaga),
     takeLatest(fetchAppointmentsRequest.type, fetchAppointmentsSaga),
     takeLatest(fetchUpcomingRequest.type, fetchUpcomingSaga),
     takeLatest(fetchAppointmentByIdRequest.type, fetchAppointmentByIdSaga),

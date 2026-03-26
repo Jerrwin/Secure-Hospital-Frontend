@@ -35,6 +35,13 @@ import usePrescription from "../../modules/prescription/hooks/usePrescription";
 import useBilling from "../../modules/billing/hooks/useBilling";
 import dayjs from "dayjs";
 import styled from "styled-components";
+import { usePrefetchPagination } from "../../hooks/usePrefetchPagination";
+import { 
+  fetchPagedRequest, 
+  setPage, 
+  setSearch, 
+  setStatus 
+} from "../../modules/patients/patientSlice";
 import PatientTimeline from "./components/PatientTimeline";
 
 const { Text } = Typography;
@@ -45,6 +52,7 @@ const PageWrapper = styled.div`
   gap: 16px;
   background: ${(props) => props.theme.background.main};
   min-height: 100vh;
+  padding-bottom: 40px;
   @media (min-width: ${(props) => props.theme.breakpoints.md}) {
     gap: 20px;
   }
@@ -60,7 +68,6 @@ const HeaderCard = styled.div`
   border: 1px solid ${(props) => props.theme.border};
   border-radius: ${(props) => props.theme.borderRadius.lg};
   box-shadow: ${(props) => props.theme.shadow};
-  margin-bottom: 24px;
   overflow: hidden;
 
   @media (min-width: ${(props) => props.theme.breakpoints.md}) {
@@ -180,14 +187,15 @@ const StyledTable = styled(Table)`
 
 // StyledFormCard removed as form is now in a Drawer
 
+const paginationActions = { fetchPagedRequest, setPage, setSearch, setStatus };
+
 const PatientList = () => {
   const { user } = useAuth();
   const { theme } = useTheme();
   const {
-    patients,
-    loading,
+    patients: rawPatients,
+    loading: patientsLoading,
     error,
-    fetchPatients,
     addPatient,
     updatePatient,
     removePatient,
@@ -195,8 +203,18 @@ const PatientList = () => {
   } = usePatients();
 
   const {
+    pagination: tablePagination,
+    actions: pagedActions,
+    searchQuery,
+  } = usePrefetchPagination({
+    selector: (state) => state.patients,
+    actions: paginationActions,
+    fixedPageSize: 5,
+  });
+
+  const {
     list: apptList,
-    fetchAll: fetchAppts,
+    fetchPaged: fetchAppts, // We have fetchPaged on appointments now
     loading: apptLoading,
   } = useAppointments();
   const {
@@ -210,13 +228,14 @@ const PatientList = () => {
     loading: billingLoading,
   } = useBilling();
 
+  const loading = patientsLoading;
+
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isTimelineVisible, setIsTimelineVisible] = useState(false);
   const [editingPatient, setEditingPatient] = useState(null);
   const [selectedPatientForTimeline, setSelectedPatientForTimeline] =
     useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form] = Form.useForm();
   const formValues = Form.useWatch([], form);
 
@@ -224,11 +243,17 @@ const PatientList = () => {
 
   useEffect(() => {
     if (error) {
-      message.error(error);
+      if (error === "OFFLINE_QUEUED") {
+        setIsFormVisible(false);
+        setEditingPatient(null);
+        form.resetFields();
+      } else {
+        message.error(error);
+      }
       clearError();
       setIsSubmitting(false);
     }
-  }, [error, clearError]);
+  }, [error, clearError, form]);
 
   useEffect(() => {
     if (isSubmitting && !loading && !error) {
@@ -241,9 +266,9 @@ const PatientList = () => {
       setIsFormVisible(false);
       setEditingPatient(null);
       form.resetFields();
-      fetchPatients(true);
+      pagedActions.fetchPaged(1); // Refresh first page
     }
-  }, [isSubmitting, loading, error, editingPatient, fetchPatients, form]);
+  }, [isSubmitting, loading, error, editingPatient, pagedActions, form]);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
 
   useEffect(() => {
@@ -256,27 +281,26 @@ const PatientList = () => {
         dob,
         gender,
         blood_group,
-        status,
         medical_history,
         address,
         password,
       } = values;
 
-      const requiredFilled = 
-        first_name && 
-        email && 
-        phone_number && 
+      const requiredFilled =
+        first_name &&
+        email &&
+        phone_number &&
         phone_number.length === 10 &&
-        dob && 
-        gender && 
-        blood_group && 
-        status && 
-        medical_history && 
+        dob &&
+        gender &&
+        blood_group &&
+        medical_history &&
         address;
 
       // Password Complexity: At least 8 chars, 1 Uppercase, 1 Special
       const passRegex = /^(?=.*[A-Z])(?=.*[\W_]).{8,}$/;
-      const isPassValid = editingPatient || (password && passRegex.test(password));
+      const isPassValid =
+        editingPatient || (password && passRegex.test(password));
 
       setIsSubmitDisabled(!(requiredFilled && isPassValid));
     };
@@ -285,14 +309,13 @@ const PatientList = () => {
   }, [formValues, editingPatient, form]);
 
   useEffect(() => {
-    fetchPatients();
-  }, [fetchPatients]);
+    pagedActions.fetchPaged(1);
+  }, [pagedActions]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    const timer = setTimeout(() => pagedActions.setSearch(searchTerm), 400);
     return () => clearTimeout(timer);
-  }, [searchTerm]);
-
+  }, [searchTerm, pagedActions]);
 
   const showForm = (patient = null) => {
     setEditingPatient(patient);
@@ -356,7 +379,7 @@ const PatientList = () => {
     if (!pass) return { score: 0, label: "None", color: theme.border };
     if (pass.length < 6)
       return { score: 1, label: "Weak", color: theme.status.error };
-    if (pass.length < 10)
+    if (pass.length < 8)
       return { score: 2, label: "Average", color: theme.status.warning };
     return { score: 3, label: "Strong", color: theme.status.success };
   };
@@ -382,28 +405,19 @@ const PatientList = () => {
   };
 
   const displayData = useMemo(() => {
-    const data = (patients || []).map((p) => ({
+    const data = (rawPatients || []).map((p) => ({
       ...p,
       display_name:
         `${p.first_name || ""} ${p.last_name || ""}`.trim() ||
         p.name ||
         "Unknown Patient",
-      display_uhid: p.uhid || `PT-ID-${p.id?.toString().padStart(4, "0")}`,
+      display_uhid:
+        p.uhid ||
+        (p.id ? `PT-ID-${p.id.toString().padStart(4, "0")}` : "PT-ID-NEW"),
     }));
 
-    if (!debouncedSearch) return data;
-    const q = debouncedSearch.toLowerCase();
-    return data.filter((p) => {
-      const name = p.display_name;
-      const patientId = p.display_uhid;
-      return (
-        name.toLowerCase().includes(q) ||
-        p.email?.toLowerCase().includes(q) ||
-        p.phone_number?.toLowerCase().includes(q) ||
-        patientId.toLowerCase().includes(q)
-      );
-    });
-  }, [patients, debouncedSearch]);
+    return data;
+  }, [rawPatients]);
 
   const columns = [
     {
@@ -422,7 +436,7 @@ const PatientList = () => {
                 cursor: "pointer",
               }}
             >
-              {highlightText(fullName, debouncedSearch)}
+              {highlightText(fullName, searchQuery)}
             </Text>
           </Tooltip>
         );
@@ -459,7 +473,7 @@ const PatientList = () => {
               color: theme.text.primary,
             }}
           >
-            {highlightText(record.phone_number, debouncedSearch)}
+            {highlightText(record.phone_number, searchQuery)}
           </Text>
         </Tooltip>
       ),
@@ -593,16 +607,18 @@ const PatientList = () => {
           borderRadius: "12px",
           boxShadow: theme.shadow,
           minHeight: "auto",
-          overflow: "hidden",
         }}
       >
         <StyledTable
           columns={columns}
           dataSource={displayData}
           rowKey="id"
-          loading={loading && (patients || []).length === 0}
-          pagination={{ pageSize: 8, placement: "bottomCenter" }}
-          rowClassName={(record) => record.status === "inactive" ? "inactive-row" : ""}
+          loading={loading && (rawPatients || []).length === 0}
+          pagination={tablePagination}
+          onChange={pagedActions.handleTableChange}
+          rowClassName={(record) =>
+            record.status === "inactive" ? "inactive-row" : ""
+          }
           scroll={{ x: 800 }}
         />
       </div>
@@ -751,15 +767,23 @@ const PatientList = () => {
                             borderRadius: "2px",
                             background:
                               formValues?.password?.length > 0
-                                ? getPasswordStrength(formValues.password).score >= i
-                                  ? getPasswordStrength(formValues.password).color
+                                ? getPasswordStrength(formValues.password)
+                                    .score >= i
+                                  ? getPasswordStrength(formValues.password)
+                                      .color
                                   : "#e5e7eb"
                                 : "#e5e7eb",
                           }}
                         />
                       ))}
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
                       <span
                         style={{
                           fontSize: "12px",
@@ -774,7 +798,9 @@ const PatientList = () => {
                             }`
                           : "Enter password"}
                       </span>
-                      <span style={{ fontSize: '11px', color: theme.text.light }}>
+                      <span
+                        style={{ fontSize: "11px", color: theme.text.light }}
+                      >
                         Min 8 chars, 1 Uppercase, 1 Special
                       </span>
                     </div>
@@ -902,7 +928,7 @@ const PatientList = () => {
                   background: isSubmitDisabled ? theme.border : theme.primary,
                   border: "none",
                   opacity: isSubmitDisabled ? 0.7 : 1,
-                  cursor: isSubmitDisabled ? 'not-allowed' : 'pointer'
+                  cursor: isSubmitDisabled ? "not-allowed" : "pointer",
                 }}
               >
                 {editingPatient ? "Save Changes" : "Register Patient"}
@@ -923,10 +949,16 @@ const PatientList = () => {
                 background: theme.primaryLight,
               }}
             >
-              <HistoryOutlined style={{ fontSize: "16px", color: theme.primary }} />
+              <HistoryOutlined
+                style={{ fontSize: "16px", color: theme.primary }}
+              />
             </TitleIcon>
             <span
-              style={{ fontSize: "16px", fontWeight: 700, color: theme.text.primary }}
+              style={{
+                fontSize: "16px",
+                fontWeight: 700,
+                color: theme.text.primary,
+              }}
             >
               Patient Medical History
             </span>
@@ -945,7 +977,11 @@ const PatientList = () => {
         closable={false}
         styles={{
           body: { background: theme.background.main, padding: "20px" },
-          header: { borderBottom: `1px solid ${theme.border}`, padding: "16px 24px", background: theme.background.card },
+          header: {
+            borderBottom: `1px solid ${theme.border}`,
+            padding: "16px 24px",
+            background: theme.background.card,
+          },
           wrapper: { width: window.innerWidth > 576 ? 500 : "100%" },
         }}
       >

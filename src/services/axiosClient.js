@@ -59,8 +59,8 @@ axiosClient.interceptors.request.use(
         await addOfflineRequest(config);
         refreshQueueCount(); // Sync Redux state
         notification.info({
-          message: "Request Queued",
-          description: "System is offline. Your changes have been saved locally and will sync once back online.",
+          message: "Saved",
+          description: "Changes saved locally.",
           placement: "topRight",
           duration: 3,
         });

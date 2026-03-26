@@ -13,7 +13,7 @@ import {
 const usePatients = () => {
   const dispatch = useDispatch();
   
-  const patients = useSelector(state => state.patients?.patients || []);
+  const patients = useSelector(state => state.patients?.list || []);
   const selectedPatient = useSelector(state => state.patients?.selectedPatient || null);
   const loading = useSelector(state => state.patients?.loading || false);
   const isLoaded = useSelector(state => state.patients?.isLoaded || false);

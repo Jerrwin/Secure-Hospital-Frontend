@@ -20,6 +20,7 @@ import {
 } from "@ant-design/icons";
 import styled from "styled-components";
 import { useTheme } from "../../context/ThemeContext";
+import axiosClient from "../../services/axiosClient";
 
 const { Text } = Typography;
 
@@ -122,9 +123,49 @@ const StyledCard = styled(Card)`
 const SecuritySettings = () => {
   const { theme } = useTheme();
   const [form] = Form.useForm();
+  const passwordValue = Form.useWatch("password", form);
 
-  const onFinish = (values) => {
-    message.success("Settings updated successfully");
+  const getPasswordStrength = (pass) => {
+    if (!pass) return { score: 0, label: "None", color: theme.border };
+    if (pass.length < 6)
+      return { score: 1, label: "Weak", color: theme.status.error };
+    
+    let score = 2;
+    if (pass.length >= 8) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+    if (score <= 3) return { score: 2, label: "Average", color: theme.status.warning };
+    return { score: 3, label: "Strong", color: theme.status.success };
+  };
+
+  const strength = getPasswordStrength(passwordValue);
+
+  const onFinish = async (values) => {
+    try {
+      if (!values.password) return;
+      
+      if (!values.current_password) {
+        return message.error("Current password is required to set a new password");
+      }
+
+      const response = await axiosClient.post("/api/auth/change-password", {
+        current_password: values.current_password,
+        new_password: values.password,
+        new_password_confirmation: values.confirm,
+      });
+
+      if (response.data.success) {
+        message.success("Password updated successfully");
+        form.resetFields();
+      }
+    } catch (error) {
+      console.error("Update failed:", error);
+      message.error(
+        error.response?.data?.message || "Failed to update security settings",
+      );
+    }
   };
 
   return (
@@ -150,19 +191,72 @@ const SecuritySettings = () => {
             }
           >
             <Form form={form} layout="vertical" onFinish={onFinish}>
-              <Form.Item label="Change Password" name="password">
+              <Form.Item 
+                label="Current Password" 
+                name="current_password"
+                rules={[{ required: true, message: "Required for security" }]}
+              >
                 <Input.Password
-                  prefix={<LockOutlined />}
-                  placeholder="New password"
+                  prefix={<LockOutlined style={{ color: theme.text.light }} />}
+                  placeholder="Enter current password"
                   size="large"
+                  style={{ borderRadius: 8 }}
                 />
               </Form.Item>
 
-              <Form.Item label="Confirm Password" name="confirm">
+              <Form.Item 
+                label="New Password" 
+                name="password"
+                rules={[
+                  { required: true, message: "New password is required" },
+                  { min: 6, message: "Minimum 6 characters" }
+                ]}
+              >
                 <Input.Password
-                  prefix={<LockOutlined />}
+                  prefix={<LockOutlined style={{ color: theme.text.light }} />}
+                  placeholder="New password"
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+
+              {passwordValue && (
+                <div style={{ marginTop: "-12px", marginBottom: "16px" }}>
+                  <div style={{ height: 4, background: "#eee", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ 
+                      height: "100%", 
+                      width: `${strength.score * 33.3}%`, 
+                      background: strength.color,
+                      transition: "all 0.3s"
+                    }} />
+                  </div>
+                  <Text style={{ fontSize: "12px", color: strength.color, fontWeight: 600 }}>
+                    Strength: {strength.label}
+                  </Text>
+                </div>
+              )}
+
+              <Form.Item 
+                label="Confirm New Password" 
+                name="confirm"
+                dependencies={["password"]}
+                rules={[
+                  { required: true, message: "Please confirm your password" },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue("password") === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error("Passwords do not match"));
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: theme.text.light }} />}
                   placeholder="Confirm new password"
                   size="large"
+                  style={{ borderRadius: 8 }}
                 />
               </Form.Item>
 
