@@ -53,8 +53,8 @@ function* addStaffSaga(action) {
   try {
     const response = yield call(addStaffAPI, action.payload);
     yield put(addStaffSuccess(response.data || response));
-    // Trigger re-fetch of current page
-    yield put(fetchPagedRequest());
+    // Trigger re-fetch of current page (page 1 for new staff)
+    yield put(fetchPagedRequest(1));
   } catch (error) {
     yield put(addStaffFailure(error.response?.data?.message || "Failed to add staff member"));
   }
@@ -62,10 +62,9 @@ function* addStaffSaga(action) {
 
 function* updateStaffSaga(action) {
   try {
-    yield call(updateStaffAPI, action.payload);
-    yield put(updateStaffSuccess());
-    // Trigger re-fetch of current page
-    yield put(fetchPagedRequest());
+    const response = yield call(updateStaffAPI, action.payload);
+    const updatedData = { ...action.payload.data, ...(response.data || response) };
+    yield put(updateStaffSuccess({ id: action.payload.id, ...updatedData }));
   } catch (error) {
     yield put(updateStaffFailure(error.response?.data?.message || "Failed to update staff member"));
   }
@@ -74,7 +73,7 @@ function* updateStaffSaga(action) {
 function* deleteStaffSaga(action) {
   try {
     yield call(deleteStaffAPI, action.payload);
-    yield put(deleteStaffSuccess());
+    yield put(deleteStaffSuccess(action.payload)); // Pass ID
     // Trigger re-fetch of current page
     yield put(fetchPagedRequest());
   } catch (error) {

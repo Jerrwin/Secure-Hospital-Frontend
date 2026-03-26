@@ -274,11 +274,18 @@ const StaffManagement = () => {
   };
 
   const handleFinish = (values) => {
+    // Resolve is_active status (preserve if missing from values)
+    const currentIsActive = editingStaff 
+      ? (editingStaff.status === "active" || editingStaff.is_active === 1 || editingStaff.is_active === true)
+      : true; // Default to active for new staff
+    
+    const isActive = values.is_active !== undefined ? values.is_active : currentIsActive;
+
     const payload = {
       ...values,
       name: `${values.first_name || ""} ${values.last_name || ""}`.trim(),
-      is_active: values.is_active ? 1 : 0,
-      status: values.is_active ? "active" : "inactive",
+      is_active: isActive ? 1 : 0,
+      status: isActive ? "active" : "inactive",
     };
 
     if (editingStaff) {
@@ -362,7 +369,7 @@ const StaffManagement = () => {
       title: "Status",
       key: "status",
       render: (_, record) => {
-        const isActive = record.status === "active" || record.is_active === 1 || record.is_active === true;
+        const isActive = record.status ? record.status === "active" : (record.is_active === 1 || record.is_active === true);
         return (
           <Switch
             checked={isActive}
@@ -463,7 +470,7 @@ const StaffManagement = () => {
           pagination={pagination}
           onChange={pagedActions.handleTableChange}
           rowClassName={(record) => {
-            const isActive = record.status === "active" || record.is_active === 1 || record.is_active === true;
+            const isActive = record.status ? record.status === "active" : (record.is_active === 1 || record.is_active === true);
             return isActive ? "" : "inactive-row";
           }}
           scroll={{ x: 800 }}

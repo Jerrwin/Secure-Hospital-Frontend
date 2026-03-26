@@ -22,6 +22,7 @@ const initialState = {
   dropdownLoading: false,
   submitting: false,  // for create/update/cancel/complete
   fetched: false,
+  dropdownFetched: false,
   error: null,
   submitError: null,
 };
@@ -213,11 +214,13 @@ const appointmentSlice = createSlice({
     },
     fetchDropdownDataSuccess: (state, action) => {
       state.dropdownLoading = false;
+      state.dropdownFetched = true;
       state.patients = action.payload.patients || [];
       state.staff = action.payload.staff || [];
     },
     fetchDropdownDataFailure: (state, action) => {
       state.dropdownLoading = false;
+      state.dropdownFetched = true;
       state.error = action.payload;
     },
 

@@ -17,7 +17,7 @@ const billingAPI = {
   updateInvoice: (id, data) => axiosClient.put(`/api/invoices/${id}`, data),
 
   // Fetch completed appointments that DO NOT have an invoice yet
-  getCompletedAppointments: () => axiosClient.get("/api/appointments/unbilled"),
+  getCompletedAppointments: (params) => axiosClient.get("/api/appointments/unbilled", { params }),
 };
 
 export default billingAPI;

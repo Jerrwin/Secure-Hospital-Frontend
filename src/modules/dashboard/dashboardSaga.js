@@ -40,7 +40,7 @@ function* fetchDashboardDataSaga(action) {
 
     yield put(
       fetchDashboardDataSuccess({
-        stats: payload.stats || null,         // ✅ never pollute stats with list data
+        stats: payload.stats || payload || null, // ✅ Handle both nested and flat responses
         appointments: payload.appointments || [],
         prescriptions: payload.prescriptions || [],
         weekly_trend: payload.weekly_trend || [],

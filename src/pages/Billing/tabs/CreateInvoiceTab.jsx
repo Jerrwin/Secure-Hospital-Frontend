@@ -3,6 +3,7 @@ import { Table, Button, Modal, Form, InputNumber, Space, Tag, message, Empty } f
 import { PlusCircleOutlined, SolutionOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import useBilling from "../../../modules/billing/hooks/useBilling";
+import useAuth from "../../../modules/auth/hooks/useAuth";
 import styled from "styled-components";
 import { useTheme } from "../../../context/ThemeContext";
 
@@ -33,6 +34,8 @@ const CreateInvoiceTab = ({
   loading 
 }) => {
   const { theme } = useTheme();
+  const { userRole } = useAuth();
+  const isPatient = userRole === "PATIENT";
   const { 
     sessionBilledIds,
     createInvoice, 
@@ -93,17 +96,20 @@ const CreateInvoiceTab = ({
       key: "date",
       render: (v) => dayjs(v).format("DD MMM YYYY"),
     },
-    {
+    ...(!isPatient ? [{
       title: "Patient",
       dataIndex: "patient_name",
       key: "patient",
       render: (text, record) => text || record.patientName || `Patient #${record.patient_id}`,
-    },
+    }] : []),
     {
       title: "Provider",
       dataIndex: "provider_name",
       key: "provider",
-      render: (text, record) => text || record.providerName || `Doctor #${record.provider_id}`,
+      render: (text, record) => {
+        const name = text || record.providerName || (record.provider ? `${record.provider.first_name || record.provider.name || ""} ${record.provider.last_name || ""}`.trim() : null);
+        return name || `Doctor #${record.provider_id || "Unknown"}`;
+      },
     },
     {
       title: "Status",
@@ -111,7 +117,7 @@ const CreateInvoiceTab = ({
       key: "status",
       render: (s) => <Tag color="green">{s?.toUpperCase()}</Tag>,
     },
-    {
+    ...(!isPatient ? [{
       title: "Action",
       key: "action",
       render: (_, record) => (
@@ -123,7 +129,7 @@ const CreateInvoiceTab = ({
           Generate Invoice
         </ActionBtn>
       ),
-    },
+    }] : []),
   ];
 
   return (

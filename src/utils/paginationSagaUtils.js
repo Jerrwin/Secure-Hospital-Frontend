@@ -33,7 +33,7 @@ export function* fetchPagedSagaGenerator({ apiMethod, actions, stateSelector, ac
     // Normalize response: some APIs return response.data directly, some are axios response objects
     const data = res.data && res.hasOwnProperty('status') ? res.data : res;
 
-    if (data.success) {
+    if (data.success || (data.data && data.pagination)) {
       yield put(actions.fetchPagedSuccess(data));
       
       // Auto-trigger prefetch for next page if it exists

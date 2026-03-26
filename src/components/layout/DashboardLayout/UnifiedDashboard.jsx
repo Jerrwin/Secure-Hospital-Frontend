@@ -982,7 +982,7 @@ const UnifiedDashboard = ({
         {/* Quick Actions */}
         <GlassCard
           theme={theme}
-          style={{ marginTop: 24 }}
+          style={{ marginTop: 24, height: "auto", flex: "none" }}
           title={
             <SectionTitle level={5} theme={theme}>
               <ThunderboltOutlined /> Quick Actions
@@ -1070,7 +1070,7 @@ const UnifiedDashboard = ({
         {/* Pipeline */}
         <GlassCard
           theme={theme}
-          style={{ marginTop: 24 }}
+          style={{ marginTop: 24, height: "auto", flex: "none" }}
           title={
             <SectionTitle level={5} theme={theme}>
               <ExperimentOutlined /> Prescription Pipeline

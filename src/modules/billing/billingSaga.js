@@ -103,6 +103,18 @@ function* fetchPagedInvoicesSaga(action) {
       }
 
       console.log(`[billingSaga] Dispatching fetchPagedSuccess with ${finalData.length} items`);
+      
+      // Normalize: if unbilled appointments, ensure they have name fields for the UI
+      if (statusFilter === "unbilled") {
+        finalData = finalData.map(app => ({
+          ...app,
+          patient_name: app.patient_name || app.patientName || (app.patient ? `${app.patient.first_name || ""} ${app.patient.last_name || ""}`.trim() : null),
+          provider_name: app.provider_name || app.providerName || (app.provider ? `${app.provider.first_name || app.provider.name || ""} ${app.provider.last_name || ""}`.trim() : null),
+          provider_id: app.provider_id || (app.provider ? app.provider.id : null),
+          patient_id: app.patient_id || (app.patient ? app.patient.id : null),
+        }));
+      }
+
       yield put(fetchPagedSuccess({ data: finalData, pagination: data.pagination }));
       
       // Auto-trigger prefetch for next page
@@ -169,6 +181,18 @@ function* prefetchSaga(action) {
         finalData = completeInvoices;
       }
       console.log(`[billingSaga] Prefetch success. Storing ${finalData.length} items in buffer.`);
+      
+      // Normalize: if unbilled appointments, ensure they have name fields
+      if (statusFilter === "unbilled") {
+        finalData = finalData.map(app => ({
+          ...app,
+          patient_name: app.patient_name || app.patientName || (app.patient ? `${app.patient.first_name || ""} ${app.patient.last_name || ""}`.trim() : null),
+          provider_name: app.provider_name || app.providerName || (app.provider ? `${app.provider.first_name || app.provider.name || ""} ${app.provider.last_name || ""}`.trim() : null),
+          provider_id: app.provider_id || (app.provider ? app.provider.id : null),
+          patient_id: app.patient_id || (app.patient ? app.patient.id : null),
+        }));
+      }
+
       yield put(prefetchSuccess({ data: finalData }));
     } else {
       yield put(prefetchFailure());

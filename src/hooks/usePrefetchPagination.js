@@ -24,20 +24,24 @@ export const usePrefetchPagination = ({
 
   const { fetchPagedRequest, setPage: setPageAction, setSearch, setStatus } = actions;
 
-  // Sync initial status if provided
+  // Sync initial status if provided and different from current state
   useEffect(() => {
-    if (initialStatus && statusFilter === "all" && initialStatus !== "all") {
-       dispatch(setStatus(initialStatus));
+    if (initialStatus && initialStatus !== "all" && statusFilter !== initialStatus) {
+      console.log(`[usePrefetchPagination] Syncing initialStatus: ${initialStatus}`);
+      dispatch(setStatus(initialStatus));
     }
-  }, [dispatch, initialStatus, statusFilter, setStatus]);
+    // Only run this once on mount/initialStatus change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialStatus]);
 
   // Initial Fetch if not already fetched
   useEffect(() => {
-    if (!fetched && !loading && !skip) {
+    const isAlreadyFetched = fetched || state.isLoaded;
+    if (!isAlreadyFetched && !loading && !skip) {
       console.log(`[usePrefetchPagination] Triggering fetchPagedRequest(1). Status: ${statusFilter}, Search: ${searchQuery}`);
       dispatch(fetchPagedRequest(1));
     }
-  }, [dispatch, fetched, loading, fetchPagedRequest, statusFilter, searchQuery, providerId, skip]);
+  }, [dispatch, fetched, loading, state.isLoaded, fetchPagedRequest, statusFilter, searchQuery, providerId, skip]);
 
   const fetchPaged = useCallback(
     (page) => {

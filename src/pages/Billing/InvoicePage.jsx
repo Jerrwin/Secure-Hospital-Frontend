@@ -199,7 +199,7 @@ const InvoicePage = () => {
     initialStatus: isPatient ? "pending" : "unbilled",
   });
 
-  const [activeKey, setActiveKey] = useState(isPatient ? "pending" : "create");
+  const [, setActiveKey] = useState(isPatient ? "pending" : "create");
 
   // Map tab keys to API status values
   const handleTabChange = (key) => {
@@ -215,9 +215,9 @@ const InvoicePage = () => {
   };
 
   // Derive active tab from statusFilter
-  const activeTabKey = activeKey === "create" || statusFilter === "unbilled"
-    ? "create"
-    : statusFilter === "paid" ? "completed" : "pending";
+  const activeTabKey = (statusFilter === "unbilled")
+      ? "create"
+      : (statusFilter === "paid" ? "completed" : "pending");
 
   const tabItems = [
     ...(isPatient
@@ -290,7 +290,7 @@ const InvoicePage = () => {
       />
 
       <ContentCard>
-        {activeTabKey === "create" ? (
+        {statusFilter === "unbilled" ? (
           <CreateInvoiceTab 
             setActiveKey={(key) => handleTabChange(key)} 
             completedAppointments={list}

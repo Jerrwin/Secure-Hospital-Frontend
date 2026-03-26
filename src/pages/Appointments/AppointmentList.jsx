@@ -119,6 +119,7 @@ const AppointmentList = forwardRef(
       loading: appointmentsLoading,
       submitting,
       dropdownLoading,
+      dropdownFetched,
       fetchDropdowns: fetchAppointmentDropdowns,
       create,
       update,
@@ -171,8 +172,8 @@ const AppointmentList = forwardRef(
 
     // ── Modal Handlers ──────────────────────────────────────────────────────
     const openCreate = () => {
-      // Only fetch dropdown data if not already present
-      if (patients.length === 0 || staff.length === 0) {
+      // Only fetch dropdown data if not already attempted
+      if (!dropdownLoading && !dropdownFetched) {
         fetchAppointmentDropdowns();
       }
       form.resetFields();
@@ -184,8 +185,8 @@ const AppointmentList = forwardRef(
     };
 
     const openEdit = (record) => {
-      // Only fetch dropdown data if not already present
-      if (patients.length === 0 || staff.length === 0) {
+      // Only fetch dropdown data if not already attempted
+      if (!dropdownLoading && !dropdownFetched) {
         fetchAppointmentDropdowns();
       }
       setEditingId(record.id);
@@ -287,10 +288,10 @@ const AppointmentList = forwardRef(
 
     // ── Initial load ────────────────────────────────────────────────────────
     useEffect(() => {
-      if (!dropdownLoading && (patients.length === 0 || staff.length === 0)) {
+      if (!dropdownLoading && !dropdownFetched) {
          fetchAppointmentDropdowns();
       }
-    }, [fetchAppointmentDropdowns, patients, staff, dropdownLoading]);
+    }, [fetchAppointmentDropdowns, dropdownLoading, dropdownFetched]);
 
     // ── Data is now pre-filtered by the server ──────────────────────────────
     const filteredData = list;

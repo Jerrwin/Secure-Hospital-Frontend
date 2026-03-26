@@ -101,7 +101,7 @@ const userSlice = createSlice({
       state.submitting = true;
       state.error = null;
     },
-    addStaffSuccess(state, action) {
+    addStaffSuccess(state) {
       state.submitting = false;
       state.fetched = false; // force re-fetch
     },
@@ -114,9 +114,17 @@ const userSlice = createSlice({
       state.submitting = true;
       state.error = null;
     },
-    updateStaffSuccess(state) {
+    updateStaffSuccess(state, action) {
       state.submitting = false;
       state.fetched = false; // force re-fetch
+      
+      const updatedUser = action.payload;
+      if (updatedUser && updatedUser.id) {
+        state.list = state.list.map(user => 
+          String(user.id) === String(updatedUser.id) ? { ...user, ...updatedUser } : user
+        );
+        state.staffList = [...state.list];
+      }
     },
     updateStaffFailure(state, action) {
       state.submitting = false;
@@ -127,9 +135,15 @@ const userSlice = createSlice({
       state.submitting = true;
       state.error = null;
     },
-    deleteStaffSuccess(state) {
+    deleteStaffSuccess(state, action) {
       state.submitting = false;
       state.fetched = false; // force re-fetch
+      
+      const id = action.payload;
+      if (id) {
+        state.list = state.list.filter(item => String(item.id) !== String(id));
+        state.staffList = [...state.list];
+      }
     },
     deleteStaffFailure(state, action) {
       state.submitting = false;

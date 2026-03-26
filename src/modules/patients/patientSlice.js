@@ -15,6 +15,7 @@ const initialState = {
   loading: false,
   error: null,
   isLoaded: false,
+  fetched: false,
 };
 
 const patientSlice = createSlice({
@@ -42,6 +43,7 @@ const patientSlice = createSlice({
         };
       }
       state.isLoaded = true;
+      state.fetched = true;
     },
     fetchPagedFailure(state, action) {
       state.loading = false;
@@ -71,14 +73,17 @@ const patientSlice = createSlice({
       state.list = state.buffer;
       state.buffer = [];
       state.pagination.currentPage = targetPage;
+      state.fetched = true;
     },
     setSearch(state, action) {
       state.searchQuery = action.payload;
       state.pagination.currentPage = 1; // Reset to page 1 on search
+      state.fetched = false;
     },
     setStatus(state, action) {
       state.statusFilter = action.payload;
       state.pagination.currentPage = 1; // Reset to page 1 on filter
+      state.fetched = false;
     },
 
     // ── Legacy/Standard Actions ──────────────────────────────────────────────
@@ -115,6 +120,7 @@ const patientSlice = createSlice({
     },
     createPatientSuccess(state, action) {
       state.loading = false;
+      state.fetched = false;
       // If we are on page 1, we might want to refresh. 
       // For now, simpler to just push if small, but with pagination, 
       // a refresh is better.
@@ -147,6 +153,7 @@ const patientSlice = createSlice({
     deletePatientSuccess(state, action) {
       state.loading = false;
       state.list = state.list.filter(p => p.id !== action.payload);
+      state.fetched = false; // Trigger refresh
     },
     deletePatientFailure(state, action) {
       state.loading = false;

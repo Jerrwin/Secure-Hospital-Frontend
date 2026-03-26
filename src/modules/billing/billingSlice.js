@@ -10,7 +10,7 @@ const initialState = {
     lastPage: 1,
   },
   searchQuery: "",
-  statusFilter: "pending", // default to pending
+  statusFilter: "unbilled", // default to unbilled to match initial page tab
   invoices: [], 
   sessionBilledIds: [], 
   selectedInvoice: null,
@@ -51,6 +51,7 @@ const billingSlice = createSlice({
     fetchPagedFailure: (state, action) => {
       state.loading = false;
       state.error = action.payload;
+      state.fetched = true; // Stop loop on error
     },
 
     // ── PREFETCH ───────────────────────────────────────────────────────────
