@@ -19,8 +19,15 @@ import {
   message,
   Empty,
   Drawer,
+  Typography,
+  Input,
+  Tooltip,
 } from "antd";
-import { MessageOutlined, EditOutlined } from "@ant-design/icons";
+import {
+  MessageOutlined,
+  EditOutlined,
+  EyeOutlined,
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 
 import useAuth from "../../modules/auth/hooks/useAuth";
@@ -36,6 +43,7 @@ import {
 } from "../../modules/appointments/appointmentSlice";
 
 const { Option } = Select;
+const { Text } = Typography;
 
 const paginationActions = { fetchPagedRequest, setPage, setSearch, setStatus };
 
@@ -170,6 +178,9 @@ const AppointmentList = forwardRef(
     const [activeChatId, setActiveChatId] = useState(null);
     const [activeChatPatient, setActiveChatPatient] = useState("");
 
+    // Expanded Row State (to show reason below)
+    const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+
     // ── Modal Handlers ──────────────────────────────────────────────────────
     const openCreate = () => {
       // Only fetch dropdown data if not already attempted
@@ -197,6 +208,7 @@ const AppointmentList = forwardRef(
         start_time: dayjs(record.start_time, "HH:mm:ss"),
         end_time: dayjs(record.end_time, "HH:mm:ss"),
         STATUS: record.STATUS?.toLowerCase(),
+        reason: record.reason || "",
       });
       setModalOpen(true);
     };
@@ -404,11 +416,24 @@ const AppointmentList = forwardRef(
       }
 
       setIsSubmittingLocal(true);
+      const submitPayload = {
+        ...payload,
+        reason: values.reason || "",
+      };
+
       if (editingId) {
-        update(editingId, payload);
+        update(editingId, submitPayload);
       } else {
-        create(payload);
+        create(submitPayload);
       }
+    };
+
+    const toggleExpand = (recordId) => {
+      setExpandedRowKeys((prev) =>
+        prev.includes(recordId)
+          ? prev.filter((id) => id !== recordId)
+          : [...prev, recordId],
+      );
     };
 
     // ─── Table Columns ────────────────────────────────────────────────────────
@@ -430,30 +455,12 @@ const AppointmentList = forwardRef(
         dataIndex: "patient_name",
         key: "patient",
         render: (text, record) => {
-          // 1. Direct field or nested object
-          let name =
-            text ||
-            record.patientName ||
-            (record.patient
-              ? `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim()
-              : null);
-
-          // 2. Fallback: Lookup in patients list (fetched for dropdowns)
+          let name = text || record.patientName || (record.patient ? `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim() : null);
           if (!name && record.patient_id && patients.length > 0) {
-            const found = patients.find(
-              (p) => String(p.id) === String(record.patient_id),
-            );
-            if (found) {
-              name =
-                found.full_name ||
-                found.name ||
-                `${found.first_name || ""} ${found.last_name || ""}`.trim();
-            }
+            const found = patients.find((p) => String(p.id) === String(record.patient_id));
+            if (found) name = found.full_name || found.name || `${found.first_name || ""} ${found.last_name || ""}`.trim();
           }
-
-          // 3. Final fallback: ID string
           name = name || `Patient #${record.patient_id || "?"}`;
-
           return highlightText(name, propSearchText);
         },
         hidden: role === "PATIENT",
@@ -463,16 +470,27 @@ const AppointmentList = forwardRef(
         dataIndex: "provider_name",
         key: "provider",
         render: (text, record) => {
-          // Robust name detection for Nurse/Patient views
-          const name =
-            text ||
-            record.providerName ||
-            (record.provider
-              ? `${record.provider.first_name || record.provider.name} ${record.provider.last_name || ""}`.trim()
-              : "—");
+          const name = text || record.providerName || (record.provider ? `${record.provider.first_name || record.provider.name} ${record.provider.last_name || ""}`.trim() : "—");
           return highlightText(name, propSearchText);
         },
         hidden: role === "DOCTOR" || role === "PROVIDER",
+      },
+      {
+        title: "View",
+        key: "view",
+        align: "center",
+        render: (_, record) => (
+          <Tooltip title="View Reason">
+            <Button 
+              type="text" 
+              icon={<EyeOutlined style={{ color: expandedRowKeys.includes(record.id) ? theme.primary : theme.text.light }} />} 
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpand(record.id);
+              }}
+            />
+          </Tooltip>
+        ),
       },
       {
         title: "Status",
@@ -483,33 +501,40 @@ const AppointmentList = forwardRef(
       {
         title: "Actions",
         key: "actions",
+        align: "right",
         render: (_, record) => {
           const status = record.STATUS?.toLowerCase();
           const isFinished = status === "cancelled" || status === "completed";
           return (
-            <Space size="middle">
+            <Space size="small">
               {role !== "PATIENT" && (
-                <ActionBtn
-                  type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => openEdit(record)}
-                  style={{
-                    color: isFinished ? theme.text.light : theme.primary,
-                  }}
-                  disabled={isFinished}
-                >
-                  Edit
-                </ActionBtn>
+                <Tooltip title={isFinished ? "Cannot edit finished appointments" : "Edit Appointment"}>
+                  <ActionBtn
+                    type="text"
+                    icon={<EditOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEdit(record);
+                    }}
+                    style={{
+                      color: isFinished ? theme.text.light : theme.primary,
+                    }}
+                    disabled={isFinished}
+                  />
+                </Tooltip>
               )}
               {role !== "RECEPTIONIST" && (
-                <ActionBtn
-                  type="text"
-                  icon={<MessageOutlined />}
-                  onClick={() => openChat(record)}
-                  style={{ color: theme.accent }}
-                >
-                  Chat
-                </ActionBtn>
+                <Tooltip title="Open Chat">
+                  <ActionBtn
+                    type="text"
+                    icon={<MessageOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openChat(record);
+                    }}
+                    style={{ color: theme.accent }}
+                  />
+                </Tooltip>
               )}
             </Space>
           );
@@ -530,6 +555,31 @@ const AppointmentList = forwardRef(
               scroll={{ x: "max-content" }}
               pagination={tablePagination}
               onChange={pagedActions.handleTableChange}
+              expandedRowKeys={expandedRowKeys}
+              onExpand={(expanded, record) => {
+                if (expanded) setExpandedRowKeys([record.id]);
+                else setExpandedRowKeys([]);
+              }}
+              expandable={{
+                expandedRowRender: (record) => (
+                  <div style={{ 
+                    padding: '8px 16px', 
+                    background: theme.background.main + '44', 
+                    borderRadius: '6px',
+                    margin: '2px 8px',
+                    border: `1px solid ${theme.border}44`
+                  }}>
+                    <Text strong style={{ color: theme.primary, fontSize: '10px', textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
+                      Clinical Reason / Purpose:
+                    </Text>
+                    <Text style={{ fontSize: '13px', fontStyle: 'italic', color: theme.text.secondary }}>
+                      "{record.reason || "No specific reason provided."}"
+                    </Text>
+                  </div>
+                ),
+                rowExpandable: (record) => !!record.reason,
+                showExpandColumn: false, // We use our custom "View" column eye icon
+              }}
               locale={{
                 emptyText: (
                   <Empty
@@ -681,6 +731,18 @@ const AppointmentList = forwardRef(
                 />
               </Form.Item>
             </div>
+
+            <Form.Item
+              name="reason"
+              label="Reason for Appointment"
+              rules={[{ required: true, message: "Please provide a reason" }]}
+            >
+              <Input.TextArea
+                placeholder="e.g. Regular checkup, Fever, Consultation"
+                rows={3}
+                style={{ borderRadius: '8px' }}
+              />
+            </Form.Item>
 
             {/* Status Dropdown - Only visible when editing. Disabled if already completed or cancelled */}
             {editingId && (
