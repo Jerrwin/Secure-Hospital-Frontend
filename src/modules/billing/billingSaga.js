@@ -88,12 +88,16 @@ function* fetchPagedInvoicesSaga(action) {
       }
       
       // RESTORE: Fetch complete details if only IDs/minimal data are returned
-      if (finalData.length > 0 && finalData[0].invoice_id && !finalData[0].amount) {
+      const firstItem = finalData.length > 0 ? finalData[0] : null;
+      const hasInvoiceId = firstItem && (firstItem.invoice_id || firstItem.INVOICE_ID);
+      const hasAmount = firstItem && (firstItem.amount !== undefined || firstItem.AMOUNT !== undefined);
+      if (hasInvoiceId && !hasAmount) {
         console.log(`[billingSaga] Fetching missing details for ${finalData.length} invoices`);
         const completeInvoices = [];
         for (const invoice of finalData) {
           try {
-            const detailRes = yield call(billingAPI.getInvoiceById, invoice.invoice_id);
+            const invId = invoice.invoice_id || invoice.INVOICE_ID;
+            const detailRes = yield call(billingAPI.getInvoiceById, invId);
             completeInvoices.push(detailRes.data.success ? detailRes.data.data : detailRes.data);
           } catch (e) {
             completeInvoices.push(invoice);
@@ -168,11 +172,15 @@ function* prefetchSaga(action) {
       if (finalData.length > perPage) finalData = finalData.slice(0, perPage);
 
        // Fetch complete details if needed
-       if (finalData.length > 0 && finalData[0].invoice_id && !finalData[0].amount) {
+       const firstPrefetchItem = finalData.length > 0 ? finalData[0] : null;
+       const prefetchHasInvoiceId = firstPrefetchItem && (firstPrefetchItem.invoice_id || firstPrefetchItem.INVOICE_ID);
+       const prefetchHasAmount = firstPrefetchItem && (firstPrefetchItem.amount !== undefined || firstPrefetchItem.AMOUNT !== undefined);
+       if (prefetchHasInvoiceId && !prefetchHasAmount) {
         const completeInvoices = [];
         for (const invoice of finalData) {
            try {
-             const detailRes = yield call(billingAPI.getInvoiceById, invoice.invoice_id);
+             const invId = invoice.invoice_id || invoice.INVOICE_ID;
+             const detailRes = yield call(billingAPI.getInvoiceById, invId);
              completeInvoices.push(detailRes.data.success ? detailRes.data.data : detailRes.data);
            } catch (e) {
              completeInvoices.push(invoice);
@@ -206,7 +214,6 @@ function* prefetchSaga(action) {
 function* createInvoiceSaga(action) {
   try {
     const res = yield call(billingAPI.createInvoice, action.payload);
-    console.log("createInvoice Response:", res.data);
     const data = res.data.success ? res.data.data : res.data;
     
     if (res.data.success || data) {
@@ -228,7 +235,6 @@ function* createInvoiceSaga(action) {
 function* processPaymentSaga(action) {
   try {
     const res = yield call(billingAPI.processPayment, action.payload);
-    console.log("processPayment Response:", res.data);
     const data = res.data.success ? res.data.data : res.data;
     
     if (res.data.success || data) {

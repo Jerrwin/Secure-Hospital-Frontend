@@ -9,8 +9,8 @@ import {
   Col,
   Button,
   Tabs,
-  message,
   Drawer,
+  App,
 } from "antd";
 import {
   PlusOutlined,
@@ -58,8 +58,6 @@ const bp = {
 };
 
 const PageWrap = styled.div`
-  min-height: 100vh;
-  background: ${(props) => props.theme.background.main};
   font-family: ${(props) => props.theme.fontFamily};
 `;
 
@@ -292,7 +290,9 @@ const PrescriptionPage = () => {
     loading: prescriptionsLoading,
     submitting,
     error,
+    fetchPrescriptions,
   } = usePrescription();
+  const { message } = App.useApp();
   const { patients, fetchPatients } = usePatients();
   const { fetchDropdowns: fetchAppointmentDropdowns } = useAppointments();
 
@@ -320,7 +320,8 @@ const PrescriptionPage = () => {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    dispatch(fetchRequest());
+    // Initial fetch of page 1 is now handled by the usePrefetchPagination hook internally
+
     const isMedicalStaff = ["DOCTOR", "ADMIN", "PROVIDER"].includes(userRole);
 
     // Set provider filter specifically for doctors
@@ -333,8 +334,9 @@ const PrescriptionPage = () => {
     if (isMedicalStaff) {
       fetchPatients();
       fetchAppointmentDropdowns();
+      fetchPrescriptions(); // Populates state.prescription.appointments
     }
-  }, [dispatch, fetchPatients, fetchAppointmentDropdowns, userRole, user?.id]);
+  }, [dispatch, fetchPatients, fetchAppointmentDropdowns, fetchPrescriptions, userRole, user?.id]);
 
   // Debounce Search
   useEffect(() => {

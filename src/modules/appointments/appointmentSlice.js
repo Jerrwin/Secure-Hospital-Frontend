@@ -40,15 +40,27 @@ const appointmentSlice = createSlice({
     fetchPagedSuccess: (state, action) => {
       state.loading = false;
       state.fetched = true;
-      state.list = action.payload.data;
+      
+      // Deduplicate by ID
+      const rawData = action.payload.data || [];
+      const seen = new Set();
+      state.list = rawData.filter(item => {
+        const id = item.id || item.ID || item.appointment_id || item.appointmentId || item.APPOINTMENT_ID;
+        if (!id || seen.has(String(id))) return false;
+        seen.add(String(id));
+        return true;
+      });
+
       // Map backend keys to our camelCase keys, but PRESERVE our fixed perPage
       const backendPagination = action.payload.pagination;
-      state.pagination = {
-        currentPage: backendPagination.current_page,
-        perPage: state.pagination.perPage, // KEEP our fixed 5, ignore backend's 15
-        total: backendPagination.total,
-        lastPage: backendPagination.last_page,
-      };
+      if (backendPagination) {
+        state.pagination = {
+          currentPage: backendPagination.current_page,
+          perPage: state.pagination.perPage, // KEEP our fixed 5, ignore backend's 15
+          total: backendPagination.total,
+          lastPage: backendPagination.last_page,
+        };
+      }
       // Clear buffer until next prefetch finishes
       state.buffer = []; 
     },
@@ -86,16 +98,19 @@ const appointmentSlice = createSlice({
       state.fetched = true;
     },
     setSearch: (state, action) => {
+      if (state.searchQuery === action.payload) return;
       state.searchQuery = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
     },
     setStatus: (state, action) => {
+      if (state.statusFilter === action.payload) return;
       state.statusFilter = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
     },
     setProviderId: (state, action) => {
+      if (state.providerId === action.payload) return;
       state.providerId = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
@@ -152,7 +167,12 @@ const appointmentSlice = createSlice({
     },
     createAppointmentSuccess: (state, action) => {
       state.submitting = false;
-      state.list = [action.payload, ...state.list];
+      // Prepend to list but slice to perPage to avoid AntD "length > pageSize" warning
+      state.list = [action.payload, ...state.list].slice(
+        0,
+        state.pagination.perPage
+      );
+      state.pagination.total += 1;
       state.fetched = false; // force re-fetch on next load
     },
     createAppointmentFailure: (state, action) => {
@@ -224,7 +244,9 @@ const appointmentSlice = createSlice({
       state.error = action.payload;
     },
 
-    // ── RESET ──────────────────────────────────────────────────────────────
+    invalidateDropdownCache: (state) => {
+      state.dropdownFetched = false;
+    },
     clearSubmitError: (state) => {
       state.submitError = null;
     },
@@ -268,6 +290,7 @@ export const {
   fetchDropdownDataRequest,
   fetchDropdownDataSuccess,
   fetchDropdownDataFailure,
+  invalidateDropdownCache,
   clearSubmitError,
   resetAppointments,
 } = appointmentSlice.actions;

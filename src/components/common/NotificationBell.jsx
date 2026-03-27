@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Badge, Popover, Typography, Button, Empty, Tag } from "antd";
-import { BellOutlined, CheckOutlined } from "@ant-design/icons";
+import { Badge, Popover, Typography, Button, Empty, Tag, Tooltip } from "antd";
+import { BellOutlined, CheckOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import useNotification from "../../hooks/useNotification";
 import { useTheme } from "../../context/ThemeContext";
@@ -61,6 +61,7 @@ const NotificationBell = () => {
     fetchNotifications,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
   } = useNotification();
   const { theme } = useTheme();
 
@@ -133,9 +134,24 @@ const NotificationBell = () => {
                   >
                     {notif.type}
                   </Tag>
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    {dayjs(notif.created_at).fromNow()}
-                  </Text>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                      {dayjs(notif.created_at).fromNow()}
+                    </Text>
+                    <Tooltip title="Delete">
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined style={{ fontSize: 12 }} />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteNotification(notif.id);
+                        }}
+                        style={{ padding: 0, height: 20, width: 20, minWidth: 20 }}
+                      />
+                    </Tooltip>
+                  </div>
                 </div>
                 <Text strong style={{ fontSize: 13, display: "block" }}>{notif.title}</Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>{notif.message}</Text>

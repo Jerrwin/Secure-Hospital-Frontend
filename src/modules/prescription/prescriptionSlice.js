@@ -69,16 +69,19 @@ const prescriptionSlice = createSlice({
       state.fetched = true;
     },
     setSearch: (state, action) => {
+      if (state.searchQuery === action.payload) return;
       state.searchQuery = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
     },
     setStatus: (state, action) => {
+      if (state.statusFilter === action.payload) return;
       state.statusFilter = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
     },
     setProviderId: (state, action) => {
+      if (state.providerId === action.payload) return;
       state.providerId = action.payload;
       state.pagination.currentPage = 1;
       state.fetched = false;
@@ -112,7 +115,12 @@ const prescriptionSlice = createSlice({
     },
     createSuccess: (state, action) => {
       state.submitting = false;
-      state.list = [action.payload, ...state.list];
+      // Prepend to list but slice to perPage to avoid AntD "length > pageSize" warning
+      state.list = [action.payload, ...state.list].slice(
+        0,
+        state.pagination.perPage
+      );
+      state.pagination.total += 1;
       state.fetched = false;
     },
     createFailure: (state, action) => {
@@ -141,6 +149,13 @@ const prescriptionSlice = createSlice({
     statusChangeSuccess: (state, action) => {
       state.submitting = false;
       state.fetched = false;
+      // Also update locally to ensure immediate UI feedback
+      const updated = action.payload;
+      if (updated && updated.id) {
+        state.list = state.list.map((item) =>
+          item.id === updated.id ? { ...item, ...updated } : item
+        );
+      }
     },
     statusChangeFailure: (state, action) => {
       state.submitting = false;

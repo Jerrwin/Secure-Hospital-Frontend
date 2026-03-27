@@ -7,327 +7,406 @@ import {
   CheckCircleFilled,
   SafetyOutlined,
   ArrowRightOutlined,
+  GlobalOutlined,
+  ExperimentOutlined,
+  HeartOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import styled, { keyframes } from "styled-components";
+import styled, { keyframes, css } from "styled-components";
 import useAuth from "../../modules/auth/hooks/useAuth";
 import { useTheme } from "../../context/ThemeContext";
 
-// ─── Animations ──────────────────────────────────────────
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(12px); }
+// ─── Keyframes ────────────────────────────────────────────────────────────────
+
+const fadeUp = keyframes`
+  from { opacity: 0; transform: translateY(40px); }
   to   { opacity: 1; transform: translateY(0); }
 `;
 
-const float = keyframes`
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-8px); }
+const fadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
 `;
 
-// ─── Layout ──────────────────────────────────────────────
-const PageWrapper = styled.div`
+const drift = keyframes`
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.1); }
+`;
+
+const staggerIn = (delay) => css`
+  animation: ${fadeUp} 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${delay} both;
+`;
+
+const float = keyframes`
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  33% { transform: translate(-15px, -20px) rotate(10deg); }
+  66% { transform: translate(15px, 10px) rotate(-10deg); }
+`;
+
+// ─── Root Layout ──────────────────────────────────────────────────────────────
+
+const PageRoot = styled.div`
   min-height: 100vh;
   display: flex;
-  font-family: ${(props) => props.theme.fontFamily || "'DM Sans', sans-serif"};
-`;
-
-const LeftPanel = styled.div`
-  flex: 1;
   background: linear-gradient(
-    160deg,
-    ${(props) => props.theme.background.main} 0%,
-    ${(props) => props.theme.secondary} 50%,
-    ${(props) => props.theme.primary} 100%
+    135deg,
+    ${(p) => p.theme.primary}12 0%,
+    ${(p) => p.theme.background.main} 50%,
+    ${(p) => p.theme.secondary}18 100%
   );
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 4rem 5rem;
-  color: white;
+  font-family: "Outfit", sans-serif;
   position: relative;
   overflow: hidden;
 
-  /* Subtle grid pattern overlay */
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: radial-gradient(
-      rgba(255, 255, 255, 0.03) 1px,
-      transparent 1px
-    );
-    background-size: 24px 24px;
-    pointer-events: none;
+  @media (max-width: 900px) {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+`;
+
+// ─── Background: Vibrant Theme Blobs ──────────────────────────────────────────
+
+const BgCanvas = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+`;
+
+const Blob = styled.div`
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.4;
+  animation: ${drift} 25s infinite alternate ease-in-out;
+  mix-blend-mode: soft-light;
+`;
+
+const Blob1 = styled(Blob)`
+  width: 800px;
+  height: 800px;
+  top: -200px;
+  left: -200px;
+  background: ${(p) => p.theme.primary};
+`;
+
+const Blob2 = styled(Blob)`
+  width: 600px;
+  height: 600px;
+  bottom: -150px;
+  right: -100px;
+  background: ${(p) => p.theme.secondary};
+  animation-delay: -5s;
+`;
+
+const Blob3 = styled(Blob)`
+  width: 400px;
+  height: 400px;
+  top: 40%;
+  left: 30%;
+  background: ${(p) => p.theme.accent || p.theme.primary};
+  opacity: 0.3;
+  animation-delay: -10s;
+`;
+
+const FloatingIcon = styled.div`
+  position: absolute;
+  color: white;
+  opacity: 0.06;
+  font-size: ${(p) => p.$size || "32px"};
+  filter: blur(${(p) => p.$blur || "0px"});
+  z-index: 0;
+  left: ${(p) => p.$left};
+  top: ${(p) => p.$top};
+  animation: ${float} ${(p) => p.$duration || "25s"} infinite ease-in-out;
+  animation-delay: ${(p) => p.$delay || "0s"};
+  pointer-events: none;
+`;
+
+const AnimationLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+`;
+
+// ─── 50/50 Glass Panes ────────────────────────────────────────────────────────
+
+const GlassSide = styled.div`
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  backdrop-filter: blur(45px);
+  -webkit-backdrop-filter: blur(45px);
+`;
+
+const LeftHero = styled(GlassSide)`
+  padding: 4rem 5rem;
+  position: relative;
+  overflow: hidden;
+  background: ${(p) => {
+    const darkStop =
+      p.theme.name === "dark"
+        ? "#020617"
+        : p.theme.name === "warm"
+          ? "#2a0f02"
+          : "#060b1a";
+    if (p.theme.name === "dark") {
+      return `linear-gradient(165deg, rgba(255, 255, 255, 0.08) 0%, ${p.theme.secondary} 100%)`;
+    }
+    return `linear-gradient(165deg, #ffffff 0%, ${p.theme.secondary} 35%, ${darkStop} 100%)`;
+  }};
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 10px 0 50px rgba(0, 0, 0, 0.25);
+  color: white;
+
+  /* Ensure text is readable on the gradient */
+  h1,
+  p,
+  .head,
+  .body,
+  span {
+    color: white;
+    position: relative;
+    z-index: 1;
   }
 
-  /* Decorative glow */
-  &::after {
-    content: "";
-    position: absolute;
-    top: 20%;
-    right: -5%;
-    width: 350px;
-    height: 350px;
-    background: radial-gradient(
-      circle,
-      ${(props) => props.theme.primary}26 0%,
-      transparent 70%
-    );
-    border-radius: 50%;
-    pointer-events: none;
+  @media (max-width: 1200px) {
+    padding: 4rem;
   }
-
   @media (max-width: 900px) {
     display: none;
   }
 `;
 
-const LeftContent = styled.div`
-  position: relative;
-  z-index: 1;
-  max-width: 480px;
-`;
-
-const RightPanel = styled.div`
-  width: 580px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 3rem 4rem;
-  background: ${(props) => props.theme.background.card};
+const RightForm = styled(GlassSide)`
+  padding: 3rem;
+  background: ${(p) => p.theme.background.card};
+  border-left: 1px solid ${(p) => p.theme.border};
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 
   @media (max-width: 900px) {
-    width: 100%;
-    padding: 2rem 1.5rem;
+    padding: 2.5rem 1.5rem;
   }
 `;
 
-const FormCard = styled.div`
-  animation: ${fadeIn} 0.5s ease-out;
-  max-width: 440px;
+// ─── Hero Components (Bigger Text) ───────────────────────────────────────────
+
+const ContentWrap = styled.div`
+  max-width: 580px;
   width: 100%;
+  ${staggerIn("0.1s")}
 `;
 
-// ─── Left Panel Elements ─────────────────────────────────
-const IconBox = styled.div`
-  width: 52px;
-  height: 52px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+const BrandLine = styled.div`
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 15px;
   margin-bottom: 2rem;
-  animation: ${float} 4s ease-in-out infinite;
 `;
 
-const HeroTitle = styled.h1`
-  font-size: 2.5rem;
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
-  color: #ffffff;
-  margin: 0 0 1rem;
-`;
-
-const HeroSubtitle = styled.p`
-  color: ${(props) => props.theme.text.light};
-  font-size: 1rem;
-  line-height: 1.7;
-  margin: 0 0 2.5rem;
-  max-width: 400px;
-`;
-
-const FeatureList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`;
-
-const FeatureItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 0.9rem;
-  color: ${(props) => props.theme.text.secondary};
-  font-weight: 400;
-
-  .anticon {
-    color: ${(props) => props.theme.primary};
-    font-size: 14px;
-  }
-`;
-
-const LeftPanelFooter = styled.div`
-  position: absolute;
-  bottom: 3rem;
-  left: 5rem;
-  color: #d4dae3;
-  font-size: 0.8rem;
-  z-index: 1;
-`;
-
-// ─── Right Panel Elements ────────────────────────────────
-const BrandRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 2.5rem;
-`;
-
-const BrandIcon = styled.div`
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(
-    135deg,
-    ${(props) => props.theme.primary},
-    ${(props) => props.theme.secondary}
-  );
-  border-radius: ${(props) => props.theme.borderRadius.md};
+const LogoIcon = styled.div`
+  width: 54px;
+  height: 54px;
+  background: ${(p) =>
+    p.theme.name === "dark"
+      ? "rgba(255, 255, 255, 0.1)"
+      : `${p.theme.primary}15`};
+  border: 1px solid
+    ${(p) =>
+      p.theme.name === "dark"
+        ? "rgba(255, 255, 255, 0.2)"
+        : `${p.theme.primary}33`};
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 18px;
-  box-shadow: ${(props) => props.theme.glow};
+  font-size: 24px;
+  color: white;
 `;
 
-const BrandName = styled.span`
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: ${(props) => props.theme.text.primary};
-  letter-spacing: -0.01em;
-`;
-
-const Heading = styled.h2`
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: ${(props) => props.theme.text.primary};
-  margin: 0 0 6px;
+const BrandTxt = styled.span`
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
   letter-spacing: -0.02em;
 `;
 
-const SubHeading = styled.p`
-  color: ${(props) => props.theme.text.secondary};
-  font-size: 0.9rem;
-  margin: 0 0 1.75rem;
-  line-height: 1.5;
+const BigTitle = styled.h1`
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: inherit;
+  margin-bottom: 1.5rem;
+  ${staggerIn("0.2s")}
+
+  span {
+    opacity: 0.6;
+  }
+
+  @media (max-width: 1200px) {
+    font-size: 2.6rem;
+  }
 `;
 
-const TenantBadge = styled.div`
-  display: inline-flex;
+const DescriptionText = styled.p`
+  font-size: 1rem;
+  line-height: 1.6;
+  color: inherit;
+  opacity: 0.85;
+  margin-bottom: 3rem;
+  max-width: 460px;
+  font-weight: 500;
+  ${staggerIn("0.3s")}
+`;
+
+const FeatureGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  ${staggerIn("0.4s")}
+`;
+
+const FeatureItem = styled.div`
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 6px;
+    color: inherit;
+  }
+  .body {
+    font-size: 0.9rem;
+    color: inherit;
+    opacity: 0.7;
+    line-height: 1.5;
+  }
+`;
+
+// ─── Form Components ─────────────────────────────────────────────────────────
+
+const InnerForm = styled.div`
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+  animation: ${fadeIn} 1s ease both;
+`;
+
+const WelcomeHeading = styled.h2`
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: ${(p) => p.theme.text.primary};
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+`;
+
+const WelcomeSubtitle = styled.p`
+  font-size: 0.95rem;
+  color: ${(p) => p.theme.text.secondary};
+  margin-bottom: 2.5rem;
+`;
+
+const TenantBanner = styled.div`
+  display: flex;
   align-items: center;
-  gap: 8px;
-  background: ${(props) => props.theme.background.main};
-  border: 1px solid ${(props) => props.theme.primaryLight};
-  color: ${(props) => props.theme.primary};
-  padding: 6px 14px;
-  border-radius: ${(props) => props.theme.borderRadius.md};
+  gap: 12px;
+  padding: 12px 18px;
+  background: ${(p) => p.theme.primaryLight};
+  border: 1px solid ${(p) => p.theme.primary}22;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+
+  .text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: ${(p) => p.theme.primary};
+  }
+`;
+
+const FormLabel = styled.label`
+  display: block;
   font-size: 0.78rem;
-  font-weight: 600;
-  margin-bottom: 1.75rem;
-  letter-spacing: 0.01em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: ${(p) => p.theme.text.secondary};
+  margin-bottom: 8px;
+`;
 
-  &::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: ${(props) => props.theme.accent};
+const StyledInp = styled(Input)`
+  height: 54px;
+  border-radius: 12px !important;
+  background: ${(p) => p.theme.inputBg} !important;
+  border: 1.5px solid ${(p) => p.theme.border} !important;
+  font-family: inherit;
+
+  &:hover,
+  &:focus {
+    border-color: ${(p) => p.theme.primary} !important;
   }
 `;
 
-const StyledLabel = styled.span`
-  color: ${(props) => props.theme.text.primary};
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-`;
+const StyledPass = styled(Input.Password)`
+  height: 54px;
+  border-radius: 12px !important;
+  background: ${(p) => p.theme.inputBg} !important;
+  border: 1.5px solid ${(p) => p.theme.border} !important;
 
-const StyledInput = styled(Input)`
-  border-radius: ${(props) => props.theme.borderRadius.md} !important;
-  padding: 10px 14px !important;
-  border: 1.5px solid ${(props) => props.theme.border} !important;
-  transition: all 0.25s ease !important;
-
-  &:hover {
-    border-color: ${(props) => props.theme.primary} !important;
-  }
-
-  &:focus,
-  &.ant-input-affix-wrapper-focused {
-    border-color: ${(props) => props.theme.primary} !important;
-    box-shadow: ${(props) => props.theme.glow} !important;
-  }
-
-  .ant-input-prefix {
-    margin-right: 10px;
+  &:hover,
+  &:focus {
+    border-color: ${(p) => p.theme.primary} !important;
   }
 `;
 
-const StyledPasswordInput = styled(Input.Password)`
-  border-radius: ${(props) => props.theme.borderRadius.md} !important;
-  padding: 10px 14px !important;
-  border: 1.5px solid ${(props) => props.theme.border} !important;
-  transition: all 0.25s ease !important;
-
-  &:hover {
-    border-color: ${(props) => props.theme.primary} !important;
-  }
-
-  &:focus,
-  &.ant-input-affix-wrapper-focused {
-    border-color: ${(props) => props.theme.primary} !important;
-    box-shadow: ${(props) => props.theme.glow} !important;
-  }
-
-  .ant-input-prefix {
-    margin-right: 10px;
-  }
-`;
-
-const SignInButton = styled(Button)`
-  height: 46px !important;
-  border-radius: ${(props) => props.theme.borderRadius.md} !important;
-  font-weight: 600 !important;
-  font-size: 0.95rem !important;
+const ActionButton = styled(Button)`
+  height: 60px !important;
+  width: 100%;
+  border-radius: 16px !important;
   background: linear-gradient(
     135deg,
-    ${(props) => props.theme.primary} 0%,
-    ${(props) => props.theme.primaryHover} 100%
+    ${(p) => p.theme.primary},
+    ${(p) => p.theme.primaryHover}
   ) !important;
   border: none !important;
-  box-shadow: ${(props) => props.theme.shadow} !important;
-  transition: all 0.3s ease !important;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  box-shadow: ${(p) => p.theme.glow};
+  margin-top: 1.5rem;
 
   &:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: ${(props) => props.theme.glow} !important;
-  }
-
-  &:active {
-    transform: translateY(0) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -6px ${(p) => p.theme.primary}55;
   }
 `;
 
-const SecurityNote = styled.div`
+const SecurityStamp = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  color: #94a3b8;
+  gap: 8px;
+  margin-top: 2.5rem;
+  color: ${(p) => p.theme.text.light};
   font-size: 0.75rem;
-  margin-top: 2rem;
+  font-weight: 500;
 
   .anticon {
-    font-size: 12px;
-    color: #10b981;
+    color: ${(p) => p.theme.status.success};
   }
 `;
 
-// ─── Component ───────────────────────────────────────────
+// ─── COMPONENT ───────────────────────────────────────────────────────────────
+
 const LoginPage = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
@@ -345,9 +424,7 @@ const LoginPage = () => {
     : "MedPortal";
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/dashboard");
-    }
+    if (isAuthenticated) navigate("/dashboard");
   }, [isAuthenticated, navigate]);
 
   const onFinish = (values) => {
@@ -356,65 +433,131 @@ const LoginPage = () => {
   };
 
   return (
-    <PageWrapper>
-      {/* ─── Left Panel ─── */}
-      <LeftPanel>
-        <LeftContent>
-          <IconBox>
-            <MedicineBoxOutlined
-              style={{ fontSize: "24px", color: "inherit" }}
-            />
-          </IconBox>
-          <HeroTitle>
-            Smarter care,
-            <br />
-            better outcomes.
-          </HeroTitle>
-          <HeroSubtitle>
-            A secure, all-in-one platform for managing patients, scheduling,
-            prescriptions, and clinical workflows — designed for modern
-            healthcare teams.
-          </HeroSubtitle>
+    <PageRoot theme={theme}>
+      {/* ─── Bg Blobs ─── */}
+      <BgCanvas>
+        <Blob1 theme={theme} />
+        <Blob2 theme={theme} />
+        <Blob3 theme={theme} />
+      </BgCanvas>
 
-          <FeatureList>
-            {[
-              "End-to-end encrypted patient records",
-              "Role-based access with audit logging",
-              "Real-time appointment & prescription management",
-              "Multi-tenant architecture for hospital groups",
-            ].map((item) => (
-              <FeatureItem key={item}>
-                <CheckCircleFilled />
-                {item}
-              </FeatureItem>
-            ))}
-          </FeatureList>
-        </LeftContent>
+      {/* ─── Left Side (Deep Glass) ─── */}
+      <LeftHero theme={theme}>
+        {/* ─── Subtle SaaS Background Elements ─── */}
+        <AnimationLayer>
+          <FloatingIcon
+            $top="10%"
+            $left="15%"
+            $size="100px"
+            $blur="1px"
+            $duration="30s"
+          >
+            <MedicineBoxOutlined />
+          </FloatingIcon>
+          <FloatingIcon
+            $top="70%"
+            $left="10%"
+            $size="60px"
+            $delay="-5s"
+            $duration="25s"
+          >
+            <HeartOutlined />
+          </FloatingIcon>
+          <FloatingIcon
+            $top="40%"
+            $left="75%"
+            $size="80px"
+            $delay="-12s"
+            $duration="35s"
+          >
+            <SafetyOutlined />
+          </FloatingIcon>
+          <FloatingIcon
+            $top="85%"
+            $left="60%"
+            $size="120px"
+            $blur="2px"
+            $delay="-18s"
+            $duration="40s"
+          >
+            <ExperimentOutlined />
+          </FloatingIcon>
+          <FloatingIcon
+            $top="25%"
+            $left="65%"
+            $size="50px"
+            $delay="-8s"
+            $duration="22s"
+          >
+            <GlobalOutlined />
+          </FloatingIcon>
+        </AnimationLayer>
 
-        <LeftPanelFooter>
-          © {new Date().getFullYear()} MedPortal Enterprise System. All rights
-          reserved.
-        </LeftPanelFooter>
-      </LeftPanel>
-
-      {/* ─── Right Panel ─── */}
-      <RightPanel>
-        <FormCard>
-          <BrandRow>
-            <BrandIcon>
+        <ContentWrap>
+          <BrandLine>
+            <LogoIcon>
               <MedicineBoxOutlined />
-            </BrandIcon>
-            <BrandName>{hospitalName}</BrandName>
-          </BrandRow>
+            </LogoIcon>
+            <BrandTxt>MedPortal</BrandTxt>
+          </BrandLine>
 
+          <BigTitle>
+            Smarter care.
+            <br />
+            <span>Better outcomes.</span>
+          </BigTitle>
+
+          <DescriptionText>
+            Enterprise-grade management for modern clinicians. A secure portal
+            designed for surgical, laboratory, and pharmacy excellence.
+          </DescriptionText>
+
+          <FeatureGrid>
+            <FeatureItem>
+              <div className="head">
+                <SafetyOutlined /> Zero-Trust
+              </div>
+              <div className="body">AES-256 cloud encryption.</div>
+            </FeatureItem>
+            <FeatureItem>
+              <div className="head">
+                <ExperimentOutlined /> Clinical
+              </div>
+              <div className="body">Pathology & surgical workflows.</div>
+            </FeatureItem>
+            <FeatureItem>
+              <div className="head">
+                <GlobalOutlined /> Scale
+              </div>
+              <div className="body">Multi-tenant group architecture.</div>
+            </FeatureItem>
+            <FeatureItem>
+              <div className="head">
+                <HeartOutlined /> Human
+              </div>
+              <div className="body">Built for care teams & patients.</div>
+            </FeatureItem>
+          </FeatureGrid>
+        </ContentWrap>
+      </LeftHero>
+
+      {/* ─── Right Side (Light Glass) ─── */}
+      <RightForm theme={theme}>
+        <InnerForm>
           {isSubdomain && (
-            <TenantBadge>{hospitalName} Healthcare Workspace</TenantBadge>
+            <TenantBanner theme={theme}>
+              <SafetyOutlined style={{ color: theme.primary }} />
+              <span className="text">{hospitalName} Healthcare Workspace</span>
+              <CheckCircleFilled
+                style={{ color: theme.status.success, marginLeft: "auto" }}
+              />
+            </TenantBanner>
           )}
 
-          <Heading>Welcome back</Heading>
-          <SubHeading>
-            Sign in to access your dashboard and manage your workspace.
-          </SubHeading>
+          <WelcomeHeading theme={theme}>Welcome back</WelcomeHeading>
+          <WelcomeSubtitle theme={theme}>
+            Secure login to your medportal workspace.
+          </WelcomeSubtitle>
 
           {error && (
             <Alert
@@ -424,10 +567,9 @@ const LoginPage = () => {
               closable
               onClose={clearAuthError}
               style={{
-                marginBottom: "1.25rem",
-                borderRadius: "10px",
-                border: `1px solid ${theme.border}`,
-                background: `${theme.background.main}`,
+                marginBottom: "2rem",
+                borderRadius: "14px",
+                padding: "14px",
               }}
             />
           )}
@@ -440,53 +582,52 @@ const LoginPage = () => {
             requiredMark={false}
           >
             <Form.Item
-              label={<StyledLabel>Email address</StyledLabel>}
+              label={<FormLabel theme={theme}>Professional Email</FormLabel>}
               name="email"
               rules={[
-                { required: true, message: "Email is required" },
-                { type: "email", message: "Enter a valid email address" },
+                { required: true, message: "Required" },
+                { type: "email", message: "Invalid email" },
               ]}
             >
-              <StyledInput
+              <StyledInp
+                theme={theme}
                 prefix={<UserOutlined style={{ color: theme.text.light }} />}
-                placeholder="you@hospital.com"
+                placeholder="doctor@hospital.com"
                 size="large"
               />
             </Form.Item>
 
             <Form.Item
-              label={<StyledLabel>Password</StyledLabel>}
+              label={<FormLabel theme={theme}>Password</FormLabel>}
               name="password"
-              rules={[{ required: true, message: "Password is required" }]}
+              rules={[{ required: true, message: "Required" }]}
             >
-              <StyledPasswordInput
+              <StyledPass
+                theme={theme}
                 prefix={<LockOutlined style={{ color: theme.text.light }} />}
-                placeholder="Enter your password"
+                placeholder="••••••••"
                 size="large"
               />
             </Form.Item>
 
-            <Form.Item style={{ marginTop: "0.5rem", marginBottom: 0 }}>
-              <SignInButton
-                type="primary"
-                htmlType="submit"
-                loading={isLoading}
-                size="large"
-                block
-              >
-                {isLoading ? "Signing in..." : "Sign In"}
-                {!isLoading && <ArrowRightOutlined style={{ marginLeft: 8 }} />}
-              </SignInButton>
-            </Form.Item>
+            <ActionButton
+              theme={theme}
+              type="primary"
+              htmlType="submit"
+              loading={isLoading}
+              size="large"
+            >
+              Sign In to System
+            </ActionButton>
           </Form>
 
-          <SecurityNote>
+          <SecurityStamp theme={theme}>
             <SafetyOutlined />
-            Protected by enterprise-grade encryption
-          </SecurityNote>
-        </FormCard>
-      </RightPanel>
-    </PageWrapper>
+            <span>Encrypted Session &middot; MedPortal v3.1</span>
+          </SecurityStamp>
+        </InnerForm>
+      </RightForm>
+    </PageRoot>
   );
 };
 

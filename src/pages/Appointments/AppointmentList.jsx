@@ -16,11 +16,14 @@ import {
   DatePicker,
   TimePicker,
   Space,
-  message,
   Empty,
   Drawer,
+  Typography,
+  Input,
+  Tooltip,
+  App,
 } from "antd";
-import { MessageOutlined, EditOutlined } from "@ant-design/icons";
+import { MessageOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 import useAuth from "../../modules/auth/hooks/useAuth";
@@ -36,6 +39,7 @@ import {
 } from "../../modules/appointments/appointmentSlice";
 
 const { Option } = Select;
+const { Text } = Typography;
 
 const paginationActions = { fetchPagedRequest, setPage, setSearch, setStatus };
 
@@ -54,6 +58,13 @@ const CardWrapper = styled.div`
   border: 1px solid ${(props) => props.theme.border};
   box-shadow: ${(props) => props.theme.shadow};
   overflow: hidden;
+  .ant-pagination-item-active {
+    border-color: transparent !important;
+    background-color: transparent !important;
+  }
+  .ant-pagination-item-active:hover {
+    border-color: transparent !important;
+  }
 `;
 
 const Highlight = styled.span`
@@ -75,6 +86,7 @@ const StatusTag = ({ status }) => {
   const { theme } = useTheme();
   const map = {
     scheduled: { color: theme.primary, label: "Scheduled" },
+    accepted: { color: theme.accent, label: "Accepted" },
     completed: { color: theme.status.success, label: "Completed" },
     cancelled: { color: theme.status.error, label: "Cancelled" },
   };
@@ -125,6 +137,7 @@ const AppointmentList = forwardRef(
       update,
       setProviderId,
     } = useAppointments();
+    const { message } = App.useApp();
 
     const {
       pagination: tablePagination,
@@ -148,7 +161,7 @@ const AppointmentList = forwardRef(
         userId,
         fullUser: user, // Log full user object to see available fields
         patientsCount: patients?.length || 0,
-        patientsData: (patients || []).slice(0, 3), 
+        patientsData: (patients || []).slice(0, 3),
         staffCount: staff.length,
         dropdownLoading,
       });
@@ -170,6 +183,9 @@ const AppointmentList = forwardRef(
     const [activeChatId, setActiveChatId] = useState(null);
     const [activeChatPatient, setActiveChatPatient] = useState("");
 
+    // Expanded Row State (to show reason below)
+    const [expandedRowKeys, setExpandedRowKeys] = useState([]);
+
     // ── Modal Handlers ──────────────────────────────────────────────────────
     const openCreate = () => {
       // Only fetch dropdown data if not already attempted
@@ -178,7 +194,10 @@ const AppointmentList = forwardRef(
       }
       form.resetFields();
       if (role === "DOCTOR" || role === "PROVIDER") {
-        form.setFieldsValue({ provider_id: String(userId) });
+        form.setFieldsValue({ provider_id: userId });
+      }
+      if (role === "PATIENT") {
+        form.setFieldsValue({ patient_id: userId });
       }
       setEditingId(null);
       setModalOpen(true);
@@ -191,12 +210,13 @@ const AppointmentList = forwardRef(
       }
       setEditingId(record.id);
       form.setFieldsValue({
-        patient_id: String(record.patient_id),
-        provider_id: String(record.provider_id),
+        patient_id: Number(record.patient_id),
+        provider_id: Number(record.provider_id),
         appointment_date: dayjs(record.appointment_date),
         start_time: dayjs(record.start_time, "HH:mm:ss"),
         end_time: dayjs(record.end_time, "HH:mm:ss"),
         STATUS: record.STATUS?.toLowerCase(),
+        reason: record.reason || "",
       });
       setModalOpen(true);
     };
@@ -241,20 +261,12 @@ const AppointmentList = forwardRef(
       pagedActions.setStatus(propStatusFilter || "all");
     }, [propStatusFilter, pagedActions]);
 
-    // Re-fetch from page 1 whenever search/filter change
-    const isInitialMount = React.useRef(true);
+    // Re-fetch from page 1 handled by usePrefetchPagination
     useEffect(() => {
-      if (isInitialMount.current) {
-        isInitialMount.current = false;
-        if (role === "DOCTOR" || role === "PROVIDER") {
-          setProviderId(String(userId));
-        } else {
-          pagedActions.fetchPaged(1); // Initial load
-        }
-        return;
+      if (role === "DOCTOR" || role === "PROVIDER") {
+        setProviderId(String(userId));
       }
-      pagedActions.fetchPaged(1);
-    }, [activeSearch, activeStatus, pagedActions, role, userId, setProviderId]);
+    }, [role, userId, setProviderId]);
 
     const { clearError, submitError } = useAppointments();
 
@@ -289,7 +301,7 @@ const AppointmentList = forwardRef(
     // ── Initial load ────────────────────────────────────────────────────────
     useEffect(() => {
       if (!dropdownLoading && !dropdownFetched) {
-         fetchAppointmentDropdowns();
+        fetchAppointmentDropdowns();
       }
     }, [fetchAppointmentDropdowns, dropdownLoading, dropdownFetched]);
 
@@ -304,18 +316,22 @@ const AppointmentList = forwardRef(
         // For lightweight lookups, these fields might be missing.
         // We trust the lookup endpoint to return only relevant active providers.
         const hasRoleInfo = !!(s.role || s.role_name);
-        const hasStatusInfo = !!(s.status !== undefined || s.is_active !== undefined);
+        const hasStatusInfo = !!(
+          s.status !== undefined || s.is_active !== undefined
+        );
 
-        const isActive = !hasStatusInfo || (s.status
-          ? s.status === "active"
-          : s.is_active === true || s.is_active === 1 || s.is_active === "1");
+        const isActive =
+          !hasStatusInfo ||
+          (s.status
+            ? s.status === "active"
+            : s.is_active === true || s.is_active === 1 || s.is_active === "1");
 
-        const isProvider = !hasRoleInfo || (
+        const isProvider =
+          !hasRoleInfo ||
           s.role_name?.toLowerCase() === "provider" ||
           s.role_name?.toLowerCase() === "doctor" ||
           s.role?.toLowerCase() === "doctor" ||
-          s.role?.toLowerCase() === "provider"
-        );
+          s.role?.toLowerCase() === "provider";
 
         if (isActive && isProvider) {
           map.set(String(s.id), {
@@ -326,8 +342,8 @@ const AppointmentList = forwardRef(
       });
 
       // 2. Extract from appointments only if we failed to get a staff list (fallback for 403s)
-      if (staff.length === 0) {
-        list.forEach((a) => {
+      if ((staff || []).length === 0) {
+        (list || []).forEach((a) => {
           const pId = a.provider_id;
           if (pId && !map.has(String(pId))) {
             map.set(String(pId), {
@@ -343,12 +359,29 @@ const AppointmentList = forwardRef(
 
     // ── Fallback Patients (extracted from appointments list when API is 403) ──
     const uniquePatients = useMemo(() => {
-      // Use dropdown patients as the primary source
+      // If patient, only show themselves as the single option
+      if (role === "PATIENT") {
+        const fullName =
+          user?.full_name ||
+          user?.name ||
+          `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
+          `Patient #${userId}`;
+
+        return [
+          {
+            id: userId,
+            full_name: fullName,
+            name: fullName,
+          },
+        ];
+      }
+
+      // Use dropdown patients as the primary source for Admin/Staff
       if (patients && patients.length > 0) return patients;
 
       // Otherwise extract from the appointments list already loaded (fallback)
       const map = new Map();
-      list.forEach((a) => {
+      (list || []).forEach((a) => {
         const pid = a.patient_id;
         if (pid && !map.has(String(pid))) {
           const fullName =
@@ -356,7 +389,9 @@ const AppointmentList = forwardRef(
             a.patientName ||
             a.full_name ||
             (a.patient
-              ? a.patient.full_name || `${a.patient.first_name || ""} ${a.patient.last_name || ""}`.trim()
+              ? a.patient.full_name ||
+                `${a.patient.first_name || ""} ${a.patient.last_name || ""}`.trim() ||
+                a.patient.name
               : `Patient #${pid}`);
           map.set(String(pid), {
             id: pid,
@@ -366,24 +401,40 @@ const AppointmentList = forwardRef(
         }
       });
       return Array.from(map.values());
-    }, [patients, list]);
+    }, [role, userId, user, patients, list]);
 
     const handleSubmit = async (values) => {
+      // 1. Resolve IDs with strict numeric conversion
+      const rawPatientId = values.patient_id || userId;
+      const rawProviderId =
+        values.provider_id ||
+        (role === "DOCTOR" || role === "PROVIDER" ? userId : null);
+
+      const patientId = Number(rawPatientId);
+      const providerId = Number(rawProviderId);
+
+      if (isNaN(patientId) || isNaN(providerId) || !patientId || !providerId) {
+        return message.error("Invalid Patient or Doctor selection.");
+      }
+
+      // 2. Build payload matching the user's requirement exactly (omit STATUS for new)
       const payload = {
-        patient_id: values.patient_id,
-        provider_id:
-          values.provider_id ||
-          (role === "DOCTOR" || role === "PROVIDER" ? String(userId) : null),
+        patient_id: patientId,
+        provider_id: providerId,
         appointment_date: values.appointment_date.format("YYYY-MM-DD"),
-        start_time: values.start_time.format("HH:mm:ss"),
-        end_time: values.end_time.format("HH:mm:ss"),
-        STATUS: values.STATUS,
+        start_time: values.start_time.format("HH:mm"),
+        end_time: values.end_time.format("HH:mm"),
       };
+
+      // 3. Include STATUS only if editing
+      if (editingId) {
+        payload.STATUS = values.STATUS;
+      }
 
       // ── Conflict Detection ───────────────────────────────────────────────
       const hasConflict = list.some((a) => {
         if (String(a.id) === String(editingId)) return false;
-        if (String(a.provider_id) !== String(payload.provider_id)) return false;
+        if (Number(a.provider_id) !== providerId) return false;
         if (a.appointment_date !== payload.appointment_date) return false;
         if (a.STATUS?.toLowerCase() === "cancelled") return false;
 
@@ -404,118 +455,186 @@ const AppointmentList = forwardRef(
       }
 
       setIsSubmittingLocal(true);
+      const submitPayload = {
+        ...payload,
+        reason: values.reason || "",
+      };
+
       if (editingId) {
-        update(editingId, payload);
+        update(editingId, submitPayload);
       } else {
-        create(payload);
+        create(submitPayload);
       }
     };
 
+    const toggleExpand = (recordId) => {
+      setExpandedRowKeys((prev) =>
+        prev.includes(recordId)
+          ? prev.filter((id) => id !== recordId)
+          : [...prev, recordId],
+      );
+    };
+
     // ─── Table Columns ────────────────────────────────────────────────────────
-    const columns = [
-      {
-        title: "Date",
-        dataIndex: "appointment_date",
-        key: "date",
-        render: (v) => dayjs(v).format("DD MMM YYYY"),
-      },
-      {
-        title: "Time",
-        key: "time",
-        render: (_, r) =>
-          `${dayjs(r.start_time, "HH:mm:ss").format("hh:mm A")} – ${dayjs(r.end_time, "HH:mm:ss").format("hh:mm A")}`,
-      },
-      {
-        title: "Patient",
-        dataIndex: "patient_name",
-        key: "patient",
-        render: (text, record) => {
-          // 1. Direct field or nested object
-          let name =
-            text ||
-            record.patientName ||
-            (record.patient
-              ? `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim()
-              : null);
-
-          // 2. Fallback: Lookup in patients list (fetched for dropdowns)
-          if (!name && record.patient_id && patients.length > 0) {
-            const found = patients.find(
-              (p) => String(p.id) === String(record.patient_id),
-            );
-            if (found) {
-              name =
-                found.full_name ||
-                found.name ||
-                `${found.first_name || ""} ${found.last_name || ""}`.trim();
-            }
-          }
-
-          // 3. Final fallback: ID string
-          name = name || `Patient #${record.patient_id || "?"}`;
-
-          return highlightText(name, propSearchText);
-        },
-        hidden: role === "PATIENT",
-      },
-      {
-        title: "Provider",
-        dataIndex: "provider_name",
-        key: "provider",
-        render: (text, record) => {
-          // Robust name detection for Nurse/Patient views
-          const name =
-            text ||
-            record.providerName ||
-            (record.provider
-              ? `${record.provider.first_name || record.provider.name} ${record.provider.last_name || ""}`.trim()
-              : "—");
-          return highlightText(name, propSearchText);
-        },
-        hidden: role === "DOCTOR" || role === "PROVIDER",
-      },
-      {
-        title: "Status",
-        dataIndex: "STATUS",
-        key: "status",
-        render: (s) => <StatusTag status={s} />,
-      },
-      {
-        title: "Actions",
-        key: "actions",
-        render: (_, record) => {
-          const status = record.STATUS?.toLowerCase();
-          const isFinished = status === "cancelled" || status === "completed";
-          return (
-            <Space size="middle">
-              {role !== "PATIENT" && (
-                <ActionBtn
+    const columns = useMemo(
+      () =>
+        [
+          {
+            title: "Date",
+            dataIndex: "appointment_date",
+            key: "date",
+            render: (v) => {
+              if (!v) return "—";
+              const d = dayjs(v);
+              return d.isValid() ? d.format("DD MMM YYYY") : "—";
+            },
+          },
+          {
+            title: "Time",
+            key: "time",
+            render: (_, r) => {
+              if (!r.start_time || !r.end_time) return "—";
+              const start = dayjs(r.start_time, [
+                "HH:mm:ss",
+                "HH:mm",
+                "h:mm A",
+                "hh:mm A",
+              ]);
+              const end = dayjs(r.end_time, [
+                "HH:mm:ss",
+                "HH:mm",
+                "h:mm A",
+                "hh:mm A",
+              ]);
+              return `${start.isValid() ? start.format("hh:mm A") : "Invalid Time"} – ${end.isValid() ? end.format("hh:mm A") : "Invalid Time"}`;
+            },
+          },
+          {
+            title: "Patient",
+            dataIndex: "patient_name",
+            key: "patient",
+            render: (text, record) => {
+              let name =
+                text ||
+                record.patientName ||
+                (record.patient
+                  ? `${record.patient.first_name || ""} ${record.patient.last_name || ""}`.trim()
+                  : null);
+              if (!name && record.patient_id && patients.length > 0) {
+                const found = patients.find(
+                  (p) => String(p.id) === String(record.patient_id),
+                );
+                if (found)
+                  name =
+                    found.full_name ||
+                    found.name ||
+                    `${found.first_name || ""} ${found.last_name || ""}`.trim();
+              }
+              name = name || `Patient #${record.patient_id || "?"}`;
+              return highlightText(name, propSearchText);
+            },
+            hidden: role === "PATIENT",
+          },
+          {
+            title: "Provider",
+            dataIndex: "provider_name",
+            key: "provider",
+            render: (text, record) => {
+              // Robust name detection for Nurse/Patient views
+              const name =
+                text ||
+                record.providerName ||
+                record.provider_name ||
+                (record.provider
+                  ? `${record.provider.first_name || record.provider.name || ""} ${record.provider.last_name || ""}`.trim()
+                  : "—");
+              return highlightText(name || "—", propSearchText);
+            },
+            hidden: role === "DOCTOR" || role === "PROVIDER",
+          },
+          {
+            title: "View",
+            key: "view",
+            align: "center",
+            render: (_, record) => (
+              <Tooltip title="View Reason">
+                <Button
                   type="text"
-                  icon={<EditOutlined />}
-                  onClick={() => openEdit(record)}
-                  style={{
-                    color: isFinished ? theme.text.light : theme.primary,
+                  icon={
+                    <EyeOutlined
+                      style={{
+                        color: expandedRowKeys.includes(record.id)
+                          ? theme.primary
+                          : theme.text.light,
+                      }}
+                    />
+                  }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleExpand(record.id);
                   }}
-                  disabled={isFinished}
-                >
-                  Edit
-                </ActionBtn>
-              )}
-              {role !== "RECEPTIONIST" && (
-                <ActionBtn
-                  type="text"
-                  icon={<MessageOutlined />}
-                  onClick={() => openChat(record)}
-                  style={{ color: theme.accent }}
-                >
-                  Chat
-                </ActionBtn>
-              )}
-            </Space>
-          );
-        },
-      },
-    ].filter((col) => !col.hidden);
+                />
+              </Tooltip>
+            ),
+          },
+          {
+            title: "Status",
+            dataIndex: "STATUS",
+            key: "status",
+            render: (s) => <StatusTag status={s} />,
+          },
+          {
+            title: "Actions",
+            key: "actions",
+            align: "right",
+            render: (_, record) => {
+              const status = record.STATUS?.toLowerCase();
+              const isFinished =
+                status === "cancelled" || status === "completed";
+              return (
+                <Space size="small">
+                  {role !== "PATIENT" && (
+                    <Tooltip
+                      title={
+                        isFinished
+                          ? "Cannot edit finished appointments"
+                          : "Edit Appointment"
+                      }
+                    >
+                      <ActionBtn
+                        type="text"
+                        icon={<EditOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(record);
+                        }}
+                        style={{
+                          color: isFinished ? theme.text.light : theme.primary,
+                        }}
+                        disabled={isFinished}
+                      />
+                    </Tooltip>
+                  )}
+                  {role !== "RECEPTIONIST" && (
+                    <Tooltip title="Open Chat">
+                      <ActionBtn
+                        type="text"
+                        icon={<MessageOutlined />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openChat(record);
+                        }}
+                        style={{ color: theme.accent }}
+                      />
+                    </Tooltip>
+                  )}
+                </Space>
+              );
+            },
+          },
+        ].filter((col) => !col.hidden),
+      [patients, role, theme, openEdit, openChat, propSearchText],
+    );
 
     return (
       <>
@@ -530,6 +649,48 @@ const AppointmentList = forwardRef(
               scroll={{ x: "max-content" }}
               pagination={tablePagination}
               onChange={pagedActions.handleTableChange}
+              expandedRowKeys={expandedRowKeys}
+              onExpand={(expanded, record) => {
+                if (expanded) setExpandedRowKeys([record.id]);
+                else setExpandedRowKeys([]);
+              }}
+              expandable={{
+                expandedRowRender: (record) => (
+                  <div
+                    style={{
+                      padding: "8px 16px",
+                      background: theme.background.main + "44",
+                      borderRadius: "6px",
+                      margin: "2px 8px",
+                      border: `1px solid ${theme.border}44`,
+                    }}
+                  >
+                    <Text
+                      strong
+                      style={{
+                        color: theme.primary,
+                        fontSize: "10px",
+                        textTransform: "uppercase",
+                        display: "block",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      Clinical Reason / Purpose:
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: "13px",
+                        fontStyle: "italic",
+                        color: theme.text.secondary,
+                      }}
+                    >
+                      "{record.reason || "No specific reason provided."}"
+                    </Text>
+                  </div>
+                ),
+                rowExpandable: (record) => !!record.reason,
+                showExpandColumn: false, // We use our custom "View" column eye icon
+              }}
               locale={{
                 emptyText: (
                   <Empty
@@ -584,7 +745,7 @@ const AppointmentList = forwardRef(
                   loading={dropdownLoading}
                   optionFilterProp="label"
                   optionLabelProp="label"
-                  disabled={!!editingId}
+                  disabled={!!editingId || role === "PATIENT"}
                 >
                   {uniquePatients.map((p) => {
                     const fullName =
@@ -595,11 +756,7 @@ const AppointmentList = forwardRef(
                       p.patient_name ||
                       `ID: ${p.id}`;
                     return (
-                      <Option
-                        key={String(p.id)}
-                        value={String(p.id)}
-                        label={fullName}
-                      >
+                      <Option key={p.id} value={p.id} label={fullName}>
                         {fullName}
                       </Option>
                     );
@@ -624,11 +781,7 @@ const AppointmentList = forwardRef(
                     optionLabelProp="label"
                   >
                     {uniqueStaff.map((s) => (
-                      <Option
-                        key={String(s.id)}
-                        value={String(s.id)}
-                        label={s.name}
-                      >
+                      <Option key={s.id} value={s.id} label={s.name}>
                         {s.name}
                       </Option>
                     ))}
@@ -682,6 +835,18 @@ const AppointmentList = forwardRef(
               </Form.Item>
             </div>
 
+            <Form.Item
+              name="reason"
+              label="Reason for Appointment"
+              rules={[{ required: true, message: "Please provide a reason" }]}
+            >
+              <Input.TextArea
+                placeholder="e.g. Regular checkup, Fever, Consultation"
+                rows={3}
+                style={{ borderRadius: "8px" }}
+              />
+            </Form.Item>
+
             {/* Status Dropdown - Only visible when editing. Disabled if already completed or cancelled */}
             {editingId && (
               <Form.Item name="STATUS" label="Status">
@@ -691,17 +856,38 @@ const AppointmentList = forwardRef(
                     ["completed", "cancelled"].includes(statusValue)
                   }
                 >
-                  <Option value="scheduled">Scheduled</Option>
-                  <Option
-                    value="completed"
-                    disabled={isFutureDate}
-                    title={
-                      isFutureDate ? "Cannot complete future appointments" : ""
-                    }
-                  >
-                    Completed {isFutureDate && "(Disabled for future dates)"}
-                  </Option>
-                  <Option value="cancelled">Cancelled</Option>
+                  {statusValue === "scheduled" && (
+                    <>
+                      <Option value="scheduled">Scheduled</Option>
+                      <Option value="accepted">Accepted</Option>
+                      <Option value="cancelled">Cancelled</Option>
+                    </>
+                  )}
+                  {statusValue === "accepted" && (
+                    <>
+                      <Option value="accepted">Accepted</Option>
+                      <Option
+                        value="completed"
+                        disabled={isFutureDate}
+                        title={
+                          isFutureDate
+                            ? "Cannot complete future appointments"
+                            : ""
+                        }
+                      >
+                        Completed{" "}
+                        {isFutureDate && "(Disabled for future dates)"}
+                      </Option>
+                      <Option value="cancelled">Cancelled</Option>
+                    </>
+                  )}
+                  {(statusValue === "completed" ||
+                    statusValue === "cancelled") && (
+                    <Option value={statusValue}>
+                      {statusValue.charAt(0).toUpperCase() +
+                        statusValue.slice(1)}
+                    </Option>
+                  )}
                 </Select>
               </Form.Item>
             )}
@@ -752,4 +938,4 @@ const AppointmentList = forwardRef(
 
 AppointmentList.displayName = "AppointmentList";
 
-export default AppointmentList;
+export default React.memo(AppointmentList);

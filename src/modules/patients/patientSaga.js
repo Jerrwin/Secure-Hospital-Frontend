@@ -10,6 +10,7 @@ import {
   updatePatientRequest, updatePatientSuccess, updatePatientFailure,
   deletePatientRequest, deletePatientSuccess, deletePatientFailure
 } from './patientSlice';
+import { invalidateDropdownCache } from '../appointments/appointmentSlice';
 import { 
   fetchPagedSagaGenerator, 
   prefetchSagaGenerator, 
@@ -70,6 +71,7 @@ function* createPatientSaga(action) {
     const response = yield call(createPatientAPI, action.payload);
     yield put(createPatientSuccess(response.data || response));
     yield put(fetchPagedRequest(1)); // Refresh first page
+    yield put(invalidateDropdownCache());
   } catch (error) {
     yield put(createPatientFailure(error.response?.data?.message || "Failed to create patient"));
   }
@@ -81,6 +83,7 @@ function* updatePatientSaga(action) {
     const response = yield call(updatePatientAPI, action.payload);
     const updatedPatient = { id, ...data, ...(response?.data || {}) };
     yield put(updatePatientSuccess(updatedPatient));
+    yield put(invalidateDropdownCache());
   } catch (error) {
     yield put(updatePatientFailure(error.response?.data?.message || "Failed to update patient"));
   }
@@ -91,6 +94,7 @@ function* deletePatientSaga(action) {
     yield call(deletePatientAPI, action.payload);
     yield put(deletePatientSuccess(action.payload));
     yield put(fetchPagedRequest(1)); // Refresh
+    yield put(invalidateDropdownCache());
   } catch (error) {
     yield put(deletePatientFailure(error.response?.data?.message || "Failed to delete patient"));
   }

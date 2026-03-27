@@ -76,11 +76,13 @@ const patientSlice = createSlice({
       state.fetched = true;
     },
     setSearch(state, action) {
+      if (state.searchQuery === action.payload) return;
       state.searchQuery = action.payload;
       state.pagination.currentPage = 1; // Reset to page 1 on search
       state.fetched = false;
     },
     setStatus(state, action) {
+      if (state.statusFilter === action.payload) return;
       state.statusFilter = action.payload;
       state.pagination.currentPage = 1; // Reset to page 1 on filter
       state.fetched = false;

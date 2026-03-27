@@ -40,6 +40,18 @@ const notificationSlice = createSlice({
       state.items.forEach((n) => (n.is_read = 1));
       state.unreadCount = 0;
     },
+    deleteNotificationRequest: () => {},
+    deleteNotificationSuccess: (state, action) => {
+      const id = action.payload;
+      const item = state.items.find((n) => n.id === id);
+      if (item && !item.is_read) {
+        state.unreadCount = Math.max(0, state.unreadCount - 1);
+      }
+      state.items = state.items.filter((n) => n.id !== id);
+    },
+    deleteNotificationFailure: (state, action) => {
+      state.error = action.payload;
+    },
   },
 });
 
@@ -51,6 +63,9 @@ export const {
   markAsReadSuccess,
   markAllAsReadRequest,
   markAllAsReadSuccess,
+  deleteNotificationRequest,
+  deleteNotificationSuccess,
+  deleteNotificationFailure,
 } = notificationSlice.actions;
 
 export default notificationSlice.reducer;

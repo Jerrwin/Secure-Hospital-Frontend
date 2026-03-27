@@ -60,14 +60,8 @@ const UserProfile = styled(Space)`
 `;
 
 // ─── Sidebar Content Component ─────────────────────────
-export const SidebarContent = ({
-  currentPath,
-  role,
-  user,
-  collapsed,
-  onMobileClick,
-  onClose,
-}) => {
+export const SidebarContent = React.memo(
+  ({ currentPath, role, user, collapsed, onMobileClick, onClose }) => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const handleClose = onMobileClick || onClose;
@@ -201,26 +195,28 @@ export const SidebarContent = ({
       </SidebarProfile>
     </>
   );
-};
+});
 
 // ─── Main Sidebar (Desktop) ─────────────────────────────
-const Sidebar = ({ currentPath, role, user, collapsed, setCollapsed }) => {
-  return (
-    <StyledSider
-      width={240}
-      breakpoint="lg"
-      collapsedWidth="80"
-      collapsed={collapsed}
-      onCollapse={(value) => setCollapsed(value)}
-    >
-      <SidebarContent
-        currentPath={currentPath}
-        role={role}
-        user={user}
+const Sidebar = React.memo(
+  ({ currentPath, role, user, collapsed, setCollapsed }) => {
+    return (
+      <StyledSider
+        width={240}
+        breakpoint="lg"
+        collapsedWidth="80"
         collapsed={collapsed}
-      />
-    </StyledSider>
-  );
-};
+        onCollapse={(value) => setCollapsed(value)}
+      >
+        <SidebarContent
+          currentPath={currentPath}
+          role={role}
+          user={user}
+          collapsed={collapsed}
+        />
+      </StyledSider>
+    );
+  },
+);
 
 export default Sidebar;

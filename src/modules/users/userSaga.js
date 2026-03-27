@@ -8,6 +8,7 @@ import {
   updateStaffRequest, updateStaffSuccess, updateStaffFailure,
   deleteStaffRequest, deleteStaffSuccess, deleteStaffFailure
 } from './userSlice';
+import { invalidateDropdownCache } from '../appointments/appointmentSlice';
 import { 
   fetchPagedSagaGenerator, 
   prefetchSagaGenerator, 
@@ -55,6 +56,8 @@ function* addStaffSaga(action) {
     yield put(addStaffSuccess(response.data || response));
     // Trigger re-fetch of current page (page 1 for new staff)
     yield put(fetchPagedRequest(1));
+    // Invalidate appointment dropdown cache
+    yield put(invalidateDropdownCache());
   } catch (error) {
     yield put(addStaffFailure(error.response?.data?.message || "Failed to add staff member"));
   }
@@ -65,6 +68,8 @@ function* updateStaffSaga(action) {
     const response = yield call(updateStaffAPI, action.payload);
     const updatedData = { ...action.payload.data, ...(response.data || response) };
     yield put(updateStaffSuccess({ id: action.payload.id, ...updatedData }));
+    // Invalidate appointment dropdown cache
+    yield put(invalidateDropdownCache());
   } catch (error) {
     yield put(updateStaffFailure(error.response?.data?.message || "Failed to update staff member"));
   }
@@ -76,6 +81,8 @@ function* deleteStaffSaga(action) {
     yield put(deleteStaffSuccess(action.payload)); // Pass ID
     // Trigger re-fetch of current page
     yield put(fetchPagedRequest());
+    // Invalidate appointment dropdown cache
+    yield put(invalidateDropdownCache());
   } catch (error) {
     yield put(deleteStaffFailure(error.response?.data?.message || "Failed to delete staff member"));
   }

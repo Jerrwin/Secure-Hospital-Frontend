@@ -46,9 +46,15 @@ axiosClient.interceptors.request.use(
     const isMutation = ["post", "put", "delete", "patch"].includes(
       config.method?.toLowerCase(),
     );
+    
+    // Explicitly exclude ALL auth routes from offline queuing
+    const isAuthRequest = 
+      config.url?.includes("/auth/login") || 
+      config.url?.includes("/auth/refresh") ||
+      config.url?.includes("/api/auth/");
 
-    // Skip offline logic if we are explicitly syncing or if it's a GET request
-    if (!navigator.onLine && isMutation && !config._isSyncing) {
+    if (!navigator.onLine && isMutation && !config._isSyncing && !isAuthRequest) {
+      console.warn("OFFLINE: Queuing mutation request:", config.url);
       try {
         await addOfflineRequest(config);
         refreshQueueCount(); // Sync Redux state
@@ -60,18 +66,17 @@ axiosClient.interceptors.request.use(
         });
 
         // Return a cancelled-like promise to stop the request from going to the network
-        // We'll return a resolved promise with a special flag so the UI can handle it if needed.
         return Promise.reject({
           message: "Offline: Request Queued",
           isOfflineQueued: true,
           config,
         });
       } catch (error) {
-        console.error("Failed to queue offline request:", error);
+        console.error("CRITICAL: Failed to queue offline request:", error);
       }
     }
 
-    // Read tokens SECURELY from Redux memory, never from localStorage.
+    // Read tokens SECURELY from Redux memory
     if (store) {
       const state = store.getState();
 

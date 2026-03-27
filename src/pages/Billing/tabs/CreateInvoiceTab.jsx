@@ -140,14 +140,8 @@ const CreateInvoiceTab = ({
         rowKey="id"
         loading={loading}
         scroll={{ x: 'max-content' }}
-        pagination={{
-          current: pagination.currentPage,
-          pageSize: pagination.perPage,
-          total: pagination.total,
-          onChange: (page) => pagedActions.setPage(page),
-          showSizeChanger: false,
-          position: ['bottomCenter']
-        }}
+        pagination={pagination}
+        onChange={pagedActions.handleTableChange}
         locale={{ emptyText: <Empty description="No billable appointments found" /> }}
       />
 

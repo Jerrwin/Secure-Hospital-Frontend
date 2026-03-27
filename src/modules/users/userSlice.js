@@ -73,10 +73,12 @@ const userSlice = createSlice({
     },
 
     setSearch: (state, action) => {
+      if (state.searchQuery === action.payload) return;
       state.searchQuery = action.payload;
       state.pagination.currentPage = 1;
     },
     setStatus: (state, action) => {
+      if (state.statusFilter === action.payload) return;
       state.statusFilter = action.payload;
       state.pagination.currentPage = 1;
     },
