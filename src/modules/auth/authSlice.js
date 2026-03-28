@@ -3,7 +3,6 @@ import { createSlice } from "@reduxjs/toolkit";
 const getStoredUser = () => {
   try {
     const user = localStorage.getItem("user");
-    // Handle literal "undefined" string (corrupted by previous bugs)
     if (!user || user === "undefined") return null;
     return JSON.parse(user);
   } catch (e) {
@@ -12,11 +11,10 @@ const getStoredUser = () => {
 };
 
 const initialState = {
-  // It's acceptable to keep non-sensitive user profile data in localStorage for UI optimism
   user: getStoredUser(),
-  accessToken: null, // Tokens MUST be in-memory only for XSS protection
-  csrfToken: null, // Tokens MUST be in-memory only for XSS protection
-  status: getStoredUser() ? "loading" : "idle", // Wait for checkAuth if user exists
+  accessToken: null, 
+  csrfToken: null,
+  status: getStoredUser() ? "loading" : "idle", 
   error: null,
 };
 

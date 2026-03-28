@@ -1,3 +1,4 @@
+// Custom hook to access auth state and actions
 import { useSelector, useDispatch } from "react-redux";
 import { useCallback, useMemo } from "react";
 import { loginRequest, logout, clearError } from "../authSlice";

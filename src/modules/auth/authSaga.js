@@ -9,8 +9,6 @@ function* loginSaga(action) {
     const response = yield call(loginAPI, action.payload);
 
     if (response.success) {
-      // ResponseHelper wraps data in: { success, message, data: { ... tokens ... } }
-      // Since loginAPI already returns response.data, 'response' here IS the body.
       const { access_token, csrf_token, user } = response.data;
 
       localStorage.setItem("user", JSON.stringify(user));
@@ -24,14 +22,12 @@ function* loginSaga(action) {
   }
 }
 
-// Plain function (not a saga) — called once on App mount.
+// Called once on App mount.
 export function checkAuth(dispatch) {
   axiosClient
     .post("/api/auth/refresh")
     .then(({ data }) => {
       if (data.success) {
-        // The refresh endpoint might only return tokens, not the full user object.
-        // We preserve the existing user profile from localStorage if needed.
         const storedUser = JSON.parse(localStorage.getItem("user") || "null");
         const { access_token, csrf_token, user } = data.data;
         const activeUser = user || storedUser;
