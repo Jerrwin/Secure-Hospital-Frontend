@@ -3,8 +3,6 @@ import { notification } from "antd";
 import { addOfflineRequest } from "./dbService";
 import { refreshQueueCount } from "./offlineManager";
 
-
-
 // Helper to inject Redux store to avoid circular dependencies
 let store;
 export const injectStore = (_store) => {
@@ -118,17 +116,13 @@ axiosClient.interceptors.response.use(
     if (error.response?.status === 401) {
       const message = error.response?.data?.message || "";
 
-      // 1. Is this the refresh endpoint itself failing?
+      // 1. If the refresh endpoint itself failing with 401
       if (originalRequest.url?.includes("/api/auth/refresh")) {
-        // The master refresh cookie is invalid/expired. Stop everything.
-        // We dispatch logout so Redux/React Router can handle the redirect gracefully.
-        // Do NOT use window.location.href here (causes infinite loops on checkAuth mount).
         if (store) store.dispatch({ type: "auth/logout" });
         return Promise.reject(error);
       }
 
-      // 2. Is this an "Expired" token error?
-      // Strict rule: Only refresh if the backend explicitly says "Expired" and we haven't retried yet.
+      // 2. If this an "Expired" token error
       if (message.includes("Expired") && !originalRequest._retry) {
         originalRequest._retry = true;
 
@@ -139,7 +133,6 @@ axiosClient.interceptors.response.use(
           })
             .then(() => {
               // The request interceptor will handle the new tokens automatically
-              // as long as the store was updated in the 'initiator' block below.
               return axiosClient(originalRequest);
             })
             .catch((err) => Promise.reject(err));
