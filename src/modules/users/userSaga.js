@@ -59,7 +59,11 @@ function* addStaffSaga(action) {
     // Invalidate appointment dropdown cache
     yield put(invalidateDropdownCache());
   } catch (error) {
-    yield put(addStaffFailure(error.response?.data?.message || "Failed to add staff member"));
+    if (error.isOfflineQueued) {
+      yield put(addStaffFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(addStaffFailure(error.response?.data?.message || "Failed to add staff member"));
+    }
   }
 }
 
@@ -71,7 +75,11 @@ function* updateStaffSaga(action) {
     // Invalidate appointment dropdown cache
     yield put(invalidateDropdownCache());
   } catch (error) {
-    yield put(updateStaffFailure(error.response?.data?.message || "Failed to update staff member"));
+    if (error.isOfflineQueued) {
+      yield put(updateStaffFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(updateStaffFailure(error.response?.data?.message || "Failed to update staff member"));
+    }
   }
 }
 
@@ -84,7 +92,11 @@ function* deleteStaffSaga(action) {
     // Invalidate appointment dropdown cache
     yield put(invalidateDropdownCache());
   } catch (error) {
-    yield put(deleteStaffFailure(error.response?.data?.message || "Failed to delete staff member"));
+    if (error.isOfflineQueued) {
+      yield put(deleteStaffFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(deleteStaffFailure(error.response?.data?.message || "Failed to delete staff member"));
+    }
   }
 }
 

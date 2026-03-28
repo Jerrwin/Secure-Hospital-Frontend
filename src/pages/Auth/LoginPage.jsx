@@ -6,7 +6,6 @@ import {
   MedicineBoxOutlined,
   CheckCircleFilled,
   SafetyOutlined,
-  ArrowRightOutlined,
   GlobalOutlined,
   ExperimentOutlined,
   HeartOutlined,

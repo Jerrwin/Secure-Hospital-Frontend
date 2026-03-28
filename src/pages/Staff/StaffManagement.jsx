@@ -218,7 +218,7 @@ const StaffManagement = () => {
     setSearchTerm(searchQuery);
   }, [searchQuery]);
 
-  const highlightText = (text, query) => {
+  const highlightText = React.useCallback((text, query) => {
     if (!query || !text) return text;
     const parts = String(text).split(new RegExp(`(${query})`, "gi"));
     return (
@@ -240,7 +240,7 @@ const StaffManagement = () => {
         )}
       </span>
     );
-  };
+  }, [theme]);
 
   // Filter out Admin from the display list (UI preference)
   const displayData = useMemo(() => {
@@ -254,16 +254,22 @@ const StaffManagement = () => {
 
   useEffect(() => {
     if (error) {
-      message.error(
-        typeof error === "string"
-          ? error
-          : "An error occurred fetching staff data",
-      );
-      console.error(error);
+      if (error === "OFFLINE_QUEUED") {
+        setIsModalVisible(false);
+        setEditingStaff(null);
+        form.resetFields();
+      } else {
+        message.error(
+          typeof error === "string"
+            ? error
+            : "An error occurred fetching staff data",
+        );
+        console.error(error);
+      }
       clearError();
       setIsSubmittingLocal(false);
     }
-  }, [error, clearError]);
+  }, [error, clearError, form, message]);
 
   useEffect(() => {
     if (isSubmittingLocal && !submitting && !error) {
@@ -278,9 +284,9 @@ const StaffManagement = () => {
       form.resetFields();
       pagedActions.fetchPaged(1);
     }
-  }, [isSubmittingLocal, submitting, error, editingStaff, pagedActions, form]);
+  }, [isSubmittingLocal, submitting, error, editingStaff, pagedActions, form, message]);
 
-  const showModal = (record = null) => {
+  const showModal = React.useCallback((record = null) => {
     setEditingStaff(record);
     if (record) {
       const formData = {
@@ -304,7 +310,7 @@ const StaffManagement = () => {
       form.resetFields();
     }
     setIsModalVisible(true);
-  };
+  }, [form]);
 
   const handleCancel = () => {
     setIsModalVisible(false);
@@ -338,7 +344,7 @@ const StaffManagement = () => {
     }
   };
 
-  const handleToggleActive = (checked, record) => {
+  const handleToggleActive = React.useCallback((checked, record) => {
     const roleId = record.role_id || record.roleId || record.role?.id;
     const cleanRecord = {
       ...record,
@@ -348,12 +354,12 @@ const StaffManagement = () => {
     };
     updateStaff(record.id, cleanRecord);
     message.success(`User ${checked ? "activated" : "deactivated"}`);
-  };
+  }, [updateStaff, message]);
 
-  const handleDelete = (id) => {
+  const handleDelete = React.useCallback((id) => {
     removeStaff(id);
     message.success("Staff member deleted");
-  };
+  }, [removeStaff, message]);
 
   const columns = useMemo(
     () => [
@@ -473,7 +479,7 @@ const StaffManagement = () => {
         ),
       },
     ],
-    [theme, searchQuery, handleToggleActive, showModal, handleDelete],
+    [theme, searchQuery, handleToggleActive, showModal, handleDelete, highlightText],
   );
 
   return (

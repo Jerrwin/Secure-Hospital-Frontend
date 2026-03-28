@@ -272,7 +272,7 @@ const PatientList = () => {
       clearPatientError();
       setIsSubmitting(false);
     }
-  }, [error, clearPatientError, form]);
+  }, [error, clearPatientError, form, message]);
 
   useEffect(() => {
     if (isSubmitting && !loading && !error) {
@@ -287,7 +287,7 @@ const PatientList = () => {
       form.resetFields();
       pagedActions.fetchPaged(1); // Refresh first page
     }
-  }, [isSubmitting, loading, error, editingPatient, pagedActions, form]);
+  }, [isSubmitting, loading, error, editingPatient, pagedActions, form, message]);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
 
   useEffect(() => {
@@ -336,7 +336,7 @@ const PatientList = () => {
     return () => clearTimeout(timer);
   }, [searchTerm, pagedActions]);
 
-  const showForm = (patient = null) => {
+  const showForm = React.useCallback((patient = null) => {
     setEditingPatient(patient);
     if (patient) {
       form.setFieldsValue({
@@ -347,7 +347,7 @@ const PatientList = () => {
       form.resetFields();
     }
     setIsFormVisible(true);
-  };
+  }, [form]);
 
   const handleCancel = () => {
     setIsFormVisible(false);
@@ -355,14 +355,14 @@ const PatientList = () => {
     form.resetFields();
   };
 
-  const showTimeline = (patient) => {
+  const showTimeline = React.useCallback((patient) => {
     setSelectedPatientForTimeline(patient);
     setIsTimelineVisible(true);
     // Fetch real data for this patient
     fetchAppts({ patient_id: patient.id });
     fetchRxs(); // Currently fetches all, we'll filter in the component
     fetchBillings({ patient_id: patient.id });
-  };
+  }, [fetchAppts, fetchRxs, fetchBillings]);
 
   const closeTimeline = () => {
     setIsTimelineVisible(false);
@@ -385,14 +385,14 @@ const PatientList = () => {
     }
   };
 
-  const handleToggleStatus = (checked, record) => {
+  const handleToggleStatus = React.useCallback((checked, record) => {
     const payload = {
       ...record,
       status: checked ? "active" : "inactive",
     };
     updatePatient(record.id, payload);
     message.success(`Patient ${checked ? "activated" : "deactivated"}`);
-  };
+  }, [updatePatient, message]);
 
   const getPasswordStrength = (pass) => {
     if (!pass) return { score: 0, label: "None", color: theme.border };
@@ -403,7 +403,7 @@ const PatientList = () => {
     return { score: 3, label: "Strong", color: theme.status.success };
   };
 
-  const highlightText = (text, query) => {
+  const highlightText = React.useCallback((text, query) => {
     if (!query) return text;
     const parts = String(text).split(new RegExp(`(${query})`, "gi"));
     return parts.map((part, i) =>
@@ -421,7 +421,7 @@ const PatientList = () => {
         part
       ),
     );
-  };
+  }, [theme]);
 
   const displayData = useMemo(() => {
     const data = (rawPatients || []).map((p) => ({
@@ -561,7 +561,7 @@ const PatientList = () => {
         </Space>
       ),
     },
-  ], [theme, searchQuery, handleToggleStatus, showForm, showTimeline, user?.role, removePatient]);
+  ], [theme, searchQuery, handleToggleStatus, showForm, showTimeline, user?.role, removePatient, highlightText]);
 
   return (
     <PageWrapper>

@@ -101,9 +101,10 @@ const BillingList = ({
     clearBillingError,
     pagedActions,
     form,
+    message,
   ]);
 
-  const handlePayClick = (record) => {
+  const handlePayClick = React.useCallback((record) => {
     setSelectedInvoice(record);
     const amount = record.amount || record.total_amount || 0;
     form.setFieldsValue({
@@ -112,9 +113,9 @@ const BillingList = ({
       transaction_id: `TXN-${Date.now()}`,
     });
     setIsModalOpen(true);
-  };
+  }, [form]);
 
-  const downloadReceipt = (record) => {
+  const downloadReceipt = React.useCallback((record) => {
     const printContent = document.getElementById(`receipt-${record.id}`);
     if (!printContent) {
       message.error("Receipt content not found");
@@ -135,7 +136,7 @@ const BillingList = ({
       WinPrint.print();
       WinPrint.close();
     }, 500);
-  };
+  }, [message]);
 
   const handleFormSubmit = (values) => {
     processPayment({
@@ -229,7 +230,7 @@ const BillingList = ({
           },
         },
       ].filter((c) => !c.hidden),
-    [theme, statusFilter, handlePayClick, downloadReceipt],
+    [theme, statusFilter, handlePayClick, downloadReceipt, userRole],
   );
 
   return (

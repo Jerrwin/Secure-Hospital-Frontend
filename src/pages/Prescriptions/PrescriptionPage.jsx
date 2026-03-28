@@ -381,7 +381,7 @@ const PrescriptionPage = () => {
       dispatch(clearError());
       setIsSubmitting(false);
     }
-  }, [error, dispatch, handleClose]);
+  }, [error, dispatch, handleClose, message]);
 
   useEffect(() => {
     if (isSubmitting && !submitting && !error) {
@@ -391,7 +391,7 @@ const PrescriptionPage = () => {
       setIsSubmitting(false);
       handleClose();
     }
-  }, [isSubmitting, submitting, error, editTarget, handleClose]);
+  }, [isSubmitting, submitting, error, editTarget, handleClose, message]);
 
   const handleSubmit = useCallback(async () => {
     try {
@@ -417,7 +417,7 @@ const PrescriptionPage = () => {
       dispatch(deleteRequest(id));
       message.success("Prescription deleted");
     },
-    [dispatch],
+    [dispatch, message],
   );
 
   const apptOptions = useMemo(() => {

@@ -73,7 +73,11 @@ function* createPatientSaga(action) {
     yield put(fetchPagedRequest(1)); // Refresh first page
     yield put(invalidateDropdownCache());
   } catch (error) {
-    yield put(createPatientFailure(error.response?.data?.message || "Failed to create patient"));
+    if (error.isOfflineQueued) {
+      yield put(createPatientFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(createPatientFailure(error.response?.data?.message || "Failed to create patient"));
+    }
   }
 }
 
@@ -85,7 +89,11 @@ function* updatePatientSaga(action) {
     yield put(updatePatientSuccess(updatedPatient));
     yield put(invalidateDropdownCache());
   } catch (error) {
-    yield put(updatePatientFailure(error.response?.data?.message || "Failed to update patient"));
+    if (error.isOfflineQueued) {
+      yield put(updatePatientFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(updatePatientFailure(error.response?.data?.message || "Failed to update patient"));
+    }
   }
 }
 
@@ -96,7 +104,11 @@ function* deletePatientSaga(action) {
     yield put(fetchPagedRequest(1)); // Refresh
     yield put(invalidateDropdownCache());
   } catch (error) {
-    yield put(deletePatientFailure(error.response?.data?.message || "Failed to delete patient"));
+    if (error.isOfflineQueued) {
+      yield put(deletePatientFailure("OFFLINE_QUEUED"));
+    } else {
+      yield put(deletePatientFailure(error.response?.data?.message || "Failed to delete patient"));
+    }
   }
 }
 

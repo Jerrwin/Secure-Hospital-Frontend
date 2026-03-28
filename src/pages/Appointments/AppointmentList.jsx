@@ -142,8 +142,6 @@ const AppointmentList = forwardRef(
     const {
       pagination: tablePagination,
       actions: pagedActions,
-      searchQuery: activeSearch,
-      statusFilter: activeStatus,
     } = usePrefetchPagination({
       selector: (state) => state.appointments,
       actions: paginationActions,
@@ -187,7 +185,7 @@ const AppointmentList = forwardRef(
     const [expandedRowKeys, setExpandedRowKeys] = useState([]);
 
     // ── Modal Handlers ──────────────────────────────────────────────────────
-    const openCreate = () => {
+    const openCreate = React.useCallback(() => {
       // Only fetch dropdown data if not already attempted
       if (!dropdownLoading && !dropdownFetched) {
         fetchAppointmentDropdowns();
@@ -201,9 +199,9 @@ const AppointmentList = forwardRef(
       }
       setEditingId(null);
       setModalOpen(true);
-    };
+    }, [dropdownLoading, dropdownFetched, fetchAppointmentDropdowns, form, role, userId]);
 
-    const openEdit = (record) => {
+    const openEdit = React.useCallback((record) => {
       // Only fetch dropdown data if not already attempted
       if (!dropdownLoading && !dropdownFetched) {
         fetchAppointmentDropdowns();
@@ -219,9 +217,9 @@ const AppointmentList = forwardRef(
         reason: record.reason || "",
       });
       setModalOpen(true);
-    };
+    }, [dropdownLoading, dropdownFetched, fetchAppointmentDropdowns, form]);
 
-    const openChat = (record) => {
+    const openChat = React.useCallback((record) => {
       setActiveChatId(record.id);
 
       // Resolve patient name for the Drawer title
@@ -243,7 +241,7 @@ const AppointmentList = forwardRef(
 
       setActiveChatPatient(pName || `Patient #${record.patient_id || "?"}`);
       setChatDrawerOpen(true);
-    };
+    }, [patients]);
 
     // Expose actions to parent
     useImperativeHandle(ref, () => ({
@@ -282,7 +280,7 @@ const AppointmentList = forwardRef(
         clearError();
         setIsSubmittingLocal(false);
       }
-    }, [submitError, clearError, form]);
+    }, [submitError, clearError, form, message]);
 
     useEffect(() => {
       if (isSubmittingLocal && !submitting && !submitError) {
@@ -296,7 +294,7 @@ const AppointmentList = forwardRef(
         form.resetFields();
         setEditingId(null);
       }
-    }, [isSubmittingLocal, submitting, submitError, editingId, form]);
+    }, [isSubmittingLocal, submitting, submitError, editingId, form, message]);
 
     // ── Initial load ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -633,7 +631,7 @@ const AppointmentList = forwardRef(
             },
           },
         ].filter((col) => !col.hidden),
-      [patients, role, theme, openEdit, openChat, propSearchText],
+      [patients, role, theme, openEdit, openChat, propSearchText, expandedRowKeys],
     );
 
     return (
