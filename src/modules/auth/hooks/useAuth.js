@@ -34,7 +34,7 @@ const useAuth = () => {
 
     const roleMap = {
       1: "ADMIN",
-      2: "PROVIDER", // Changed from DR/DOCTOR to PROVIDER
+      2: "PROVIDER",
       3: "NURSE",
       4: "PHARMACIST",
       5: "RECEPTIONIST",

@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
-import sagaMiddleware from "./sagaMiddleware"; // ← import from sagaMiddleware.js
-import rootReducer from "./rootReducer"; // ← use rootReducer.js
+import sagaMiddleware from "./sagaMiddleware";
+import rootReducer from "./rootReducer";
 import rootSaga from "./rootSaga";
 
 const isDevelopment = process.env.NODE_ENV !== "production";

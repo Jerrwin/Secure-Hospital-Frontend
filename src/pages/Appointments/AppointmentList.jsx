@@ -631,6 +631,7 @@ const AppointmentList = forwardRef(
                 </Space>
               );
             },
+            hidden: role === "PATIENT",
           },
         ].filter((col) => !col.hidden),
       [patients, role, theme, openEdit, openChat, propSearchText],
