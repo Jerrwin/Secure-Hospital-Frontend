@@ -1,7 +1,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import useAuth from "../modules/auth/hooks/useAuth";
 
-const IDLE_TIMEOUT = 50 * 60 * 1000; // 5 Minutes in milliseconds
+const IDLE_TIMEOUT = 5 * 60 * 1000; // 5 Minutes in milliseconds
 
 /**
  * Custom hook to monitor user inactivity and automatically logout.

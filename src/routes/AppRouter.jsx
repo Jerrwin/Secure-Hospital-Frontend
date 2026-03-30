@@ -23,14 +23,14 @@ const PrescriptionPage = lazy(
 const StaffManagement = lazy(() => import("../pages/Staff/StaffManagement"));
 const InvoicePage = lazy(() => import("../pages/Billing/InvoicePage"));
 const ProfilePage = lazy(() => import("../pages/Profile/ProfilePage"));
-const SettingsPage = lazy(() => import("../pages/Settings/SecuritySettings")); // Using SecuritySettings as placeholder for now
-
-
+const SettingsPage = lazy(() => import("../pages/Settings/SecuritySettings"));
 
 /**
  * Global Loading Fallback for Lazy Components
  */
-const LoadingFallback = () => <LoadingScreen fullPage label="Loading Module..." />;
+const LoadingFallback = () => (
+  <LoadingScreen fullPage label="Loading Module..." />
+);
 
 const AppRouter = ({ isSubdomain }) => {
   const { config, loading, error, fetched } = useSelector(
@@ -78,7 +78,15 @@ const AppRouter = ({ isSubdomain }) => {
           <Route
             path="/appointments"
             element={
-              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PROVIDER", "DOCTOR", "NURSE", "PATIENT"]}>
+              <RoleBasedRoute
+                allowedRoles={[
+                  "RECEPTIONIST",
+                  "PROVIDER",
+                  "DOCTOR",
+                  "NURSE",
+                  "PATIENT",
+                ]}
+              >
                 <AppointmentCalendar />
               </RoleBasedRoute>
             }
@@ -116,9 +124,7 @@ const AppRouter = ({ isSubdomain }) => {
           <Route
             path="/billing"
             element={
-              <RoleBasedRoute
-                allowedRoles={["RECEPTIONIST", "PATIENT"]}
-              >
+              <RoleBasedRoute allowedRoles={["RECEPTIONIST", "PATIENT"]}>
                 <InvoicePage />
               </RoleBasedRoute>
             }

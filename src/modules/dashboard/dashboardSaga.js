@@ -33,20 +33,23 @@ function* fetchDashboardDataSaga(action) {
           const presRes = yield call(dashboardAPI.getPrescriptions);
           if (presRes.data?.success) payload.prescriptions = presRes.data.data;
         } catch (e) {
-          console.error("Error fetching pharmacist dashboard prescriptions:", e);
+          console.error(
+            "Error fetching pharmacist dashboard prescriptions:",
+            e,
+          );
         }
       }
     }
 
     yield put(
       fetchDashboardDataSuccess({
-        stats: payload.stats || payload || null, // ✅ Handle both nested and flat responses
+        stats: payload.stats || payload || null,
         appointments: payload.appointments || [],
         prescriptions: payload.prescriptions || [],
         weekly_trend: payload.weekly_trend || [],
         patients: [],
         staff: [],
-      })
+      }),
     );
   } catch (error) {
     if (!navigator.onLine || !error.response) {
@@ -54,8 +57,8 @@ function* fetchDashboardDataSaga(action) {
     } else {
       yield put(
         fetchDashboardDataFailure(
-          error.response?.data?.message || "Failed to fetch dashboard data"
-        )
+          error.response?.data?.message || "Failed to fetch dashboard data",
+        ),
       );
     }
   }

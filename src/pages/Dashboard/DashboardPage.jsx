@@ -34,7 +34,7 @@ const SubtitleText = styled.p`
 const DashboardPage = () => {
   const { theme } = useTheme();
   const { user, userRole } = useAuth();
-  const dashboardData = useDashboard(user);
+  const dashboardData = useDashboard(userRole);
   const { patients } = usePatients();
   const { list: allAppointments } = useAppointments();
   const { staffList } = useUsers();

@@ -2,7 +2,7 @@ import { useSelector, useDispatch, shallowEqual } from "react-redux";
 import { fetchDashboardDataRequest } from "../../../modules/dashboard/dashboardSlice";
 import { useEffect, useMemo } from "react";
 
-const useDashboard = (user) => {
+const useDashboard = (userRole) => {
   const dispatch = useDispatch();
 
   const {
@@ -18,10 +18,10 @@ const useDashboard = (user) => {
   } = useSelector((state) => state.dashboard, shallowEqual);
 
   useEffect(() => {
-    if (user?.role && !fetched && !loading) {
-      dispatch(fetchDashboardDataRequest({ role: user.role }));
+    if (userRole && !fetched && !loading) {
+      dispatch(fetchDashboardDataRequest({ role: userRole }));
     }
-  }, [dispatch, user?.role, fetched, loading]);
+  }, [dispatch, userRole, fetched, loading]);
 
   const dashboardData = useMemo(
     () => ({
